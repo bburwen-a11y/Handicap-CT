@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v7.45 · September 10, 2026 — iPhone / Safari</title>
+<title>Horse Handicap v7.46 · September 10, 2026 — iPhone / Safari</title>
 
 <style>
 :root{
@@ -852,7 +852,7 @@ tbody input:focus{
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.45</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.46</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance fit and value.
 </p>
@@ -2936,7 +2936,7 @@ function surfaceBestSpeed(horse){
     const g=surfaceGroup(horse.currentSurface);
     const cond=conditionGroup(horse.currentTrackCondition);
 
-    // v7.45 TURF PROOF FIX:
+    // v7.46 TURF PROOF FIX:
     // A dirt/lifetime figure is not a turf figure. In a turf race an unproven
     // turf horse gets no substitute Best Speed credit from another surface.
     if(g==="T") return number(horse.bestSpeedTurf);
@@ -3546,7 +3546,7 @@ function getConfidence(top,second){
 
 
 /* ============================================================
-   PERFORMANCE + EARNINGS SUPPORT — v7.45
+   PERFORMANCE + EARNINGS SUPPORT — v7.46
    Uses only the horse data parsed from the race card; no comparison badge.
    This layer does not alter the underlying Horse Handicap score.
    It describes whether the TOP HORSE is supported by independent
@@ -3738,7 +3738,7 @@ function isFirstTimeStarterForQuality(h){
     return usable.length===0;
 }
 
-// v7.45 — SIGNAL CONSENSUS + AUTOMATIC FROZEN INTERNAL RULE
+// v7.46 — SIGNAL CONSENSUS + AUTOMATIC FROZEN INTERNAL RULE
 
 function soleTopRank(field, horse, selector){
     const active=(field||[]).filter(h=>!h.scratched);
@@ -3799,7 +3799,8 @@ function concurrenceSupport(field, topHorse, race){
     const ruleA=fav && avg3.ok;
     const ruleB=fav && avg3.ok && (trip.ok || classOK) && !h2h.strong;
 
-    let count=1; // Horse Handicap's own #1 pick
+    const ownTop=calculateProbabilities(active)[0]?.horse?.id===topHorse.id;
+    let count=ownTop ? 1 : 0; // Horse Handicap's own #1 pick
     if(ruleA) count++;
     if(ruleB) count++;
 
@@ -3859,7 +3860,7 @@ function consensusBadgeHTML(field,horse){
     return `<span class="badge ${cls}">${safe(c.label)} · ${c.wins}/${c.usable}</span>`;
 }
 
-// v7.45 balanced validation gates: pace/maiden/surface are modifiers, not automatic vetoes.
+// v7.46 balanced validation gates: pace/maiden/surface are modifiers, not automatic vetoes.
 function primePowerGap(field,horse){
     const active=(field||[]).filter(h=>!h.scratched);
     const vals=active.map(h=>({h,v:number(h.score||h.primePower)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
@@ -3964,7 +3965,7 @@ function raceBetQuality(field, modelTopHorse){
             text:'Performance and earnings evidence is too thin or too mixed to upgrade this race.'};
     }
 
-    // v7.45: Recent Speed Confirmed can strengthen a race, but cannot by itself
+    // v7.46: Recent Speed Confirmed can strengthen a race, but cannot by itself
     // manufacture a STRONG bet. It needs class/surface proof and P+E support.
     if(recentConfirm.confirmed && ftsCount===0 && fieldSize<=9 && supportOK && surfaceOK && (classOK || lightlyRacedWinner)){
         return {level:'strong',label:'BET — STRONG',fieldSize,ftsCount,support,recentConfirm,fit,
@@ -4031,7 +4032,7 @@ function modelBestBetProfile(scored,field){
     const consensus=signalConsensus(active,horse);
     if(consensus.level==='uncertain') reasons.push("high signal uncertainty");
 
-    // v7.45 keeps the separated model profile, but HIGH UNCERTAINTY is a veto.
+    // v7.46 keeps the separated model profile, but HIGH UNCERTAINTY is a veto.
     // This prevents a race like Race 5 / Doctrine from being labeled BEST BET
     // while the same board says the evidence does not agree.
     // This restores the pre-result profile that identified the strongest
@@ -4058,7 +4059,7 @@ function finalRaceDecision(top,field){
     const active=(field||[]).filter(h=>!h.scratched);
     const fts=active.filter(isFirstTimeStarterForQuality).length;
 
-    // v7.45: a complete-data leader with HIGH CONSENSUS is not forced to PASS
+    // v7.46: a complete-data leader with HIGH CONSENSUS is not forced to PASS
     // solely because Performance + Earnings support is thin. This is especially
     // important in proven older-horse/stakes fields where the four core measures agree.
     if(!structural.pass && quality.level==='pass' && complete && consensus.level==='high' && fts===0 && active.length<=9){
@@ -4375,7 +4376,7 @@ function classStrengthFromValues(purse,claiming){
     return Math.log10(1+p)*10 + Math.log10(1+c)*4;
 }
 
-// v7.45 — class-family normalization.
+// v7.46 — class-family normalization.
 // BRIS past-performance class text can use forms such as Moc50000.
 // Those are maiden optional-claiming races and must stay in the MAIDEN family
 // when compared with MdSpWt / MSW / maiden claiming races.
@@ -4879,8 +4880,8 @@ function computeRaceCard(){
         const decision=finalRaceDecision(top,activeField);
         const bestProfile=modelBestBetProfile(scored,activeField);
 
-        // v7.45 preserves the current wager-selection path. paired_final12 is
-        // informational confirmation only; it cannot erase a v7.45 Best Bet.
+        // v7.46 preserves the current wager-selection path. paired_final12 is
+        // informational confirmation only; it cannot erase a v7.46 Best Bet.
         const topConsensus=signalConsensus(activeField,top.horse);
         const concurrence=concurrenceSupport(activeField,top.horse,{
             horse:top.horse, activeField, race:String(raceNum),
@@ -5205,7 +5206,24 @@ function computeRaceCard(){
           ${multiTrainers.length ? `<div class="warning-box"><b>TRAINER MULTIPLE ENTRY:</b> ${multiTrainers.map(k=>{const h=activeField.find(x=>normalizeName(x.trainer)===k);return safe(h?h.trainer:k);}).join(', ')}</div>` : ''}
           <div class="analysis-grid">
             <div class="analysis-box contender"><h4>Contenders (${contenders.length})</h4>
-              ${contenders.map(item=>`<div class="analysis-item"><b>#${safe(item.horse.post)} ${safe(item.horse.horse)}</b> ${speedConfirmedBadge(activeField,item.horse)}<br>Model: <b>${(item.probability*100).toFixed(1)}%</b><br><span class="note">${safe(classMap[item.horse.id].reason)}</span>${renderContenderPastPerformances(item.horse)}</div>`).join('') || '<div class="analysis-item">None.</div>'}
+              ${contenders.map(item=>{
+                  const cc=concurrenceSupport(activeField,item.horse,{
+                      horse:item.horse,
+                      activeField,
+                      race:String(raceNum),
+                      surface:item.horse.currentSurface,
+                      distance:item.horse.currentDistance
+                  });
+                  return `<div class="analysis-item">
+                    <b class="${cc.full?'concurrent-pick':''}">#${safe(item.horse.post)} ${safe(item.horse.horse)}</b>
+                    ${cc.full?'<span class="badge badge-green">3/3 CONCURRENCE</span>':''}
+                    ${speedConfirmedBadge(activeField,item.horse)}
+                    <br>Model: <b>${(item.probability*100).toFixed(1)}%</b>
+                    ${cc.full?`<br><span class="note"><b>Concurrent support:</b> ${safe(cc.notes.join(" · "))}</span>`:''}
+                    <br><span class="note">${safe(classMap[item.horse.id].reason)}</span>
+                    ${renderContenderPastPerformances(item.horse)}
+                  </div>`;
+              }).join('') || '<div class="analysis-item">None.</div>'}
             </div>
             <div class="analysis-box questionable"><h4>Questionable / Live Longshots (${questionable.length})</h4>
               ${questionable.map(item=>`<div class="analysis-item"><b>#${safe(item.horse.post)} ${safe(item.horse.horse)}</b> ${speedConfirmedBadge(activeField,item.horse)}<br>Model: <b>${(item.probability*100).toFixed(1)}%</b><br><span class="note">${safe(classMap[item.horse.id].reason)}</span></div>`).join('') || '<div class="analysis-item">None.</div>'}
@@ -5281,7 +5299,7 @@ function computeRaceCard(){
           <div class="metric-line"><b>INDEPENDENT CONDITIONS CONFIRMED</b> · ${safe(independentConditionConfirmation(x).notes.join(" · "))}</div>
           ${topPickH2HWarning(x.activeField,x.horse,x)}
         </div>`).join("") :
-        '<div class="warning-box"><b>No race qualifies under the restored v7.45 Best Races logic today.</b> Review contenders, but do not force a wager.</div>'}
+        '<div class="warning-box"><b>No race qualifies under the restored v7.46 Best Races logic today.</b> Review contenders, but do not force a wager.</div>'}
     </div>`;
 
     $("bestSection").innerHTML = `
@@ -6768,6 +6786,6 @@ renderRows();
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.45 · iPhone/Safari build 2026-09-12</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.46 · iPhone/Safari build 2026-09-12</div>
 </body>
 </html>
