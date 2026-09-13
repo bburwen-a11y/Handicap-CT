@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v7.47 · September 10, 2026 — iPhone / Safari</title>
+<title>Horse Handicap v7.49 · September 10, 2026 — iPhone / Safari</title>
 
 <style>
 :root{
@@ -852,7 +852,7 @@ tbody input:focus{
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.47</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.49</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance fit and value.
 </p>
@@ -2936,7 +2936,7 @@ function surfaceBestSpeed(horse){
     const g=surfaceGroup(horse.currentSurface);
     const cond=conditionGroup(horse.currentTrackCondition);
 
-    // v7.47 TURF PROOF FIX:
+    // v7.49 TURF PROOF FIX:
     // A dirt/lifetime figure is not a turf figure. In a turf race an unproven
     // turf horse gets no substitute Best Speed credit from another surface.
     if(g==="T") return number(horse.bestSpeedTurf);
@@ -3546,7 +3546,7 @@ function getConfidence(top,second){
 
 
 /* ============================================================
-   PERFORMANCE + EARNINGS SUPPORT — v7.47
+   PERFORMANCE + EARNINGS SUPPORT — v7.49
    Uses only the horse data parsed from the race card; no comparison badge.
    This layer does not alter the underlying Horse Handicap score.
    It describes whether the TOP HORSE is supported by independent
@@ -3738,7 +3738,7 @@ function isFirstTimeStarterForQuality(h){
     return usable.length===0;
 }
 
-// v7.47 — SIGNAL CONSENSUS + AUTOMATIC FROZEN INTERNAL RULE
+// v7.49 — SIGNAL CONSENSUS + AUTOMATIC FROZEN INTERNAL RULE
 
 function soleTopRank(field, horse, selector){
     const active=(field||[]).filter(h=>!h.scratched);
@@ -3797,7 +3797,7 @@ function concurrenceSupport(field, topHorse, race){
     // A: market choice + sole #1 recent three-race speed.
     // B: the same horse, with comparable-trip support and no strong H2H contradiction.
     const ruleA=fav && avg3.ok;
-    const ruleB=fav && avg3.ok && (trip.ok || classOK) && !h2h.strong;
+    const ruleB=fav && avg3.ok && (trip.ok || classOK);
 
     const ownTop=calculateProbabilities(active)[0]?.horse?.id===topHorse.id;
     let count=ownTop ? 1 : 0; // Horse Handicap's own #1 pick
@@ -3817,7 +3817,9 @@ function concurrenceSupport(field, topHorse, race){
     if(bs.rank===1) notes.push(`Best Speed #1 (${Math.round(bs.value)})`);
     if(!h2h.hasLoss) notes.push(`no prior H2H loss to a current rival`);
 
-    return {count,full:count===3,ruleA,ruleB,notes,avg3,trip,fav,classOK};
+    if(h2h.strong) notes.push(`STRONG H2H CAUTION — separate from concurrence`);
+    else if(h2h.hasLoss) notes.push(`H2H caution — separate from concurrence`);
+    return {count,full:count===3,ruleA,ruleB,notes,avg3,trip,fav,classOK,h2h};
 }
 
 function concurrenceHTML(field,topHorse,race){
@@ -3860,7 +3862,7 @@ function consensusBadgeHTML(field,horse){
     return `<span class="badge ${cls}">${safe(c.label)} · ${c.wins}/${c.usable}</span>`;
 }
 
-// v7.47 balanced validation gates: pace/maiden/surface are modifiers, not automatic vetoes.
+// v7.49 balanced validation gates: pace/maiden/surface are modifiers, not automatic vetoes.
 function primePowerGap(field,horse){
     const active=(field||[]).filter(h=>!h.scratched);
     const vals=active.map(h=>({h,v:number(h.score||h.primePower)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
@@ -3965,7 +3967,7 @@ function raceBetQuality(field, modelTopHorse){
             text:'Performance and earnings evidence is too thin or too mixed to upgrade this race.'};
     }
 
-    // v7.47: Recent Speed Confirmed can strengthen a race, but cannot by itself
+    // v7.49: Recent Speed Confirmed can strengthen a race, but cannot by itself
     // manufacture a STRONG bet. It needs class/surface proof and P+E support.
     if(recentConfirm.confirmed && ftsCount===0 && fieldSize<=9 && supportOK && surfaceOK && (classOK || lightlyRacedWinner)){
         return {level:'strong',label:'BET — STRONG',fieldSize,ftsCount,support,recentConfirm,fit,
@@ -4032,7 +4034,7 @@ function modelBestBetProfile(scored,field){
     const consensus=signalConsensus(active,horse);
     if(consensus.level==='uncertain') reasons.push("high signal uncertainty");
 
-    // v7.47 keeps the separated model profile, but HIGH UNCERTAINTY is a veto.
+    // v7.49 keeps the separated model profile, but HIGH UNCERTAINTY is a veto.
     // This prevents a race like Race 5 / Doctrine from being labeled BEST BET
     // while the same board says the evidence does not agree.
     // This restores the pre-result profile that identified the strongest
@@ -4059,7 +4061,7 @@ function finalRaceDecision(top,field){
     const active=(field||[]).filter(h=>!h.scratched);
     const fts=active.filter(isFirstTimeStarterForQuality).length;
 
-    // v7.47: a complete-data leader with HIGH CONSENSUS is not forced to PASS
+    // v7.49: a complete-data leader with HIGH CONSENSUS is not forced to PASS
     // solely because Performance + Earnings support is thin. This is especially
     // important in proven older-horse/stakes fields where the four core measures agree.
     if(!structural.pass && quality.level==='pass' && complete && consensus.level==='high' && fts===0 && active.length<=9){
@@ -4376,7 +4378,7 @@ function classStrengthFromValues(purse,claiming){
     return Math.log10(1+p)*10 + Math.log10(1+c)*4;
 }
 
-// v7.47 — class-family normalization.
+// v7.49 — class-family normalization.
 // BRIS past-performance class text can use forms such as Moc50000.
 // Those are maiden optional-claiming races and must stay in the MAIDEN family
 // when compared with MdSpWt / MSW / maiden claiming races.
@@ -4880,8 +4882,8 @@ function computeRaceCard(){
         const decision=finalRaceDecision(top,activeField);
         const bestProfile=modelBestBetProfile(scored,activeField);
 
-        // v7.47 preserves the current wager-selection path. paired_final12 is
-        // informational confirmation only; it cannot erase a v7.47 Best Bet.
+        // v7.49 preserves the current wager-selection path. paired_final12 is
+        // informational confirmation only; it cannot erase a v7.49 Best Bet.
         const topConsensus=signalConsensus(activeField,top.horse);
         const concurrence=concurrenceSupport(activeField,top.horse,{
             horse:top.horse, activeField, race:String(raceNum),
@@ -5264,6 +5266,38 @@ function computeRaceCard(){
     }
     bestHTML=bestHTML.replace(/<span data-strongest-race="[^"]+"><\/span>/g,'');
 
+    // 3/3 concurrence is an informational cross-check and must NEVER
+    // disappear merely because the separate Best Bet gate declines the race.
+    // This preserves the user's core requirement: if all three frozen approaches
+    // key on the same horse, surface it prominently in this one program.
+    const concurrenceRaces=rankedBetRaces.filter(x=>
+        !x.horse.scratched &&
+        x.concurrence?.full
+    );
+
+    const concurrenceSummary = `<div class="bestof" style="margin-bottom:16px;">
+      <h3>3/3 Concurrence</h3>
+      ${concurrenceRaces.length ? concurrenceRaces.map(x=>`
+        <div class="best-pick" style="padding:10px 12px;margin:8px 0;">
+          <b class="concurrent-pick"><span class="race-number-link"
+             onclick="goToContendersRace('${safe(x.race)}')"
+             title="Open this race in Contenders">Race ${safe(x.race)}</span>
+             — ${safe(x.horse.horse)}</b>
+          <span class="badge badge-green">3/3 CONCURRENCE</span>
+          ${x.pass?'<span class="badge badge-red">NOT A BEST BET</span>':''}
+          ${x.close?'<span class="badge">CLOSE RACE</span>':''}
+          <div class="metric-line"><b>Supporting data:</b> ${safe(x.concurrence.notes.join(" · "))}</div>
+          ${!independentConditionConfirmation(x).confirmed
+              ? `<div class="metric-line"><b>Best-Bet gate:</b> concurrence confirmed, but independent-condition confirmation did not pass.</div>`
+              : ``}
+          ${x.concurrence?.h2h?.strong
+              ? `<div class="metric-line"><b>Important:</b> 3/3 concurrence remains valid; STRONG H2H CAUTION is a separate Best-Bet downgrade, not a disagreement signal.</div>`
+              : ``}
+          ${topPickH2HWarning(x.activeField,x.horse,x)}
+        </div>`).join("") :
+        '<div class="warning-box">No 3/3 concurrence race on this card.</div>'}
+    </div>`;
+
     const bestBetRaces=rankedBetRaces.filter(x=>
         !x.horse.scratched &&
         !x.close &&
@@ -5303,12 +5337,13 @@ function computeRaceCard(){
           <div class="metric-line"><b>INDEPENDENT CONDITIONS CONFIRMED</b> · ${safe(independentConditionConfirmation(x).notes.join(" · "))}</div>
           ${topPickH2HWarning(x.activeField,x.horse,x)}
         </div>`).join("") :
-        '<div class="warning-box"><b>No race qualifies under the restored v7.47 Best Races logic today.</b> Review contenders, but do not force a wager.</div>'}
+        '<div class="warning-box"><b>No race qualifies under the restored v7.49 Best Races logic today.</b> Review contenders, but do not force a wager.</div>'}
     </div>`;
 
     $("bestSection").innerHTML = `
 
         ${raceJumpBarHTML(raceKeys,"best")}
+        ${concurrenceSummary}
         ${betRaceSummary}
         <div class="bestof">
 
@@ -5396,6 +5431,10 @@ function renderTop4Board(){
               const ls=liveLongshotForHorse(activeField,h);
               return `<div class="metric-line" style="padding:8px 0;border-bottom:1px solid rgba(0,0,0,.08);">
                 <b>${i+1}. #${safe(h.post||h.pgm||"")} ${safe(h.horse)}</b>
+                ${concurrenceSupport(activeField,h,{
+                    horse:h,activeField,race:String(raceNum),
+                    surface:h.currentSurface,distance:h.currentDistance
+                }).full?'<span class="badge badge-green">3/3 CONCURRENCE</span>':''}
                 ${ls?'<span class="badge badge-blue">LIVE LONGSHOT</span>':''}
                 · ${(x.probability*100).toFixed(1)}%
                 · ${safe(cons?.label || cons?.level || "")}
@@ -6808,6 +6847,6 @@ renderRows();
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.47 · iPhone/Safari build 2026-09-12</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.49 · iPhone/Safari build 2026-09-12</div>
 </body>
 </html>
