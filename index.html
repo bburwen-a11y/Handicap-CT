@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v7.50 · September 10, 2026 — iPhone / Safari</title>
+<title>Horse Handicap v7.51 · September 10, 2026 — iPhone / Safari</title>
 
 <style>
 :root{
@@ -844,6 +844,19 @@ tbody input:focus{
   }
 </style>
 
+
+<style id="v751-final-odds-style">
+.final-odds-note{
+  margin-top:10px;
+  padding:10px 12px;
+  border:1px solid var(--amber-dim);
+  border-left:5px solid var(--amber);
+  background:#FFF8E6;
+  font-size:12.5px;
+  line-height:1.55;
+}
+.final-odds-note b{color:var(--ink);}
+</style>
 </head>
 
 <body>
@@ -852,7 +865,7 @@ tbody input:focus{
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.50</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.51</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance fit and value.
 </p>
@@ -960,6 +973,11 @@ Apply Feed Updates
 </div>
 
 <div id="rssStatus" class="status"></div>
+<div class="final-odds-note">
+  <b>RSS workflow:</b> Apply Feed Updates automatically recomputes all races.
+  Before wagering, go to <b>Full Field</b> or <b>Contenders</b>, enter the
+  <b>final odds</b>, then tap <b>Compute Race Card</b> again.
+</div>
 
 </div>
 
@@ -2518,8 +2536,21 @@ function applyRSS(raw,fileName="Pasted Content"){
     $("rssStatus").className="status ok";
     $("rssStatus").textContent=msg;
 
-    if(Object.keys(computedRaces).length){
+    // v7.51: applying RSS updates recomputes the entire race card immediately.
+    // This keeps scratches, rider changes, surface/distance changes, probabilities,
+    // Best Bets, concurrence, Top 4 and Second Look synchronized.
+    if(rows && rows.length){
         computeRaceCard();
+
+        const baseMsg = $("rssStatus").textContent || "";
+        $("rssStatus").innerHTML =
+            safe(baseMsg) +
+            `<div class="final-odds-note">
+              <b>Races recomputed after RSS updates.</b><br>
+              Before wagering, go to <b>Full Field</b> or <b>Contenders</b>,
+              enter the <b>final odds</b>, then tap <b>Compute Race Card</b> again.
+              Final odds can change market rank, value, contender status and pass/play decisions.
+            </div>`;
     }
 }
 
@@ -2936,7 +2967,7 @@ function surfaceBestSpeed(horse){
     const g=surfaceGroup(horse.currentSurface);
     const cond=conditionGroup(horse.currentTrackCondition);
 
-    // v7.50 TURF PROOF FIX:
+    // v7.51 TURF PROOF FIX:
     // A dirt/lifetime figure is not a turf figure. In a turf race an unproven
     // turf horse gets no substitute Best Speed credit from another surface.
     if(g==="T") return number(horse.bestSpeedTurf);
@@ -3546,7 +3577,7 @@ function getConfidence(top,second){
 
 
 /* ============================================================
-   PERFORMANCE + EARNINGS SUPPORT — v7.50
+   PERFORMANCE + EARNINGS SUPPORT — v7.51
    Uses only the horse data parsed from the race card; no comparison badge.
    This layer does not alter the underlying Horse Handicap score.
    It describes whether the TOP HORSE is supported by independent
@@ -3738,7 +3769,7 @@ function isFirstTimeStarterForQuality(h){
     return usable.length===0;
 }
 
-// v7.50 — SIGNAL CONSENSUS + AUTOMATIC FROZEN INTERNAL RULE
+// v7.51 — SIGNAL CONSENSUS + AUTOMATIC FROZEN INTERNAL RULE
 
 function soleTopRank(field, horse, selector){
     const active=(field||[]).filter(h=>!h.scratched);
@@ -3862,7 +3893,7 @@ function consensusBadgeHTML(field,horse){
     return `<span class="badge ${cls}">${safe(c.label)} · ${c.wins}/${c.usable}</span>`;
 }
 
-// v7.50 balanced validation gates: pace/maiden/surface are modifiers, not automatic vetoes.
+// v7.51 balanced validation gates: pace/maiden/surface are modifiers, not automatic vetoes.
 function primePowerGap(field,horse){
     const active=(field||[]).filter(h=>!h.scratched);
     const vals=active.map(h=>({h,v:number(h.score||h.primePower)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
@@ -3967,7 +3998,7 @@ function raceBetQuality(field, modelTopHorse){
             text:'Performance and earnings evidence is too thin or too mixed to upgrade this race.'};
     }
 
-    // v7.50: Recent Speed Confirmed can strengthen a race, but cannot by itself
+    // v7.51: Recent Speed Confirmed can strengthen a race, but cannot by itself
     // manufacture a STRONG bet. It needs class/surface proof and P+E support.
     if(recentConfirm.confirmed && ftsCount===0 && fieldSize<=9 && supportOK && surfaceOK && (classOK || lightlyRacedWinner)){
         return {level:'strong',label:'BET — STRONG',fieldSize,ftsCount,support,recentConfirm,fit,
@@ -4034,7 +4065,7 @@ function modelBestBetProfile(scored,field){
     const consensus=signalConsensus(active,horse);
     if(consensus.level==='uncertain') reasons.push("high signal uncertainty");
 
-    // v7.50 keeps the separated model profile, but HIGH UNCERTAINTY is a veto.
+    // v7.51 keeps the separated model profile, but HIGH UNCERTAINTY is a veto.
     // This prevents a race like Race 5 / Doctrine from being labeled BEST BET
     // while the same board says the evidence does not agree.
     // This restores the pre-result profile that identified the strongest
@@ -4061,7 +4092,7 @@ function finalRaceDecision(top,field){
     const active=(field||[]).filter(h=>!h.scratched);
     const fts=active.filter(isFirstTimeStarterForQuality).length;
 
-    // v7.50: a complete-data leader with HIGH CONSENSUS is not forced to PASS
+    // v7.51: a complete-data leader with HIGH CONSENSUS is not forced to PASS
     // solely because Performance + Earnings support is thin. This is especially
     // important in proven older-horse/stakes fields where the four core measures agree.
     if(!structural.pass && quality.level==='pass' && complete && consensus.level==='high' && fts===0 && active.length<=9){
@@ -4378,7 +4409,7 @@ function classStrengthFromValues(purse,claiming){
     return Math.log10(1+p)*10 + Math.log10(1+c)*4;
 }
 
-// v7.50 — class-family normalization.
+// v7.51 — class-family normalization.
 // BRIS past-performance class text can use forms such as Moc50000.
 // Those are maiden optional-claiming races and must stay in the MAIDEN family
 // when compared with MdSpWt / MSW / maiden claiming races.
@@ -4882,8 +4913,8 @@ function computeRaceCard(){
         const decision=finalRaceDecision(top,activeField);
         const bestProfile=modelBestBetProfile(scored,activeField);
 
-        // v7.50 preserves the current wager-selection path. paired_final12 is
-        // informational confirmation only; it cannot erase a v7.50 Best Bet.
+        // v7.51 preserves the current wager-selection path. paired_final12 is
+        // informational confirmation only; it cannot erase a v7.51 Best Bet.
         const topConsensus=signalConsensus(activeField,top.horse);
         const concurrence=concurrenceSupport(activeField,top.horse,{
             horse:top.horse, activeField, race:String(raceNum),
@@ -5337,7 +5368,7 @@ function computeRaceCard(){
           <div class="metric-line"><b>INDEPENDENT CONDITIONS CONFIRMED</b> · ${safe(independentConditionConfirmation(x).notes.join(" · "))}</div>
           ${topPickH2HWarning(x.activeField,x.horse,x)}
         </div>`).join("") :
-        '<div class="warning-box"><b>No race qualifies under the restored v7.50 Best Races logic today.</b> Review contenders, but do not force a wager.</div>'}
+        '<div class="warning-box"><b>No race qualifies under the restored v7.51 Best Races logic today.</b> Review contenders, but do not force a wager.</div>'}
     </div>`;
 
     $("bestSection").innerHTML = `
@@ -6893,6 +6924,6 @@ renderRows();
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.50 · iPhone/Safari build 2026-09-12</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.51 · iPhone/Safari build 2026-09-12</div>
 </body>
 </html>
