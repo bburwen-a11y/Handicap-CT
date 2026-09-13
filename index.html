@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v7.49 · September 10, 2026 — iPhone / Safari</title>
+<title>Horse Handicap v7.50 · September 10, 2026 — iPhone / Safari</title>
 
 <style>
 :root{
@@ -852,7 +852,7 @@ tbody input:focus{
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.49</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.50</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance fit and value.
 </p>
@@ -1044,7 +1044,7 @@ Top 4
 </button>
 
 <button data-tab="longshots">
-Live Longshots
+Second Look
 </button>
 
 <button data-tab="analysis">
@@ -1070,8 +1070,8 @@ Contenders / Questionable / Pretenders
 <section id="longshotsSection" style="display:none;">
   <div class="section-head"><div>
     <span class="step">VALUE ALERT</span>
-    <h2>LIVE LONGSHOTS</h2>
-    <p>Long-priced horses whose racing evidence is stronger than the morning line suggests. This is a value/caution view — not a Best Bet and not an automatic pick switch.</p>
+    <h2>LONGSHOT SECOND LOOK</h2>
+    <p>Long-priced horses that match the backtested second-look profile: competitive at today's level and top-2 in earnings per start. Additional model, speed, pace, H2H and surface/distance evidence is shown for review. This is not a Best Bet and does not replace the primary pick.</p>
   </div></div>
   <div id="longshotsBoard"></div>
 </section>
@@ -2936,7 +2936,7 @@ function surfaceBestSpeed(horse){
     const g=surfaceGroup(horse.currentSurface);
     const cond=conditionGroup(horse.currentTrackCondition);
 
-    // v7.49 TURF PROOF FIX:
+    // v7.50 TURF PROOF FIX:
     // A dirt/lifetime figure is not a turf figure. In a turf race an unproven
     // turf horse gets no substitute Best Speed credit from another surface.
     if(g==="T") return number(horse.bestSpeedTurf);
@@ -3546,7 +3546,7 @@ function getConfidence(top,second){
 
 
 /* ============================================================
-   PERFORMANCE + EARNINGS SUPPORT — v7.49
+   PERFORMANCE + EARNINGS SUPPORT — v7.50
    Uses only the horse data parsed from the race card; no comparison badge.
    This layer does not alter the underlying Horse Handicap score.
    It describes whether the TOP HORSE is supported by independent
@@ -3738,7 +3738,7 @@ function isFirstTimeStarterForQuality(h){
     return usable.length===0;
 }
 
-// v7.49 — SIGNAL CONSENSUS + AUTOMATIC FROZEN INTERNAL RULE
+// v7.50 — SIGNAL CONSENSUS + AUTOMATIC FROZEN INTERNAL RULE
 
 function soleTopRank(field, horse, selector){
     const active=(field||[]).filter(h=>!h.scratched);
@@ -3862,7 +3862,7 @@ function consensusBadgeHTML(field,horse){
     return `<span class="badge ${cls}">${safe(c.label)} · ${c.wins}/${c.usable}</span>`;
 }
 
-// v7.49 balanced validation gates: pace/maiden/surface are modifiers, not automatic vetoes.
+// v7.50 balanced validation gates: pace/maiden/surface are modifiers, not automatic vetoes.
 function primePowerGap(field,horse){
     const active=(field||[]).filter(h=>!h.scratched);
     const vals=active.map(h=>({h,v:number(h.score||h.primePower)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
@@ -3967,7 +3967,7 @@ function raceBetQuality(field, modelTopHorse){
             text:'Performance and earnings evidence is too thin or too mixed to upgrade this race.'};
     }
 
-    // v7.49: Recent Speed Confirmed can strengthen a race, but cannot by itself
+    // v7.50: Recent Speed Confirmed can strengthen a race, but cannot by itself
     // manufacture a STRONG bet. It needs class/surface proof and P+E support.
     if(recentConfirm.confirmed && ftsCount===0 && fieldSize<=9 && supportOK && surfaceOK && (classOK || lightlyRacedWinner)){
         return {level:'strong',label:'BET — STRONG',fieldSize,ftsCount,support,recentConfirm,fit,
@@ -4034,7 +4034,7 @@ function modelBestBetProfile(scored,field){
     const consensus=signalConsensus(active,horse);
     if(consensus.level==='uncertain') reasons.push("high signal uncertainty");
 
-    // v7.49 keeps the separated model profile, but HIGH UNCERTAINTY is a veto.
+    // v7.50 keeps the separated model profile, but HIGH UNCERTAINTY is a veto.
     // This prevents a race like Race 5 / Doctrine from being labeled BEST BET
     // while the same board says the evidence does not agree.
     // This restores the pre-result profile that identified the strongest
@@ -4061,7 +4061,7 @@ function finalRaceDecision(top,field){
     const active=(field||[]).filter(h=>!h.scratched);
     const fts=active.filter(isFirstTimeStarterForQuality).length;
 
-    // v7.49: a complete-data leader with HIGH CONSENSUS is not forced to PASS
+    // v7.50: a complete-data leader with HIGH CONSENSUS is not forced to PASS
     // solely because Performance + Earnings support is thin. This is especially
     // important in proven older-horse/stakes fields where the four core measures agree.
     if(!structural.pass && quality.level==='pass' && complete && consensus.level==='high' && fts===0 && active.length<=9){
@@ -4378,7 +4378,7 @@ function classStrengthFromValues(purse,claiming){
     return Math.log10(1+p)*10 + Math.log10(1+c)*4;
 }
 
-// v7.49 — class-family normalization.
+// v7.50 — class-family normalization.
 // BRIS past-performance class text can use forms such as Moc50000.
 // Those are maiden optional-claiming races and must stay in the MAIDEN family
 // when compared with MdSpWt / MSW / maiden claiming races.
@@ -4747,7 +4747,7 @@ function openRacePP(raceNum){
       ${raceConditionsHTML(shown.find(h=>!h.scratched) || shown[0])}
       ${paceProjectionHTML(field)}
       <div class="note" style="margin-bottom:10px;">
-        ${liveOnly ? "Showing Contenders and Questionable / Live Longshots; Pretenders are hidden." : "Showing every runner in the field."}
+        ${liveOnly ? "Showing Contenders and Questionable / Second Look; Pretenders are hidden." : "Showing every runner in the field."}
         Tap a horse name on the Race Card when you want only that horse's Past Performances. PP Level markers: ▲ past race tougher than today, = about the same, ▼ easier than today.
       </div>
       ${shown.map(renderRaceHorsePP).join("")}
@@ -4882,8 +4882,8 @@ function computeRaceCard(){
         const decision=finalRaceDecision(top,activeField);
         const bestProfile=modelBestBetProfile(scored,activeField);
 
-        // v7.49 preserves the current wager-selection path. paired_final12 is
-        // informational confirmation only; it cannot erase a v7.49 Best Bet.
+        // v7.50 preserves the current wager-selection path. paired_final12 is
+        // informational confirmation only; it cannot erase a v7.50 Best Bet.
         const topConsensus=signalConsensus(activeField,top.horse);
         const concurrence=concurrenceSupport(activeField,top.horse,{
             horse:top.horse, activeField, race:String(raceNum),
@@ -5114,7 +5114,7 @@ function computeRaceCard(){
                 horse:top.horse, activeField, race:String(raceNum),
                 surface:top.horse.currentSurface, distance:top.horse.currentDistance
             })}
-            ${liveLongshotDecisionHTML(activeField)}
+            ${longshotSecondLookHTML(activeField,{activeField,race:String(raceNum),horse:top.horse})}
             ${bestProfile.qualifies
                 ? `<div class="race-quality rq-strong"><span class="rq-tag">BEST BET</span>${safe(decision.quality.text)}</div>`
                 : raceBetQualityHTML(activeField, top.horse)}
@@ -5217,11 +5217,11 @@ function computeRaceCard(){
                       surface:item.horse.currentSurface,
                       distance:item.horse.currentDistance
                   });
-                  const ls=liveLongshotForHorse(activeField,item.horse);
+                  const ls=longshotSecondLookForHorse(activeField,item.horse,{activeField,race:String(raceNum),horse:item.horse});
                   return `<div class="analysis-item">
                     <b class="${cc.full?'concurrent-pick':''}">#${safe(item.horse.post)} ${safe(item.horse.horse)}</b>
                     ${cc.full?'<span class="badge badge-green">3/3 CONCURRENCE</span>':''}
-                    ${ls?'<span class="badge badge-blue">LIVE LONGSHOT</span>':''}
+                    ${ls?'<span class="badge badge-blue">SECOND LOOK</span>':''}
                     ${speedConfirmedBadge(activeField,item.horse)}
                     <br>Model: <b>${(item.probability*100).toFixed(1)}%</b>
                     ${cc.full?`<br><span class="note"><b>Concurrent support:</b> ${safe(cc.notes.join(" · "))}</span>`:''}
@@ -5231,7 +5231,7 @@ function computeRaceCard(){
                   </div>`;
               }).join('') || '<div class="analysis-item">None.</div>'}
             </div>
-            <div class="analysis-box questionable"><h4>Questionable / Live Longshots (${questionable.length})</h4>
+            <div class="analysis-box questionable"><h4>Questionable / Second Look (${questionable.length})</h4>
               ${questionable.map(item=>`<div class="analysis-item"><b>#${safe(item.horse.post)} ${safe(item.horse.horse)}</b> ${speedConfirmedBadge(activeField,item.horse)}<br>Model: <b>${(item.probability*100).toFixed(1)}%</b><br><span class="note">${safe(classMap[item.horse.id].reason)}</span></div>`).join('') || '<div class="analysis-item">None.</div>'}
             </div>
             <div class="analysis-box pretender"><h4>Pretenders (${pretenders.length})</h4>
@@ -5337,7 +5337,7 @@ function computeRaceCard(){
           <div class="metric-line"><b>INDEPENDENT CONDITIONS CONFIRMED</b> · ${safe(independentConditionConfirmation(x).notes.join(" · "))}</div>
           ${topPickH2HWarning(x.activeField,x.horse,x)}
         </div>`).join("") :
-        '<div class="warning-box"><b>No race qualifies under the restored v7.49 Best Races logic today.</b> Review contenders, but do not force a wager.</div>'}
+        '<div class="warning-box"><b>No race qualifies under the restored v7.50 Best Races logic today.</b> Review contenders, but do not force a wager.</div>'}
     </div>`;
 
     $("bestSection").innerHTML = `
@@ -5428,14 +5428,14 @@ function renderTop4Board(){
           ${scored.map((x,i)=>{
               const h=x.horse;
               const cons=signalConsensus(activeField,h);
-              const ls=liveLongshotForHorse(activeField,h);
+              const ls=longshotSecondLookForHorse(activeField,h,{activeField,race:String(raceNum),horse:h});
               return `<div class="metric-line" style="padding:8px 0;border-bottom:1px solid rgba(0,0,0,.08);">
                 <b>${i+1}. #${safe(h.post||h.pgm||"")} ${safe(h.horse)}</b>
                 ${concurrenceSupport(activeField,h,{
                     horse:h,activeField,race:String(raceNum),
                     surface:h.currentSurface,distance:h.currentDistance
                 }).full?'<span class="badge badge-green">3/3 CONCURRENCE</span>':''}
-                ${ls?'<span class="badge badge-blue">LIVE LONGSHOT</span>':''}
+                ${ls?'<span class="badge badge-blue">SECOND LOOK</span>':''}
                 · ${(x.probability*100).toFixed(1)}%
                 · ${safe(cons?.label || cons?.level || "")}
                 ${ls?`<br><span class="note"><b>${safe(h.odds||h.ml||"")} M/L</b> · ${safe(ls.reasons.join(" · "))}</span>`:''}
@@ -5447,78 +5447,124 @@ function renderTop4Board(){
 }
 
 
-function liveLongshotCandidates(field){
+
+function longshotSecondLookCandidates(field, raceCtx){
     const active=(field||[]).filter(h=>!h.scratched);
     if(active.length<4) return [];
+
     const ranked=calculateProbabilities(active);
-    const topProb=ranked[0]?.probability || 0;
-    const fourthProb=ranked[Math.min(3,ranked.length-1)]?.probability || 0;
+    const epsRows=active.map(h=>{
+        const starts=number(h.starts||h.ltStarts||0);
+        const earn=number(h.earnings||h.ltEarn||0);
+        const eps=starts>0 && earn>0 ? earn/starts :
+                  number(h.earningsPerStart||h.earnPerStart||h.eps||0);
+        return {h,eps};
+    }).filter(x=>x.eps>0).sort((a,b)=>b.eps-a.eps);
+
+    const epsRankOf=h=>{
+        const row=epsRows.find(x=>x.h.id===h.id);
+        if(!row) return null;
+        return 1+epsRows.filter(x=>x.eps>row.eps).length;
+    };
 
     return ranked.map((x,i)=>{
         const h=x.horse;
         const ml=oddsDecimal(h.odds ?? h.ml);
-        if(!isFinite(ml) || ml<8) return null;
+        if(ml===null) return null;
+        const price=ml-1;
 
-        let positives=0, reasons=[];
+        // Use the uploaded program's evidence profile as the CORE trigger.
+        // 12-1+ is the historically tested "priced out" threshold there.
+        if(price<12) return null;
+
         const elf=entryLevelFit(h);
-        const comp=Number(elf?.competitiveCount ?? elf?.competitive ?? 0);
-        const total=Number(elf?.sampleCount ?? elf?.sample ?? 0);
-        if((total>=2 && comp>=2) || elf?.level==="proven" || elf?.level==="competitive"){
-            positives++; reasons.push(total?`competitive at today's level ${comp}/${total}`:"competitive class fit");
+        const comp=Number(
+            elf?.competitiveCount ??
+            elf?.competitive ??
+            h.classFit ??
+            0
+        );
+        const seen=Number(
+            elf?.sampleCount ??
+            elf?.sample ??
+            h.classSeen ??
+            0
+        );
+
+        // Accept either the explicit 3-of-4-style ratio or the app's proven/competitive label.
+        const classRatio = seen>0 ? comp/seen : 0;
+        const classOK =
+            (seen>=2 && classRatio>=0.75) ||
+            elf?.level==="proven" ||
+            elf?.level==="competitive";
+
+        const epsRank=epsRankOf(h);
+        const epsOK=epsRank!==null && epsRank<=2;
+
+        // CORE gate: both must be present. This keeps the flag rare and source-backed.
+        if(!classOK || !epsOK) return null;
+
+        const support=[];
+        support.push(`competitive at today's level${seen?` ${comp}/${seen}`:""}`);
+        support.push(`#${epsRank} earnings/start`);
+
+        // Additional context does NOT create the flag; it only helps the user review it.
+        if(i<4) support.push(`model rank #${i+1}`);
+        const avg3=avg3RaceSpeed(h);
+        const avg3vals=active.map(avg3RaceSpeed).filter(v=>v>0).sort((a,b)=>b-a);
+        if(avg3>0 && avg3vals.length>=3){
+            const ar=1+avg3vals.filter(v=>v>avg3).length;
+            if(ar<=3) support.push(`Top-${ar} Avg-3 Speed`);
         }
 
-        // Model proximity/rank is evidence independent of ML price.
-        if(i<4){
-            positives++; reasons.push(`model rank #${i+1}`);
-        } else if(x.probability >= fourthProb*0.90){
-            positives++; reasons.push("near Top-4 model range");
-        }
+        const pf=paceFit(h,active);
+        if(pf>=0.60) support.push(`positive pace fit`);
 
-        // Earnings/start: reward top-quartile field evidence.
-        const eps=number(h.earningsPerStart || h.earnPerStart || h.eps || 0);
-        const epsVals=active.map(z=>number(z.earningsPerStart || z.earnPerStart || z.eps || 0)).filter(v=>v>0).sort((a,b)=>b-a);
-        if(eps>0 && epsVals.length){
-            const erank=epsVals.filter(v=>v>eps).length+1;
-            if(erank<=Math.max(2,Math.ceil(epsVals.length*.25))){
-                positives++; reasons.push(`#${erank} earnings/start`);
-            }
-        }
+        const sd=surfaceDistanceFit(h);
+        if(sd>=0.60) support.push(`surface/distance fit`);
 
-        // Strong speed evidence.
-        const speeds=active.map(z=>number(z.lastSpeed||z.speed||0));
-        const sp=number(h.lastSpeed||h.speed||0);
-        const srank=speeds.filter(v=>v>sp).length+1;
-        if(sp>0 && srank<=3){ positives++; reasons.push(`Top-${srank} last speed`); }
+        const h2h=topPickH2HContext(active,h,raceCtx||{horse:h,activeField:active});
+        if(h2h.strong) support.push(`STRONG H2H evidence`);
+        else if(h2h.hasLoss) support.push(`H2H caution`);
 
-        const h2h=topPickH2HContext(active,h,{horse:h,activeField:active});
-        if(h2h.strong) return null;
+        // Put concerns beside the evidence so this remains a second-look tool.
+        const concerns=[];
+        if(h2h.hasLoss && !h2h.strong) concerns.push("prior H2H loss");
+        if(sd<0.35) concerns.push("weak surface/distance evidence");
+        if(pf<0.35) concerns.push("pace mismatch");
+        if(i>4) concerns.push(`outside model Top 5 (#${i+1})`);
 
-        // Thin top: small probability spread or mixed/uncertain top consensus.
-        const topHorse=ranked[0]?.horse;
-        const topConsensus=topHorse ? signalConsensus(active,topHorse) : null;
-        const spread=topProb-(ranked[1]?.probability||0);
-        const thinTop = spread<=0.07 || topConsensus?.level!=="high";
-
-        // Require real evidence, not ML alone. A thin race lowers the bar by one.
-        const needed=thinTop ? 2 : 3;
-        if(positives<needed) return null;
-
-        return {horse:h, rank:i+1, probability:x.probability, ml, positives, reasons, thinTop};
+        return {
+            horse:h,
+            rank:i+1,
+            probability:x.probability,
+            ml,
+            price,
+            epsRank,
+            classOK,
+            support,
+            concerns
+        };
     }).filter(Boolean);
 }
 
-
-function liveLongshotForHorse(field, horse){
+function longshotSecondLookForHorse(field,horse,raceCtx){
     if(!horse) return null;
-    return liveLongshotCandidates(field).find(x=>x.horse.id===horse.id) || null;
+    return longshotSecondLookCandidates(field,raceCtx).find(x=>x.horse.id===horse.id) || null;
 }
 
-function liveLongshotDecisionHTML(field){
-    const shots=liveLongshotCandidates(field);
+function longshotSecondLookHTML(field,raceCtx){
+    const shots=longshotSecondLookCandidates(field,raceCtx);
     if(!shots.length) return "";
     return `<div class="warn" style="margin-top:10px;">
-      <b>LIVE LONGSHOT ALERT</b><br>
-      ${shots.map(x=>`#${safe(x.horse.post||x.horse.pgm||"")} <b>${safe(x.horse.horse)}</b> · ${safe(x.horse.odds||x.horse.ml||"")} M/L · model #${x.rank} · ${safe(x.reasons.join(" · "))}`).join("<br>")}
+      <b>LONGSHOT SECOND LOOK</b><br>
+      ${shots.map(x=>`
+        #${safe(x.horse.post||x.horse.pgm||"")} <b>${safe(x.horse.horse)}</b>
+        · ${safe(x.horse.odds||x.horse.ml||"")} M/L
+        · ${safe(x.support.join(" · "))}
+        ${x.concerns.length?`<br><span class="note"><b>Concern:</b> ${safe(x.concerns.join(" · "))}</span>`:""}
+      `).join("<br><br>")}
+      <br><span class="small-note">Second-look alert only — not a pick, not a Best Bet, and not an automatic replacement for the program's selection.</span>
     </div>`;
 }
 
@@ -5529,19 +5575,19 @@ function renderLiveLongshots(){
     let html="", count=0;
     raceKeys.forEach(raceNum=>{
         const field=(computedRaces[raceNum]||[]).filter(h=>!h.scratched);
-        const shots=liveLongshotCandidates(field);
+        const shots=longshotSecondLookCandidates(field,{activeField:field,race:String(raceNum)});
         if(!shots.length) return;
         count+=shots.length;
         html += `<div class="race-card race-anchor-target" id="longshot-race-${safe(raceNum)}">
           <h3><span class="race-number-link" onclick="goToContendersRace('${safe(raceNum)}')">Race ${safe(raceNum)}</span>${shots.some(x=>x.thinTop)?` · THIN TOP`:""}</h3>
           ${shots.map(x=>`<div class="warn" style="margin-top:8px;">
-            <b>LIVE LONGSHOT · #${safe(x.horse.post||x.horse.pgm||"")} ${safe(x.horse.horse)} · ${safe(x.horse.odds||x.horse.ml||"")} M/L</b><br>
+            <b>SECOND LOOK · #${safe(x.horse.post||x.horse.pgm||"")} ${safe(x.horse.horse)} · ${safe(x.horse.odds||x.horse.ml||"")} M/L</b><br>
             Model rank #${x.rank} · ${(x.probability*100).toFixed(1)}% · ${safe(x.reasons.join(" · "))}
-            <br><span class="small-note">Value alert only — not a Best Bet or automatic pick switch.</span>
+            <br><span class="small-note">Second-look alert only — not a Best Bet or automatic pick switch.</span>
           </div>`).join("")}
         </div>`;
     });
-    box.innerHTML = count ? html : `<div class="empty-state">No horse meets the LIVE LONGSHOT evidence threshold on this card.</div>`;
+    box.innerHTML = count ? html : `<div class="empty-state">No horse meets the SECOND LOOK evidence threshold on this card.</div>`;
 }
 
 function showTab(tab){
@@ -6847,6 +6893,6 @@ renderRows();
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.49 · iPhone/Safari build 2026-09-12</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.50 · iPhone/Safari build 2026-09-12</div>
 </body>
 </html>
