@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v7.61 · September 10, 2026 — iPhone / Safari</title>
+<title>Horse Handicap v7.62 · September 10, 2026 — iPhone / Safari</title>
 
 <style>
 :root{
@@ -913,7 +913,7 @@ tbody input:focus{
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.61</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.62</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance fit and value.
 </p>
@@ -1023,7 +1023,7 @@ Apply Feed Updates
 <div id="rssStatus" class="status"></div>
 <div class="final-odds-note">
 <b>Price discipline:</b> MODEL SHARE is a relative field score, not a calibrated win probability.
-v7.61 does not convert it into fair odds or VALUE/UNDERLAY. Final odds remain visible.
+v7.62 does not convert it into fair odds or VALUE/UNDERLAY. Final odds remain visible.
 RSS changes still trigger a full-card recompute and surface reevaluation.
 </div>
 <div class="note" style="margin:8px 0;">
@@ -2626,7 +2626,7 @@ function applyRSS(raw,fileName="Pasted Content"){
     $("rssStatus").className="status ok";
     $("rssStatus").textContent=msg;
 
-    // v7.61: applying RSS updates recomputes the entire race card immediately.
+    // v7.62: applying RSS updates recomputes the entire race card immediately.
     // This keeps scratches, rider changes, surface/distance changes, probabilities,
     // Best Bets, concurrence, Top 4 and Second Look synchronized.
     if(rows && rows.length){
@@ -3057,7 +3057,7 @@ function surfaceBestSpeed(horse){
     const g=surfaceGroup(horse.currentSurface);
     const cond=conditionGroup(horse.currentTrackCondition);
 
-    // v7.61 TURF PROOF FIX:
+    // v7.62 TURF PROOF FIX:
     // A dirt/lifetime figure is not a turf figure. In a turf race an unproven
     // turf horse gets no substitute Best Speed credit from another surface.
     if(g==="T") return number(horse.bestSpeedTurf);
@@ -3592,7 +3592,7 @@ function calculateHorseScore(horse,field){
     const turfProof=turfProofStatus(horse);
     score += turfProof.adjust;
 
-    // v7.61 ALL-WEATHER PROOF. Uses BRIS fields specifically supplied for
+    // v7.62 ALL-WEATHER PROOF. Uses BRIS fields specifically supplied for
     // synthetic history rather than treating synthetic as dirt or as missing.
     const allWeatherProof=allWeatherProofStatus(horse);
     score += allWeatherProof.adjust;
@@ -3631,7 +3631,7 @@ function calculateHorseScore(horse,field){
 }
 
 
-// v7.61 MODEL FAIR ODDS + MARKET VALUE
+// v7.62 MODEL FAIR ODDS + MARKET VALUE
 // FUTURE CALIBRATION RESEARCH ONLY — do not use for wagering until historically validated.
 function fairOddsFromProbability(p){
     const q=Number(p)||0;
@@ -3657,7 +3657,7 @@ function fairOddsHTML(h,p){
 }
 
 
-// v7.61 CLASS HIERARCHY FIX: lower rank = stronger class.
+// v7.62 CLASS HIERARCHY FIX: lower rank = stronger class.
 
 
 
@@ -3683,6 +3683,62 @@ function pedigreeHTML(h){
  <b>BRIS pedigree ratings:</b> Dirt ${safe(h.dirtPedigree||"—")} · Mud ${safe(h.mudPedigree||"—")} · Turf ${safe(h.turfPedigree||"—")} · Distance ${safe(h.distPedigree||"—")}
  </div>`;
 }
+
+// v7.62 — relative pace is based on who wants the lead, not an absolute speed threshold.
+function relativePaceV762(raceHorses){
+  const live=(raceHorses||[]).filter(h=>!h.scratched);
+  const style=h=>String(h.runStyle||"").toUpperCase().replace(/\s+/g,"").replace("E/P","EP");
+  const early=h=>{
+    const a=[h.pace2,h.pace4,h.e1,h.e2,h.earlyPace,h.paceEarly]
+      .map(number).filter(v=>Number.isFinite(v)&&v>0);
+    return a.length?Math.max(...a):null;
+  };
+  const pureE=live.filter(h=>style(h)==="E");
+  const intent=live.filter(h=>["E","EP"].includes(style(h)));
+  let lone=null;
+  if(pureE.length===1){
+    const c=pureE[0], ce=early(c);
+    const rivals=intent.filter(h=>h!==c);
+    // An E horse is the default leader unless another early-intent runner has
+    // genuinely comparable early evidence. Missing figures do not create pressure.
+    const challenged=(ce!==null) && rivals.some(h=>{
+      const re=early(h); return re!==null && re>=ce-2;
+    });
+    if(!challenged) lone=c;
+  }
+  const stalkers=live.filter(h=>["P","EP"].includes(style(h)) && h!==lone)
+    .sort((a,b)=>(early(b)||0)-(early(a)||0));
+  return {
+    label:lone?"LONE SPEED / DEFAULT LEAD":(intent.length>=3?"PACE PRESSURE":"BALANCED"),
+    loneSpeed:lone,
+    firstStalker:lone&&stalkers.length?stalkers[0]:null
+  };
+}
+function paceRoleV762(h,raceHorses){
+  const p=relativePaceV762(raceHorses);
+  if(p.loneSpeed && String(p.loneSpeed.id)===String(h.id))
+    return {contender:true,label:"CONTENDER — PACE ADVANTAGE",
+      detail:"Only clear E runner; projects to the default/uncontested lead."};
+  if(p.firstStalker && String(p.firstStalker.id)===String(h.id))
+    return {contender:false,label:"STALKER ADVANTAGE",
+      detail:"Projects as the first stalker behind the lone/default speed."};
+  return null;
+}
+function seriousPaceExclusionV762(h){
+  const sf=typeof surfaceEvaluation==="function"?surfaceEvaluation(h):null;
+  const cf=typeof entryLevelFit==="function"?entryLevelFit(h):null;
+  return !!((sf&&/WEAK|QUESTION|NO FIT/i.test(String(sf.label||""))) ||
+            (cf&&/OVERMATCHED/i.test(String(cf.label||""))));
+}
+function forcePaceContenderV762(h,raceHorses){
+  const r=paceRoleV762(h,raceHorses);
+  return !!(r&&r.contender&&!seriousPaceExclusionV762(h));
+}
+function paceBadgeV762(h,raceHorses){
+  const r=paceRoleV762(h,raceHorses);
+  return r?`<span class="badge ${r.contender?'badge-green':'badge-blue'}" title="${safe(r.detail)}">${safe(r.label)}</span>`:"";
+}
+
 function calculateProbabilities(field){
 
     const scored=field.map(horse=>{
@@ -3787,7 +3843,7 @@ function getConfidence(top,second){
 
 
 /* ============================================================
-   PERFORMANCE + EARNINGS SUPPORT — v7.61
+   PERFORMANCE + EARNINGS SUPPORT — v7.62
    Uses only the horse data parsed from the race card; no comparison badge.
    This layer does not alter the underlying Horse Handicap score.
    It describes whether the TOP HORSE is supported by independent
@@ -3985,7 +4041,7 @@ function isFirstTimeStarterForQuality(h){
     return usable.length===0;
 }
 
-// v7.61 — SIGNAL CONSENSUS + AUTOMATIC FROZEN INTERNAL RULE
+// v7.62 — SIGNAL CONSENSUS + AUTOMATIC FROZEN INTERNAL RULE
 
 function soleTopRank(field, horse, selector){
     const active=(field||[]).filter(h=>!h.scratched);
@@ -4109,7 +4165,7 @@ function consensusBadgeHTML(field,horse){
     return `<span class="badge ${cls}">${safe(c.label)} · ${c.wins}/${c.usable}</span>`;
 }
 
-// v7.61 balanced validation gates: pace/maiden/surface are modifiers, not automatic vetoes.
+// v7.62 balanced validation gates: pace/maiden/surface are modifiers, not automatic vetoes.
 function primePowerGap(field,horse){
     const active=(field||[]).filter(h=>!h.scratched);
     const vals=active.map(h=>({h,v:number(h.score||h.primePower)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
@@ -4214,7 +4270,7 @@ function raceBetQuality(field, modelTopHorse){
             text:'Performance and earnings evidence is too thin or too mixed to upgrade this race.'};
     }
 
-    // v7.61: Recent Speed Confirmed can strengthen a race, but cannot by itself
+    // v7.62: Recent Speed Confirmed can strengthen a race, but cannot by itself
     // manufacture a STRONG bet. It needs class/surface proof and P+E support.
     if(recentConfirm.confirmed && ftsCount===0 && fieldSize<=9 && supportOK && surfaceOK && (classOK || lightlyRacedWinner)){
         return {level:'strong',label:'BET — STRONG',fieldSize,ftsCount,support,recentConfirm,fit,
@@ -4281,7 +4337,7 @@ function modelBestBetProfile(scored,field){
     const consensus=signalConsensus(active,horse);
     if(consensus.level==='uncertain') reasons.push("high signal uncertainty");
 
-    // v7.61 keeps the separated model profile, but HIGH UNCERTAINTY is a veto.
+    // v7.62 keeps the separated model profile, but HIGH UNCERTAINTY is a veto.
     // This prevents a race like Race 5 / Doctrine from being labeled BEST BET
     // while the same board says the evidence does not agree.
     // This restores the pre-result profile that identified the strongest
@@ -4308,7 +4364,7 @@ function finalRaceDecision(top,field){
     const active=(field||[]).filter(h=>!h.scratched);
     const fts=active.filter(isFirstTimeStarterForQuality).length;
 
-    // v7.61: a complete-data leader with HIGH CONSENSUS is not forced to PASS
+    // v7.62: a complete-data leader with HIGH CONSENSUS is not forced to PASS
     // solely because Performance + Earnings support is thin. This is especially
     // important in proven older-horse/stakes fields where the four core measures agree.
     if(!structural.pass && quality.level==='pass' && complete && consensus.level==='high' && fts===0 && active.length<=9){
@@ -4465,6 +4521,13 @@ function buildReason(top,second,field){
 ============================================================ */
 
 function classificationEvidence(item,scored,field){
+    // v7.62 safety net: lone/default speed cannot be eliminated from Contenders
+    // solely by blended figure/class gates.
+    const _raceV762=(rows||[]).filter(x=>String(x.race)===String(item.race) && !x.scratched);
+    if(forcePaceContenderV762(item,_raceV762)){
+      return {label:"CONTENDER", reason:"PACE ADVANTAGE — lone/default speed", paceForced:true};
+    }
+
     const horse=item.horse;
     const pp=(horse.ppRaces || []).filter(p=>number(p.fin)>0 && number(p.fin)<90);
     const rank=scored.indexOf(item)+1;
@@ -4625,7 +4688,7 @@ function classStrengthFromValues(purse,claiming){
     return Math.log10(1+p)*10 + Math.log10(1+c)*4;
 }
 
-// v7.61 — class-family normalization.
+// v7.62 — class-family normalization.
 // BRIS past-performance class text can use forms such as Moc50000.
 // Those are maiden optional-claiming races and must stay in the MAIDEN family
 // when compared with MdSpWt / MSW / maiden claiming races.
@@ -4811,6 +4874,8 @@ function classMoveBadge(horse){
 }
 
 function entryLevelHTML(horse){
+    const _racePaceV762=(rows||[]).filter(x=>String(x.race)===String(horse.race)&&!x.scratched);
+    const _paceBadgeV762=paceBadgeV762(horse,_racePaceV762);
     const e=entryLevelFit(horse);
     const cls=e.label==="PROVEN" || e.label==="COMPETITIVE" || e.label==="CLASS RELIEF"
         ? "badge-green"
@@ -4818,7 +4883,7 @@ function entryLevelHTML(horse){
         ? "badge-red"
         : "badge-blue";
     const speed=e.avgSpeed!==null ? ` · avg comparable speed ${e.avgSpeed.toFixed(0)}` : '';
-    return `<span class="badge ${cls}" title="${safe(e.detail)}">${safe(e.label)}</span><div class="note" style="font-size:10px;margin-top:3px;">${safe(e.detail)}${speed}</div>${tjStatsHTML(horse)}`;
+    return `<span class="badge ${cls}" title="${safe(e.detail)}">${safe(e.label)}</span><div class="note" style="font-size:10px;margin-top:3px;">${safe(e.detail)}${speed}</div>${_paceBadgeV762}${tjStatsHTML(horse)}`;
 }
 
 function paceStyleScore(h){
@@ -5190,8 +5255,8 @@ function computeRaceCard(){
         const decision=finalRaceDecision(top,activeField);
         const bestProfile=modelBestBetProfile(scored,activeField);
 
-        // v7.61 preserves the current wager-selection path. paired_final12 is
-        // informational confirmation only; it cannot erase a v7.61 Best Bet.
+        // v7.62 preserves the current wager-selection path. paired_final12 is
+        // informational confirmation only; it cannot erase a v7.62 Best Bet.
         const topConsensus=signalConsensus(activeField,top.horse);
         const concurrence=concurrenceSupport(activeField,top.horse,{
             horse:top.horse, activeField, race:String(raceNum),
@@ -5645,7 +5710,7 @@ function computeRaceCard(){
           <div class="metric-line"><b>INDEPENDENT CONDITIONS CONFIRMED</b> · ${safe(independentConditionConfirmation(x).notes.join(" · "))}</div>
           ${topPickH2HWarning(x.activeField,x.horse,x)}
         </div>`).join("") :
-        '<div class="warning-box"><b>No race qualifies under the restored v7.61 Best Races logic today.</b> Review contenders, but do not force a wager.</div>'}
+        '<div class="warning-box"><b>No race qualifies under the restored v7.62 Best Races logic today.</b> Review contenders, but do not force a wager.</div>'}
     </div>`;
 
     $("bestSection").innerHTML = `
@@ -6877,7 +6942,7 @@ function renderContenderPastPerformances(horse){
 }
 
 
-// v7.61 UNIVERSAL HORSE-NAME PAST-PERFORMANCE NAVIGATION
+// v7.62 UNIVERSAL HORSE-NAME PAST-PERFORMANCE NAVIGATION
 let ppReturnState=null;
 
 function currentViewKey(){
@@ -7337,7 +7402,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.61 · iPhone/Safari build 2026-09-18</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.62 · iPhone/Safari build 2026-09-18</div>
 <div id="whereAmI"><b>Horse Handicap</b></div>
 </body>
 </html>
