@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v7.58 · September 10, 2026 — iPhone / Safari</title>
+<title>Horse Handicap v7.59 · September 10, 2026 — iPhone / Safari</title>
 
 <style>
 :root{
@@ -913,7 +913,7 @@ tbody input:focus{
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.58</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.59</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance fit and value.
 </p>
@@ -1023,7 +1023,7 @@ Apply Feed Updates
 <div id="rssStatus" class="status"></div>
 <div class="final-odds-note">
 <b>Price discipline:</b> MODEL SHARE is a relative field score, not a calibrated win probability.
-v7.58 does not convert it into fair odds or VALUE/UNDERLAY. Final odds remain visible.
+v7.59 does not convert it into fair odds or VALUE/UNDERLAY. Final odds remain visible.
 RSS changes still trigger a full-card recompute and surface reevaluation.
 </div>
 <div class="note" style="margin:8px 0;">
@@ -2608,7 +2608,7 @@ function applyRSS(raw,fileName="Pasted Content"){
     $("rssStatus").className="status ok";
     $("rssStatus").textContent=msg;
 
-    // v7.58: applying RSS updates recomputes the entire race card immediately.
+    // v7.59: applying RSS updates recomputes the entire race card immediately.
     // This keeps scratches, rider changes, surface/distance changes, probabilities,
     // Best Bets, concurrence, Top 4 and Second Look synchronized.
     if(rows && rows.length){
@@ -3039,7 +3039,7 @@ function surfaceBestSpeed(horse){
     const g=surfaceGroup(horse.currentSurface);
     const cond=conditionGroup(horse.currentTrackCondition);
 
-    // v7.58 TURF PROOF FIX:
+    // v7.59 TURF PROOF FIX:
     // A dirt/lifetime figure is not a turf figure. In a turf race an unproven
     // turf horse gets no substitute Best Speed credit from another surface.
     if(g==="T") return number(horse.bestSpeedTurf);
@@ -3574,7 +3574,7 @@ function calculateHorseScore(horse,field){
     const turfProof=turfProofStatus(horse);
     score += turfProof.adjust;
 
-    // v7.58 ALL-WEATHER PROOF. Uses BRIS fields specifically supplied for
+    // v7.59 ALL-WEATHER PROOF. Uses BRIS fields specifically supplied for
     // synthetic history rather than treating synthetic as dirt or as missing.
     const allWeatherProof=allWeatherProofStatus(horse);
     score += allWeatherProof.adjust;
@@ -3613,7 +3613,7 @@ function calculateHorseScore(horse,field){
 }
 
 
-// v7.58 MODEL FAIR ODDS + MARKET VALUE
+// v7.59 MODEL FAIR ODDS + MARKET VALUE
 // FUTURE CALIBRATION RESEARCH ONLY — do not use for wagering until historically validated.
 function fairOddsFromProbability(p){
     const q=Number(p)||0;
@@ -3636,6 +3636,48 @@ function valueAssessment(h,p){
 function fairOddsHTML(h,p){
     // MODEL SHARE is relative ranking strength, not a calibrated win probability.
     return `<span class="badge">MODEL SHARE ${modelPct(p)}</span>`;
+}
+
+
+// v7.59 CLASS HIERARCHY FIX: lower rank = stronger class.
+function classTierV759(label){
+  const x=String(label||"").toUpperCase().replace(/\s+/g," ").trim();
+  if(!x) return {rank:99,label:"UNKNOWN"};
+  if(/\bG1\b|GRADE\s*(1|I)\b/.test(x)) return {rank:1,label:"G1"};
+  if(/\bG2\b|GRADE\s*(2|II)\b/.test(x)) return {rank:2,label:"G2"};
+  if(/\bG3\b|GRADE\s*(3|III)\b/.test(x)) return {rank:3,label:"G3"};
+  if(/\bSTK\b|\bSTAKES?\b/.test(x)){
+    const restricted=/STATE.?BRED|RESTRICT|STARTER\s+STAKES/.test(x);
+    return {rank:restricted?5:4,label:restricted?"RESTRICTED STAKES":"STAKES"};
+  }
+  if(/\bAOC\b|\bOC\b|OPTIONAL\s+CLAIM/.test(x)){
+    const m=x.match(/(?:AOC|OC|OPTIONAL\s+CLAIM(?:ING)?)\s*\$?\s*([0-9]{2,6})/);
+    let amt=m?Number(m[1]):0; if(amt&&amt<1000) amt*=1000;
+    const sub=amt>=100000?0:amt>=80000?.1:amt>=50000?.2:amt>=25000?.3:.4;
+    return {rank:6+sub,label:amt?`OC${Math.round(amt/1000)}K`:"ALLOWANCE/OC"};
+  }
+  if(/\bALW\b|\bALLOWANCE\b/.test(x)) return {rank:6.5,label:"ALLOWANCE"};
+  if(/\bMSW\b|MAIDEN\s+SPECIAL/.test(x)) return {rank:7,label:"MSW"};
+  if(/\bCLM\b|\bCLAIMING\b/.test(x)) return {rank:8,label:"CLAIMING"};
+  if(/\bMCL\b|MAIDEN\s+CLAIM/.test(x)) return {rank:9,label:"MCL"};
+  return {rank:99,label:x};
+}
+function classMoveV759(previousLabel,todayLabel){
+  const from=classTierV759(previousLabel),to=classTierV759(todayLabel);
+  if(from.rank===99||to.rank===99) return {direction:"UNKNOWN",text:"CLASS UNKNOWN"};
+  const d=to.rank-from.rank;
+  if(d>.15) return {direction:"DOWN",text:`CLASS DROP — ${from.label} → ${to.label}`};
+  if(d<-.15) return {direction:"UP",text:`CLASS RISE — ${from.label} → ${to.label}`};
+  return {direction:"SAME",text:`SIMILAR CLASS — ${from.label} → ${to.label}`};
+}
+function correctedClassLabelV759(horse,label){
+  const raw=String(label||"");
+  if(!/UNPROVEN\s+UP/i.test(raw)||!horse) return raw;
+  const last=((horse.ppRaces||[])[0])||{};
+  const prior=last.className||last.class||last.raceClass||last.conditions||"";
+  const today=horse.raceClass||horse.className||horse.class||horse.conditions||"";
+  const mv=classMoveV759(prior,today);
+  return mv.direction==="DOWN"?mv.text:raw;
 }
 
 function calculateProbabilities(field){
@@ -3742,7 +3784,7 @@ function getConfidence(top,second){
 
 
 /* ============================================================
-   PERFORMANCE + EARNINGS SUPPORT — v7.58
+   PERFORMANCE + EARNINGS SUPPORT — v7.59
    Uses only the horse data parsed from the race card; no comparison badge.
    This layer does not alter the underlying Horse Handicap score.
    It describes whether the TOP HORSE is supported by independent
@@ -3940,7 +3982,7 @@ function isFirstTimeStarterForQuality(h){
     return usable.length===0;
 }
 
-// v7.58 — SIGNAL CONSENSUS + AUTOMATIC FROZEN INTERNAL RULE
+// v7.59 — SIGNAL CONSENSUS + AUTOMATIC FROZEN INTERNAL RULE
 
 function soleTopRank(field, horse, selector){
     const active=(field||[]).filter(h=>!h.scratched);
@@ -4064,7 +4106,7 @@ function consensusBadgeHTML(field,horse){
     return `<span class="badge ${cls}">${safe(c.label)} · ${c.wins}/${c.usable}</span>`;
 }
 
-// v7.58 balanced validation gates: pace/maiden/surface are modifiers, not automatic vetoes.
+// v7.59 balanced validation gates: pace/maiden/surface are modifiers, not automatic vetoes.
 function primePowerGap(field,horse){
     const active=(field||[]).filter(h=>!h.scratched);
     const vals=active.map(h=>({h,v:number(h.score||h.primePower)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
@@ -4169,7 +4211,7 @@ function raceBetQuality(field, modelTopHorse){
             text:'Performance and earnings evidence is too thin or too mixed to upgrade this race.'};
     }
 
-    // v7.58: Recent Speed Confirmed can strengthen a race, but cannot by itself
+    // v7.59: Recent Speed Confirmed can strengthen a race, but cannot by itself
     // manufacture a STRONG bet. It needs class/surface proof and P+E support.
     if(recentConfirm.confirmed && ftsCount===0 && fieldSize<=9 && supportOK && surfaceOK && (classOK || lightlyRacedWinner)){
         return {level:'strong',label:'BET — STRONG',fieldSize,ftsCount,support,recentConfirm,fit,
@@ -4236,7 +4278,7 @@ function modelBestBetProfile(scored,field){
     const consensus=signalConsensus(active,horse);
     if(consensus.level==='uncertain') reasons.push("high signal uncertainty");
 
-    // v7.58 keeps the separated model profile, but HIGH UNCERTAINTY is a veto.
+    // v7.59 keeps the separated model profile, but HIGH UNCERTAINTY is a veto.
     // This prevents a race like Race 5 / Doctrine from being labeled BEST BET
     // while the same board says the evidence does not agree.
     // This restores the pre-result profile that identified the strongest
@@ -4263,7 +4305,7 @@ function finalRaceDecision(top,field){
     const active=(field||[]).filter(h=>!h.scratched);
     const fts=active.filter(isFirstTimeStarterForQuality).length;
 
-    // v7.58: a complete-data leader with HIGH CONSENSUS is not forced to PASS
+    // v7.59: a complete-data leader with HIGH CONSENSUS is not forced to PASS
     // solely because Performance + Earnings support is thin. This is especially
     // important in proven older-horse/stakes fields where the four core measures agree.
     if(!structural.pass && quality.level==='pass' && complete && consensus.level==='high' && fts===0 && active.length<=9){
@@ -4580,7 +4622,7 @@ function classStrengthFromValues(purse,claiming){
     return Math.log10(1+p)*10 + Math.log10(1+c)*4;
 }
 
-// v7.58 — class-family normalization.
+// v7.59 — class-family normalization.
 // BRIS past-performance class text can use forms such as Moc50000.
 // Those are maiden optional-claiming races and must stay in the MAIDEN family
 // when compared with MdSpWt / MSW / maiden claiming races.
@@ -5108,8 +5150,8 @@ function computeRaceCard(){
         const decision=finalRaceDecision(top,activeField);
         const bestProfile=modelBestBetProfile(scored,activeField);
 
-        // v7.58 preserves the current wager-selection path. paired_final12 is
-        // informational confirmation only; it cannot erase a v7.58 Best Bet.
+        // v7.59 preserves the current wager-selection path. paired_final12 is
+        // informational confirmation only; it cannot erase a v7.59 Best Bet.
         const topConsensus=signalConsensus(activeField,top.horse);
         const concurrence=concurrenceSupport(activeField,top.horse,{
             horse:top.horse, activeField, race:String(raceNum),
@@ -5563,7 +5605,7 @@ function computeRaceCard(){
           <div class="metric-line"><b>INDEPENDENT CONDITIONS CONFIRMED</b> · ${safe(independentConditionConfirmation(x).notes.join(" · "))}</div>
           ${topPickH2HWarning(x.activeField,x.horse,x)}
         </div>`).join("") :
-        '<div class="warning-box"><b>No race qualifies under the restored v7.58 Best Races logic today.</b> Review contenders, but do not force a wager.</div>'}
+        '<div class="warning-box"><b>No race qualifies under the restored v7.59 Best Races logic today.</b> Review contenders, but do not force a wager.</div>'}
     </div>`;
 
     $("bestSection").innerHTML = `
@@ -6795,7 +6837,7 @@ function renderContenderPastPerformances(horse){
 }
 
 
-// v7.58 UNIVERSAL HORSE-NAME PAST-PERFORMANCE NAVIGATION
+// v7.59 UNIVERSAL HORSE-NAME PAST-PERFORMANCE NAVIGATION
 let ppReturnState=null;
 
 function currentViewKey(){
@@ -7253,7 +7295,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.58 · iPhone/Safari build 2026-09-17</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.59 · iPhone/Safari build 2026-09-18</div>
 <div id="whereAmI"><b>Horse Handicap</b></div>
 </body>
 </html>
