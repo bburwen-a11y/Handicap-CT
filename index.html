@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v7.60 · September 10, 2026 — iPhone / Safari</title>
+<title>Horse Handicap v7.61 · September 10, 2026 — iPhone / Safari</title>
 
 <style>
 :root{
@@ -913,7 +913,7 @@ tbody input:focus{
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.60</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.61</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance fit and value.
 </p>
@@ -1023,7 +1023,7 @@ Apply Feed Updates
 <div id="rssStatus" class="status"></div>
 <div class="final-odds-note">
 <b>Price discipline:</b> MODEL SHARE is a relative field score, not a calibrated win probability.
-v7.60 does not convert it into fair odds or VALUE/UNDERLAY. Final odds remain visible.
+v7.61 does not convert it into fair odds or VALUE/UNDERLAY. Final odds remain visible.
 RSS changes still trigger a full-card recompute and surface reevaluation.
 </div>
 <div class="note" style="margin:8px 0;">
@@ -1988,6 +1988,12 @@ function loadDRF(text){
                 race:getField(fields,3) || "1",
                 post:getField(fields,4) || "1",
                 horse,
+                sire:getField(fields,52), sireSire:getField(fields,53),
+                dam:getField(fields,54), damSire:getField(fields,55),
+                breeder:getField(fields,56), bred:getField(fields,57),
+                sireStudFee:getNumber(fields,1177),
+                dirtPedigree:getField(fields,1264), mudPedigree:getField(fields,1265),
+                turfPedigree:getField(fields,1266), distPedigree:getField(fields,1267),
                 odds:getField(fields,44),
 
                 trainer:getField(fields,28),
@@ -1995,6 +2001,12 @@ function loadDRF(text){
                 trainerWins:getNumber(fields,30),
                 trainerPlaces:getNumber(fields,31),
                 trainerShows:getNumber(fields,32),
+                trainerYearStarts:getNumber(fields,1147), trainerYearWins:getNumber(fields,1148),
+                trainerYearPlaces:getNumber(fields,1149), trainerYearShows:getNumber(fields,1150),
+                trainerYearROI:getNumber(fields,1151),
+                trainerPrevStarts:getNumber(fields,1152), trainerPrevWins:getNumber(fields,1153),
+                trainerPrevPlaces:getNumber(fields,1154), trainerPrevShows:getNumber(fields,1155),
+                trainerPrevROI:getNumber(fields,1156),
 
                 jockey:getField(fields,33),
                 origJockey:getField(fields,33),
@@ -2002,6 +2014,12 @@ function loadDRF(text){
                 jockeyWins:getNumber(fields,36),
                 jockeyPlaces:getNumber(fields,37),
                 jockeyShows:getNumber(fields,38),
+                jockeyYearStarts:getNumber(fields,1157), jockeyYearWins:getNumber(fields,1158),
+                jockeyYearPlaces:getNumber(fields,1159), jockeyYearShows:getNumber(fields,1160),
+                jockeyYearROI:getNumber(fields,1161),
+                jockeyPrevStarts:getNumber(fields,1162), jockeyPrevWins:getNumber(fields,1163),
+                jockeyPrevPlaces:getNumber(fields,1164), jockeyPrevShows:getNumber(fields,1165),
+                jockeyPrevROI:getNumber(fields,1166),
 
                 // BRIS Single File: lifetime turf record is fields 75-79;
                 // overall lifetime record is fields 97-101. Keep both separate.
@@ -2608,7 +2626,7 @@ function applyRSS(raw,fileName="Pasted Content"){
     $("rssStatus").className="status ok";
     $("rssStatus").textContent=msg;
 
-    // v7.60: applying RSS updates recomputes the entire race card immediately.
+    // v7.61: applying RSS updates recomputes the entire race card immediately.
     // This keeps scratches, rider changes, surface/distance changes, probabilities,
     // Best Bets, concurrence, Top 4 and Second Look synchronized.
     if(rows && rows.length){
@@ -3039,7 +3057,7 @@ function surfaceBestSpeed(horse){
     const g=surfaceGroup(horse.currentSurface);
     const cond=conditionGroup(horse.currentTrackCondition);
 
-    // v7.60 TURF PROOF FIX:
+    // v7.61 TURF PROOF FIX:
     // A dirt/lifetime figure is not a turf figure. In a turf race an unproven
     // turf horse gets no substitute Best Speed credit from another surface.
     if(g==="T") return number(horse.bestSpeedTurf);
@@ -3574,7 +3592,7 @@ function calculateHorseScore(horse,field){
     const turfProof=turfProofStatus(horse);
     score += turfProof.adjust;
 
-    // v7.60 ALL-WEATHER PROOF. Uses BRIS fields specifically supplied for
+    // v7.61 ALL-WEATHER PROOF. Uses BRIS fields specifically supplied for
     // synthetic history rather than treating synthetic as dirt or as missing.
     const allWeatherProof=allWeatherProofStatus(horse);
     score += allWeatherProof.adjust;
@@ -3613,7 +3631,7 @@ function calculateHorseScore(horse,field){
 }
 
 
-// v7.60 MODEL FAIR ODDS + MARKET VALUE
+// v7.61 MODEL FAIR ODDS + MARKET VALUE
 // FUTURE CALIBRATION RESEARCH ONLY — do not use for wagering until historically validated.
 function fairOddsFromProbability(p){
     const q=Number(p)||0;
@@ -3639,11 +3657,32 @@ function fairOddsHTML(h,p){
 }
 
 
-// v7.60 CLASS HIERARCHY FIX: lower rank = stronger class.
+// v7.61 CLASS HIERARCHY FIX: lower rank = stronger class.
 
 
 
 
+
+function pct761(w,st){w=number(w)||0;st=number(st)||0;return st?`${(100*w/st).toFixed(0)}%`:"—";}
+function tjStatsHTML(h){
+ return `<div class="note" style="font-size:10px;line-height:1.5">
+ <b>Trainer ${safe(h.trainer||"—")}</b> · Meet ${h.trainerStarts||0}-${h.trainerWins||0}-${h.trainerPlaces||0}-${h.trainerShows||0} (${pct761(h.trainerWins,h.trainerStarts)} wins)
+ ${h.trainerYearStarts?` · Year ${h.trainerYearStarts}-${h.trainerYearWins||0} (${pct761(h.trainerYearWins,h.trainerYearStarts)})`:''}
+ ${h.trainerYearROI?` · ROI ${safe(h.trainerYearROI)}`:''}<br>
+ <b>Jockey ${safe(h.jockey||"—")}</b> · Meet ${h.jockeyStarts||0}-${h.jockeyWins||0}-${h.jockeyPlaces||0}-${h.jockeyShows||0} (${pct761(h.jockeyWins,h.jockeyStarts)} wins)
+ ${h.jockeyYearStarts?` · Year ${h.jockeyYearStarts}-${h.jockeyYearWins||0} (${pct761(h.jockeyYearWins,h.jockeyYearStarts)})`:''}
+ ${h.jockeyYearROI?` · ROI ${safe(h.jockeyYearROI)}`:''}
+ ${h.tjStarts?`<br><b>T/J combo:</b> ${h.tjStarts}-${h.tjWins||0}-${h.tjPlaces||0}-${h.tjShows||0} (${pct761(h.tjWins,h.tjStarts)} wins) · ROI ${safe(h.tjROI||"—")}`:''}
+ </div>`;
+}
+function pedigreeHTML(h){
+ return `<div class="note" style="line-height:1.55;margin:6px 0 10px;">
+ <b>Sire:</b> ${safe(h.sire||"—")} · <b>Sire's sire:</b> ${safe(h.sireSire||"—")}<br>
+ <b>Dam:</b> ${safe(h.dam||"—")} · <b>Dam's sire:</b> ${safe(h.damSire||"—")}<br>
+ <b>Bred:</b> ${safe(h.bred||"—")} · <b>Breeder:</b> ${safe(h.breeder||"—")}${h.sireStudFee?` · <b>Sire stud fee:</b> $${Number(h.sireStudFee).toLocaleString()}`:''}<br>
+ <b>BRIS pedigree ratings:</b> Dirt ${safe(h.dirtPedigree||"—")} · Mud ${safe(h.mudPedigree||"—")} · Turf ${safe(h.turfPedigree||"—")} · Distance ${safe(h.distPedigree||"—")}
+ </div>`;
+}
 function calculateProbabilities(field){
 
     const scored=field.map(horse=>{
@@ -3748,7 +3787,7 @@ function getConfidence(top,second){
 
 
 /* ============================================================
-   PERFORMANCE + EARNINGS SUPPORT — v7.60
+   PERFORMANCE + EARNINGS SUPPORT — v7.61
    Uses only the horse data parsed from the race card; no comparison badge.
    This layer does not alter the underlying Horse Handicap score.
    It describes whether the TOP HORSE is supported by independent
@@ -3946,7 +3985,7 @@ function isFirstTimeStarterForQuality(h){
     return usable.length===0;
 }
 
-// v7.60 — SIGNAL CONSENSUS + AUTOMATIC FROZEN INTERNAL RULE
+// v7.61 — SIGNAL CONSENSUS + AUTOMATIC FROZEN INTERNAL RULE
 
 function soleTopRank(field, horse, selector){
     const active=(field||[]).filter(h=>!h.scratched);
@@ -4070,7 +4109,7 @@ function consensusBadgeHTML(field,horse){
     return `<span class="badge ${cls}">${safe(c.label)} · ${c.wins}/${c.usable}</span>`;
 }
 
-// v7.60 balanced validation gates: pace/maiden/surface are modifiers, not automatic vetoes.
+// v7.61 balanced validation gates: pace/maiden/surface are modifiers, not automatic vetoes.
 function primePowerGap(field,horse){
     const active=(field||[]).filter(h=>!h.scratched);
     const vals=active.map(h=>({h,v:number(h.score||h.primePower)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
@@ -4175,7 +4214,7 @@ function raceBetQuality(field, modelTopHorse){
             text:'Performance and earnings evidence is too thin or too mixed to upgrade this race.'};
     }
 
-    // v7.60: Recent Speed Confirmed can strengthen a race, but cannot by itself
+    // v7.61: Recent Speed Confirmed can strengthen a race, but cannot by itself
     // manufacture a STRONG bet. It needs class/surface proof and P+E support.
     if(recentConfirm.confirmed && ftsCount===0 && fieldSize<=9 && supportOK && surfaceOK && (classOK || lightlyRacedWinner)){
         return {level:'strong',label:'BET — STRONG',fieldSize,ftsCount,support,recentConfirm,fit,
@@ -4242,7 +4281,7 @@ function modelBestBetProfile(scored,field){
     const consensus=signalConsensus(active,horse);
     if(consensus.level==='uncertain') reasons.push("high signal uncertainty");
 
-    // v7.60 keeps the separated model profile, but HIGH UNCERTAINTY is a veto.
+    // v7.61 keeps the separated model profile, but HIGH UNCERTAINTY is a veto.
     // This prevents a race like Race 5 / Doctrine from being labeled BEST BET
     // while the same board says the evidence does not agree.
     // This restores the pre-result profile that identified the strongest
@@ -4269,7 +4308,7 @@ function finalRaceDecision(top,field){
     const active=(field||[]).filter(h=>!h.scratched);
     const fts=active.filter(isFirstTimeStarterForQuality).length;
 
-    // v7.60: a complete-data leader with HIGH CONSENSUS is not forced to PASS
+    // v7.61: a complete-data leader with HIGH CONSENSUS is not forced to PASS
     // solely because Performance + Earnings support is thin. This is especially
     // important in proven older-horse/stakes fields where the four core measures agree.
     if(!structural.pass && quality.level==='pass' && complete && consensus.level==='high' && fts===0 && active.length<=9){
@@ -4586,7 +4625,7 @@ function classStrengthFromValues(purse,claiming){
     return Math.log10(1+p)*10 + Math.log10(1+c)*4;
 }
 
-// v7.60 — class-family normalization.
+// v7.61 — class-family normalization.
 // BRIS past-performance class text can use forms such as Moc50000.
 // Those are maiden optional-claiming races and must stay in the MAIDEN family
 // when compared with MdSpWt / MSW / maiden claiming races.
@@ -4779,7 +4818,7 @@ function entryLevelHTML(horse){
         ? "badge-red"
         : "badge-blue";
     const speed=e.avgSpeed!==null ? ` · avg comparable speed ${e.avgSpeed.toFixed(0)}` : '';
-    return `<span class="badge ${cls}" title="${safe(e.detail)}">${safe(e.label)}</span><div class="note" style="font-size:10px;margin-top:3px;">${safe(e.detail)}${speed}</div>`;
+    return `<span class="badge ${cls}" title="${safe(e.detail)}">${safe(e.label)}</span><div class="note" style="font-size:10px;margin-top:3px;">${safe(e.detail)}${speed}</div>${tjStatsHTML(horse)}`;
 }
 
 function paceStyleScore(h){
@@ -5151,8 +5190,8 @@ function computeRaceCard(){
         const decision=finalRaceDecision(top,activeField);
         const bestProfile=modelBestBetProfile(scored,activeField);
 
-        // v7.60 preserves the current wager-selection path. paired_final12 is
-        // informational confirmation only; it cannot erase a v7.60 Best Bet.
+        // v7.61 preserves the current wager-selection path. paired_final12 is
+        // informational confirmation only; it cannot erase a v7.61 Best Bet.
         const topConsensus=signalConsensus(activeField,top.horse);
         const concurrence=concurrenceSupport(activeField,top.horse,{
             horse:top.horse, activeField, race:String(raceNum),
@@ -5606,7 +5645,7 @@ function computeRaceCard(){
           <div class="metric-line"><b>INDEPENDENT CONDITIONS CONFIRMED</b> · ${safe(independentConditionConfirmation(x).notes.join(" · "))}</div>
           ${topPickH2HWarning(x.activeField,x.horse,x)}
         </div>`).join("") :
-        '<div class="warning-box"><b>No race qualifies under the restored v7.60 Best Races logic today.</b> Review contenders, but do not force a wager.</div>'}
+        '<div class="warning-box"><b>No race qualifies under the restored v7.61 Best Races logic today.</b> Review contenders, but do not force a wager.</div>'}
     </div>`;
 
     $("bestSection").innerHTML = `
@@ -6838,7 +6877,7 @@ function renderContenderPastPerformances(horse){
 }
 
 
-// v7.60 UNIVERSAL HORSE-NAME PAST-PERFORMANCE NAVIGATION
+// v7.61 UNIVERSAL HORSE-NAME PAST-PERFORMANCE NAVIGATION
 let ppReturnState=null;
 
 function currentViewKey(){
@@ -6998,6 +7037,8 @@ function openPP(id){
                 "N/A"
             )}
         </b>
+        ${tjStatsHTML(horse)}
+        ${pedigreeHTML(horse)}
 
         <br>
 
@@ -7296,7 +7337,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.60 · iPhone/Safari build 2026-09-18</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.61 · iPhone/Safari build 2026-09-18</div>
 <div id="whereAmI"><b>Horse Handicap</b></div>
 </body>
 </html>
