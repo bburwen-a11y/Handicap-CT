@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v7.63 · September 18, 2026 — iPhone / Safari</title>
+<title>Horse Handicap v7.64 · September 19, 2026 — iPhone / Safari</title>
 
 <style>
 :root{
@@ -894,9 +894,9 @@ tbody input:focus{
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.63</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.64</span></h1>
 <p class="tagline">
-BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance fit and value. v7.63 emphasizes projected race shape and jockey evidence before morning-line price, adds clearer jockey reporting to Past Performances, corrects optional-claiming class reporting, and removes the bottom floating location bar.
+BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance fit and value. v7.64 emphasizes projected race shape and jockey evidence before morning-line price, adds clearer jockey reporting to Past Performances, corrects optional-claiming class reporting, and removes the bottom floating location bar.
 </p>
 </header>
 
@@ -1004,7 +1004,7 @@ Apply Feed Updates
 <div id="rssStatus" class="status"></div>
 <div class="final-odds-note">
 <b>Price discipline:</b> MODEL SHARE is a relative field score, not a calibrated win probability.
-v7.63 does not convert it into fair odds or VALUE/UNDERLAY. Final odds remain visible.
+v7.64 does not convert it into fair odds or VALUE/UNDERLAY. Final odds remain visible.
 RSS changes still trigger a full-card recompute and surface reevaluation.
 </div>
 <div class="note" style="margin:8px 0;">
@@ -3539,7 +3539,7 @@ function calculateHorseScore(horse,field){
         field.map(conditionSpeedScore)
     );
 
-    // v7.63: morning line is NOT a contender-selection input.
+    // v7.64: morning line is NOT a contender-selection input.
     // Race shape and rider evidence receive more weight.
     let score =
         pp*.18 +
@@ -3667,51 +3667,84 @@ function pedigreeHTML(h){
  </div>`;
 }
 
-// v7.62 — relative pace is based on who wants the lead, not an absolute speed threshold.
+// v7.64 — FIELD-RELATIVE PACE ENGINE.
+// Race shape is calculated from every active runner using BRIS run style,
+// Speed Points and the runner's actual recent PP early-pace figures.
+function recentEarlyPaceV764(h){
+  const pp=(h.ppRaces||[]).slice(0,5);
+  const vals=[];
+  pp.forEach((p,i)=>{
+    const calls=[number(p.pace2),number(p.pace4)].filter(v=>v>0);
+    if(calls.length) vals.push({v:Math.max(...calls),w:Math.max(.45,1-i*.12)});
+  });
+  if(!vals.length) return null;
+  vals.sort((a,b)=>b.v-a.v);
+  const use=vals.slice(0,3);
+  return use.reduce((s,x)=>s+x.v*x.w,0)/use.reduce((s,x)=>s+x.w,0);
+}
+function fieldPaceProfileV764(h){
+  const style=String(h.runStyle||'').toUpperCase().replace(/\s+/g,'').replace('E/P','EP');
+  const sp=horseSpeedPoints(h);
+  const ppEarly=recentEarlyPaceV764(h);
+  const stylePts=style==='E'?4:style==='EP'?3:style==='P'?1.5:style==='P/S'?0.5:0;
+  const speedPts=sp?Math.min(4,sp*.5):0;
+  return {h,style,sp,ppEarly,stylePts,speedPts};
+}
 function relativePaceV762(raceHorses){
   const live=(raceHorses||[]).filter(h=>!h.scratched);
-  const style=h=>String(h.runStyle||"").toUpperCase().replace(/\s+/g,"").replace("E/P","EP");
-  const early=h=>{
-    const a=[h.pace2,h.pace4,h.e1,h.e2,h.earlyPace,h.paceEarly]
-      .map(number).filter(v=>Number.isFinite(v)&&v>0);
-    return a.length?Math.max(...a):null;
-  };
-  const pureE=live.filter(h=>style(h)==="E");
-  const intent=live.filter(h=>["E","EP"].includes(style(h)));
-  let lone=null;
-  if(pureE.length===1){
-    const c=pureE[0], ce=early(c);
-    const rivals=intent.filter(h=>h!==c);
-    // An E horse is the default leader unless another early-intent runner has
-    // genuinely comparable early evidence. Missing figures do not create pressure.
-    const challenged=(ce!==null) && rivals.some(h=>{
-      const re=early(h); return re!==null && re>=ce-2;
-    });
-    if(!challenged) lone=c;
+  const prof=live.map(fieldPaceProfileV764);
+  const ppVals=prof.map(x=>x.ppEarly).filter(v=>v!==null).sort((a,b)=>b-a);
+  const leaderPP=ppVals.length?ppVals[0]:null;
+  prof.forEach(x=>{
+    const ppComponent=x.ppEarly===null||leaderPP===null?0:Math.max(0,4-(leaderPP-x.ppEarly)*.35);
+    x.pressure=x.stylePts+x.speedPts+ppComponent;
+  });
+  prof.sort((a,b)=>b.pressure-a.pressure);
+  const top=prof[0]||null, second=prof[1]||null;
+  const credible=prof.filter(x=>x.pressure>=5.0 || (x.ppEarly!==null&&leaderPP!==null&&x.ppEarly>=leaderPP-4));
+  let label='PACE UNKNOWN', lone=null;
+  if(prof.length>=2){
+    if(top && top.pressure>=6 && (!second || top.pressure-second.pressure>=2.25) && credible.length<=1){ label='LONE SPEED'; lone=top.h; }
+    else if(credible.length>=3) label='CONTESTED / FAST';
+    else if(credible.length===2) label='PRESSURED';
+    else label='BALANCED / UNCERTAIN';
   }
-  const stalkers=live.filter(h=>["P","EP"].includes(style(h)) && h!==lone)
-    .sort((a,b)=>(early(b)||0)-(early(a)||0));
-  return {
-    label:lone?"LONE SPEED / DEFAULT LEAD":(intent.length>=3?"PACE PRESSURE":"BALANCED"),
-    loneSpeed:lone,
-    firstStalker:lone&&stalkers.length?stalkers[0]:null
-  };
+  const stalkers=prof.filter(x=>['P','EP','P/S'].includes(x.style) && (!lone||x.h!==lone));
+  const closers=prof.filter(x=>['S','SS','P/S'].includes(x.style));
+  return {label,loneSpeed:lone,firstStalker:stalkers.length?stalkers[0].h:null,profiles:prof,credible,closers};
+}
+function paceSupportFactorV764(h,field){
+  const active=(field||[]).filter(x=>!x.scratched);
+  const pp=active.map(x=>number(x.score||x.primePower)).filter(v=>v>0).sort((a,b)=>b-a);
+  const speeds=active.map(x=>Math.max(number(x.lastSpeed),number(x.bestSpeed))).filter(v=>v>0).sort((a,b)=>b-a);
+  const myPP=number(h.score||h.primePower), mySp=Math.max(number(h.lastSpeed),number(h.bestSpeed));
+  const ppOK=myPP>0 && pp.length && myPP>=pp[Math.min(2,pp.length-1)]-1;
+  const spOK=mySp>0 && speeds.length && mySp>=speeds[Math.min(2,speeds.length-1)]-2;
+  const sf=typeof surfaceEvaluation==='function'?surfaceEvaluation(h):null;
+  const surfaceOK=sf && !/WEAK|QUESTION|NO FIT/i.test(String(sf.label||''));
+  const jockeyOK=number(h.jockeyStarts)>=10 && number(h.jockeyWins)/Math.max(1,number(h.jockeyStarts))>=.12;
+  const formOK=(h.ppRaces||[]).slice(0,3).some(p=>number(p.fin)>0&&number(p.fin)<=3);
+  const support=[ppOK,spOK,surfaceOK,jockeyOK,formOK].filter(Boolean).length;
+  return {support,ppOK,spOK,surfaceOK,jockeyOK,formOK};
 }
 function paceRoleV762(h,raceHorses){
-  const p=relativePaceV762(raceHorses);
+  const p=relativePaceV762(raceHorses), prof=p.profiles.find(x=>String(x.h.id)===String(h.id));
+  if(!prof) return null;
+  const support=paceSupportFactorV764(h,raceHorses);
   if(p.loneSpeed && String(p.loneSpeed.id)===String(h.id))
-    return {contender:true,label:"CONTENDER — PACE ADVANTAGE",
-      detail:"Only clear E runner; projects to the default/uncontested lead."};
+    return {contender:support.support>=1,label:'CONTENDER — LONE PACE ADVANTAGE',detail:'Field-relative pace projects this runner to control the lead; at least one independent factor supports the promotion.'};
+  if((p.label==='CONTESTED / FAST'||p.label==='PRESSURED') && p.closers.some(x=>String(x.h.id)===String(h.id)) && support.support>=2)
+    return {contender:true,label:'CONTENDER — PACE FIT',detail:'Projected field pressure favors this stalking/closing profile and multiple independent factors support it.'};
+  if(p.credible.some(x=>String(x.h.id)===String(h.id)) && support.support>=2)
+    return {contender:true,label:'CONTENDER — EARLY PACE',detail:'Actual recent early figures place this runner in the field pace cluster; multiple independent factors support it.'};
   if(p.firstStalker && String(p.firstStalker.id)===String(h.id))
-    return {contender:false,label:"STALKER ADVANTAGE",
-      detail:"Projects as the first stalker behind the lone/default speed."};
+    return {contender:support.support>=2,label:'STALKER ADVANTAGE',detail:'Projects for a favorable first-stalking trip; promotion requires supporting evidence.'};
   return null;
 }
 function seriousPaceExclusionV762(h){
-  const sf=typeof surfaceEvaluation==="function"?surfaceEvaluation(h):null;
-  const cf=typeof entryLevelFit==="function"?entryLevelFit(h):null;
-  return !!((sf&&/WEAK|QUESTION|NO FIT/i.test(String(sf.label||""))) ||
-            (cf&&/OVERMATCHED/i.test(String(cf.label||""))));
+  const sf=typeof surfaceEvaluation==='function'?surfaceEvaluation(h):null;
+  const cf=typeof entryLevelFit==='function'?entryLevelFit(h):null;
+  return !!((sf&&/WEAK|NO FIT/i.test(String(sf.label||''))) || (cf&&/OVERMATCHED/i.test(String(cf.label||''))));
 }
 function forcePaceContenderV762(h,raceHorses){
   const r=paceRoleV762(h,raceHorses);
@@ -3719,7 +3752,7 @@ function forcePaceContenderV762(h,raceHorses){
 }
 function paceBadgeV762(h,raceHorses){
   const r=paceRoleV762(h,raceHorses);
-  return r?`<span class="badge ${r.contender?'badge-green':'badge-blue'}" title="${safe(r.detail)}">${safe(r.label)}</span>`:"";
+  return r?`<span class="badge ${r.contender?'badge-green':'badge-blue'}" title="${safe(r.detail)}">${safe(r.label)}</span>`:'';
 }
 
 function calculateProbabilities(field){
@@ -4506,19 +4539,17 @@ function buildReason(top,second,field){
 function classificationEvidence(item,scored,field){
     // v7.62 safety net: lone/default speed cannot be eliminated from Contenders
     // solely by blended figure/class gates.
-    const _raceV762=(rows||[]).filter(x=>String(x.race)===String(item.race) && !x.scratched);
+    const _raceV762=(field||[]).filter(x=>!x.scratched);
     if(forcePaceContenderV762(item,_raceV762)){
-      return {label:"CONTENDER", reason:"PACE ADVANTAGE — lone/default speed", paceForced:true};
+      return {label:"CONTENDER", reason:"FIELD-PACE ADVANTAGE — projected trip plus independent supporting evidence", paceForced:true};
     }
 
     const horse=item.horse;
     const pp=(horse.ppRaces || []).filter(p=>number(p.fin)>0 && number(p.fin)<90);
     const rank=scored.indexOf(item)+1;
 
-    // Market-frame classification baseline:
-    // the MARKET creates the elimination cut. 12-1+ OR outside the top five
-    // is a Pretender candidate. Lack of evidence can rescue the horse to
-    // Questionable, but it does not promote it to Contender.
+    // v7.64: Morning line is context/value evidence, not the sole contender gate.
+    // Long odds can trigger review, but cannot eliminate a horse that has strong model or field-relative pace support.
     const market=field
         .filter(h=>oddsDecimal(h.odds)!==null)
         .slice()
@@ -4532,6 +4563,14 @@ function classificationEvidence(item,scored,field){
     if(marketRank!==null && marketRank>5) cutReasons.push(`${marketRank}th choice of ${market.length}`);
 
     if(cutReasons.length){
+        const paceRole=paceRoleV762(horse,field);
+        const support=paceSupportFactorV764(horse,field);
+        if(rank<=4 && support.support>=2){
+            return {label:"CONTENDER",reason:`Model rank #${rank} with ${support.support} independent support signals; morning line (${horse.odds||"N/A"}) is not an elimination rule.`};
+        }
+        if(paceRole && paceRole.contender){
+            return {label:"CONTENDER",reason:`${paceRole.label}: ${paceRole.detail} Morning line is retained only as price context.`};
+        }
         const debut=!pp.length || number(horse.starts)===0;
 
         // Same rescue principle as the supplied program: a horse with no form
@@ -4581,7 +4620,7 @@ function classificationEvidence(item,scored,field){
         }
     }
 
-    return {label:"CONTENDER",reason:"Inside the market's top-five / under-12-1 frame; no elimination trigger."};
+    return {label:"CONTENDER",reason:"No strong elimination trigger after model rank, field-relative pace, form/class/surface evidence and market context are considered."};
 }
 
 
@@ -4887,24 +4926,14 @@ function paceStyleScore(h){
 }
 
 function paceProjection(field){
-    const active=(field||[]).filter(h=>!h.scratched);
-    const rated=active.map(h=>({h,q:horseSpeedPoints(h),r:paceStyleScore(h)})).filter(x=>x.r!==null).sort((a,b)=>b.r-a.r);
-    if(rated.length<3) return {label:"PACE UNKNOWN",detail:"not enough BRIS Speed Points/run-style information"};
-    const speed=rated.filter(x=>x.q>=5);
-    const top=rated[0], second=rated[1];
-    if(speed.length===1 && top.r-second.r>=1.5){
-        return {label:"LONE SPEED",detail:`#${top.h.post} ${top.h.horse} projects to control the early pace`};
-    }
-    if(speed.length>=3){
-        const closers=active.filter(h=>/^(S|SS|P\/S)$/i.test(String(h.runStyle||''))).map(h=>`#${h.post} ${h.horse}`);
-        return {label:"CONTESTED",detail:`${speed.length} runners show genuine early speed${closers.length ? `; may help ${closers.slice(0,3).join(', ')}` : ''}`};
-    }
-    if(speed.length===2){
-        return {label:"PRESSURED",detail:`two credible speed horses (${speed.map(x=>`#${x.h.post}`).join(' and ')}) should keep the pace honest`};
-    }
-    return {label:"BALANCED",detail:"no extreme early-speed concentration is visible"};
+    const p=relativePaceV762(field);
+    const names=p.credible.slice(0,4).map(x=>`#${x.h.post} ${x.h.horse}`);
+    if(p.label==='LONE SPEED') return {label:'LONE SPEED',detail:`#${p.loneSpeed.post} ${p.loneSpeed.horse} has the clearest field-relative early advantage`};
+    if(p.label==='CONTESTED / FAST') return {label:'CONTESTED',detail:`${names.join(', ')} form the principal early-pace cluster; stalking/closing trips gain value`};
+    if(p.label==='PRESSURED') return {label:'PRESSURED',detail:`${names.join(' and ')} project to supply meaningful early pressure`};
+    if(p.label==='BALANCED / UNCERTAIN') return {label:'BALANCED / UNCERTAIN',detail:'No runner owns a decisive field-relative early edge; actual PP pace figures prevent a false lone-speed call'};
+    return {label:'PACE UNKNOWN',detail:'not enough field pace evidence'};
 }
-
 function paceProjectionHTML(field){
     const p=paceProjection(field);
     const active=(field||[]).filter(h=>!h.scratched);
@@ -7382,6 +7411,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.63 · September 18, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.64 · September 19, 2026 · iPhone/Safari</div>
 </body>
 </html>
