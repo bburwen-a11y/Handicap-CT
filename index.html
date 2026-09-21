@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v7.67 · September 20, 2026 — iPhone / Safari</title>
+<title>Horse Handicap v7.68 · September 20, 2026 — iPhone / Safari</title>
 
 <style>
 :root{
@@ -870,7 +870,7 @@ tbody input:focus{
 </style>
 
 <style id="v755-floating-nav-style">
-/* v7.67 iPhone navigation safety:
+/* v7.68 iPhone navigation safety:
    tabs and race numbers remain in normal document flow so they cannot cover modal controls. */
 .tabbar{
   position:relative;
@@ -899,9 +899,9 @@ tbody input:focus{
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.67</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.68</span></h1>
 <p class="tagline">
-BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance fit and value. v7.67 melds the strongest Overlay Board evidence reads into Horse Handicap: field-relative pace, evidence confirmations for every Contender, chart-comment excuses for Questionables, jockey/class/surface support, H2H context, and iPhone-safe non-floating navigation. Morning line remains price context, never the sole reason a horse is a Contender.
+BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance fit and value. v7.68 melds the strongest Overlay Board evidence reads into Horse Handicap: field-relative pace, evidence confirmations for every Contender, chart-comment excuses for Questionables, jockey/class/surface support, H2H context, and iPhone-safe non-floating navigation. Morning line remains price context, never the sole reason a horse is a Contender.
 </p>
 </header>
 
@@ -1009,7 +1009,7 @@ Apply Feed Updates
 <div id="rssStatus" class="status"></div>
 <div class="final-odds-note">
 <b>Price discipline:</b> MODEL SHARE is a relative field score, not a calibrated win probability.
-v7.67 does not convert it into fair odds or VALUE/UNDERLAY. Final odds remain visible.
+v7.68 does not convert it into fair odds or VALUE/UNDERLAY. Final odds remain visible.
 RSS changes still trigger a full-card recompute and surface reevaluation.
 </div>
 <div class="note" style="margin:8px 0;">
@@ -3395,7 +3395,7 @@ function classFit(horse,field){
     return relativeFeature(horse,field,relative=>recentClassScore(relative));
 }
 
-/* v7.67 RSS fix: v7.66 referenced this helper without defining it.
+/* v7.68 RSS fix: v7.66 referenced this helper without defining it.
    Compute surface/distance fit directly from parsed PP evidence. */
 function surfaceDistanceFit(horse){
     const pps=(horse.ppRaces||[]).filter(p=>number(p.fin)>0 && number(p.fin)<90);
@@ -3567,7 +3567,7 @@ function calculateHorseScore(horse,field){
         field.map(conditionSpeedScore)
     );
 
-    // v7.67: morning line is NOT a contender-selection input.
+    // v7.68: morning line is NOT a contender-selection input.
     // Race shape and rider evidence receive more weight.
     let score =
         pp*.18 +
@@ -3695,7 +3695,7 @@ function pedigreeHTML(h){
  </div>`;
 }
 
-// v7.67 — FIELD-RELATIVE PACE ENGINE.
+// v7.68 — FIELD-RELATIVE PACE ENGINE.
 // Race shape is calculated from every active runner using BRIS run style,
 // Speed Points and the runner's actual recent PP early-pace figures.
 function recentEarlyPaceV764(h){
@@ -4575,7 +4575,7 @@ function buildReason(top,second,field){
 
 
 /* ============================================================
-   v7.67 — CONTENDER CONFIRMATIONS + QUESTIONABLE EXCUSES
+   v7.68 — CONTENDER CONFIRMATIONS + QUESTIONABLE EXCUSES
    A contender must be supported by evidence beyond morning line.
    Signals are descriptive card evidence; they are not guarantees.
 ============================================================ */
@@ -4677,8 +4677,8 @@ function classificationEvidence(item,scored,field){
     const rank=scored.indexOf(item)+1;
     const confirmations=contenderConfirmationsV766(item,scored,_race);
 
-    // Morning line is price context only. Pace promotion still requires
-    // independent support and now reports its confirmations explicitly.
+    // Price is context only. A Top-4 model horse cannot be eliminated solely
+    // because of morning-line rank/price.
     if(forcePaceContenderV762(item,_race)){
       return {label:"CONTENDER",
         reason:`FIELD-PACE ADVANTAGE confirmed by ${confirmations.length} supporting signal${confirmations.length===1?"":"s"}: ${confirmations.join(", ")||"independent field evidence"}.`,
@@ -4695,15 +4695,22 @@ function classificationEvidence(item,scored,field){
     if(price!==null && price>=12) cutReasons.push(`${safe(horse.odds)} — 12-1 or longer`);
     if(marketRank!==null && marketRank>5) cutReasons.push(`${marketRank}th choice of ${market.length}`);
 
-    // Strong evidence can override a long morning line, but price itself
-    // never supplies the confirmation.
-    if(cutReasons.length){
-        const paceRole=paceRoleV762(horse,_race);
-        if(rank<=4 && confirmations.length>=2){
+    // v7.68: protect evidence-rich Top-4 model horses from a market-only cut.
+    if(rank>0 && rank<=4){
+        if(confirmations.length>=2){
             return {label:"CONTENDER",
-              reason:`Long morning line noted (${horse.odds||"N/A"}), but ${confirmations.length} independent confirmations keep this horse live: ${confirmations.join(", ")}.`,
+              reason:`MODEL TOP ${rank} with ${confirmations.length} independent confirmations: ${confirmations.join(", ")}. Morning line cannot demote this horse.`,
               confirmations};
         }
+        // A Top-4 horse with only one confirmation remains Questionable rather
+        // than Pretender; this is the safety valve that preserves live outsiders.
+        return {label:"QUESTIONABLE",
+          reason:`MODEL TOP ${rank}, but only ${confirmations.length} independent confirmation${confirmations.length===1?"":"s"} beyond the model${confirmations.length?`: ${confirmations.join(", ")}`:""}. Keep live, but require another positive before Contender status.`,
+          confirmations};
+    }
+
+    if(cutReasons.length){
+        const paceRole=paceRoleV762(horse,_race);
         if(paceRole && paceRole.contender && confirmations.length>=2){
             return {label:"CONTENDER",
               reason:`${paceRole.label}; independently confirmed by ${confirmations.filter(x=>!x.includes("pace")).join(", ")||confirmations.join(", ")}. Morning line is price context only.`,
@@ -4712,6 +4719,11 @@ function classificationEvidence(item,scored,field){
 
         const debut=!pp.length || number(horse.starts)===0;
         if(debut){
+            // Debutants are inherently uncertain; keep Questionable unless
+            // there are at least two positive current-card confirmations.
+            if(confirmations.length>=2){
+                return {label:"CONTENDER",reason:`First-time starter with ${confirmations.length} current-card confirmations: ${confirmations.join(", ")}.`,confirmations};
+            }
             return {label:"QUESTIONABLE",reason:`${cutReasons.join("; ")}; first-time starter / no usable form — insufficient evidence to eliminate.`,confirmations};
         }
 
@@ -4729,14 +4741,16 @@ function classificationEvidence(item,scored,field){
             const fin=number(p.fin), n=number(p.entrants);
             return fin>0 && (fin<=3 || (n>=4 && fin<=Math.ceil(n*.40)));
         }).length;
-        if(recent.length>=3 && competitive>=2){
-            return {label:"QUESTIONABLE",reason:`${cutReasons.join("; ")}; but ${competitive} of ${recent.length} comparable/recent starts were competitive — keep live for review.`,confirmations};
+
+        // Cull weak Questionables: one isolated "maybe" is not enough.
+        if(confirmations.length>=2 && recent.length>=2 && competitive>=1){
+            return {label:"QUESTIONABLE",reason:`Market concern (${cutReasons.join("; ")}), but multiple independent confirmations and comparable form justify one more look.`,confirmations};
         }
-        return {label:"PRETENDER",reason:`Market elimination evidence: ${cutReasons.join("; ")}. Usable past performances do not provide enough independent confirmation to override the cut.`,confirmations};
+        return {label:"PRETENDER",reason:`${cutReasons.join("; ")}; fewer than two independent confirmations and no strong comparable-form override.`,confirmations};
     }
 
-    // Poor comparable result is Questionable; attach the actual chart comment
-    // separately so a trouble excuse is visible rather than silently scored.
+    // Poor comparable result: only Questionable when there is a real excuse
+    // or enough independent evidence to justify review. Otherwise cull it.
     if(pp.length){
         const targetSurface=horse.currentSurface;
         const targetDistance=Math.abs(number(horse.currentDistance));
@@ -4749,20 +4763,33 @@ function classificationEvidence(item,scored,field){
         const last=(comparable.length?comparable:pp)[0];
         const fin=number(last && last.fin), n=number(last && last.entrants);
         if(fin>0 && n>=4 && fin>Math.ceil(n*.80)){
-            return {label:"QUESTIONABLE",reason:"Poor last comparable finish — review the chart comment/excuse before eliminating.",confirmations};
+            const excuse=questionableExcuseV766(horse);
+            if((excuse && excuse.trouble) || confirmations.length>=2){
+                return {label:"QUESTIONABLE",reason:"Poor last comparable finish, but a documented trip excuse or multiple independent confirmations justify review.",confirmations};
+            }
+            return {label:"PRETENDER",reason:"Poor last comparable finish with no documented trouble and insufficient independent confirmation.",confirmations};
         }
     }
 
-    // v7.67: being short-priced is not enough. An ordinary Contender needs
-    // at least two independent confirmations from the card.
+    // Ordinary contender threshold.
     if(confirmations.length>=2){
       return {label:"CONTENDER",
         reason:`Confirmed contender — ${confirmations.length} independent signals: ${confirmations.join(", ")}. Morning line is price context only.`,
         confirmations};
     }
 
-    return {label:"QUESTIONABLE",
-      reason:`Inside the market frame, but only ${confirmations.length} independent confirmation${confirmations.length===1?"":"s"} beyond morning line${confirmations.length?`: ${confirmations.join(", ")}`:""}. Needs more evidence before Contender status.`,
+    // v7.68 Questionable cull:
+    // one weak confirmation is not enough unless the horse is model Top-4
+    // (handled above), a debutant, or has a documented trip excuse.
+    const excuse=questionableExcuseV766(horse);
+    if(excuse && excuse.trouble){
+      return {label:"QUESTIONABLE",
+        reason:`Documented chart trouble keeps this horse alive despite limited confirmation.`,
+        confirmations};
+    }
+
+    return {label:"PRETENDER",
+      reason:`Only ${confirmations.length} independent confirmation${confirmations.length===1?"":"s"} beyond price/model context and no documented trip excuse — culled from Questionable.`,
       confirmations};
 }
 
@@ -7562,6 +7589,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.67 · September 20, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.68 · September 20, 2026 · iPhone/Safari</div>
 </body>
 </html>
