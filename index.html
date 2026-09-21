@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v7.68 · September 20, 2026 — iPhone / Safari</title>
+<title>Horse Handicap v7.69 · September 21, 2026 — iPhone / Safari</title>
 
 <style>
 :root{
@@ -870,7 +870,7 @@ tbody input:focus{
 </style>
 
 <style id="v755-floating-nav-style">
-/* v7.68 iPhone navigation safety:
+/* v7.69 iPhone navigation safety:
    tabs and race numbers remain in normal document flow so they cannot cover modal controls. */
 .tabbar{
   position:relative;
@@ -899,9 +899,9 @@ tbody input:focus{
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.68</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.69</span></h1>
 <p class="tagline">
-BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance fit and value. v7.68 melds the strongest Overlay Board evidence reads into Horse Handicap: field-relative pace, evidence confirmations for every Contender, chart-comment excuses for Questionables, jockey/class/surface support, H2H context, and iPhone-safe non-floating navigation. Morning line remains price context, never the sole reason a horse is a Contender.
+BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance fit and value. v7.69 melds the strongest Overlay Board evidence reads into Horse Handicap: field-relative pace, evidence confirmations for every Contender, chart-comment excuses for Questionables, jockey/class/surface support, H2H context, and iPhone-safe non-floating navigation. Morning line remains price context, never the sole reason a horse is a Contender.
 </p>
 </header>
 
@@ -1009,7 +1009,7 @@ Apply Feed Updates
 <div id="rssStatus" class="status"></div>
 <div class="final-odds-note">
 <b>Price discipline:</b> MODEL SHARE is a relative field score, not a calibrated win probability.
-v7.68 does not convert it into fair odds or VALUE/UNDERLAY. Final odds remain visible.
+v7.69 does not convert it into fair odds or VALUE/UNDERLAY. Final odds remain visible.
 RSS changes still trigger a full-card recompute and surface reevaluation.
 </div>
 <div class="note" style="margin:8px 0;">
@@ -1944,6 +1944,7 @@ function loadDRF(text){
                     pace8:getNumber(fields,796+i),
                     latePace:getNumber(fields,816+i),
                     raceClass:getField(fields,536+i),
+                    raceType:getField(fields,1086+i),
                     claimingPrice:getNumber(fields,546+i),
                     purse:getNumber(fields,556+i),
                     classRating:0,
@@ -3395,7 +3396,83 @@ function classFit(horse,field){
     return relativeFeature(horse,field,relative=>recentClassScore(relative));
 }
 
-/* v7.68 RSS fix: v7.66 referenced this helper without defining it.
+/* v7.69 — CLASS-SPECIFIC READ.
+   Direction (up/down/same) is display context only; it is not rewarded by itself.
+   The useful question is whether the horse has actually been competitive at
+   TODAY'S class family/tag. Claiming tags are compared only within claiming
+   families; allowance/optional, maiden, starter and stakes families remain distinct. */
+function classFamilyV769(type,text){
+    const rt=String(type||"").trim().toUpperCase();
+    const tx=String(text||"").trim().toUpperCase();
+    if(rt==="G1"||/\bG1\b|GRADE\s*1/.test(tx)) return "G1";
+    if(rt==="G2"||/\bG2\b|GRADE\s*2/.test(tx)) return "G2";
+    if(rt==="G3"||/\bG3\b|GRADE\s*3/.test(tx)) return "G3";
+    if(["N","NO"].includes(rt)||/\bSTAKES\b|\bHCP\b|\bHANDICAP\b/.test(tx)) return "STAKES";
+    if(rt==="S"||/MAIDEN\s+SPECIAL|MDSPWT|MSW/.test(tx)) return "MSW";
+    if(["M","MO"].includes(rt)||/MAIDEN.*CLM|MCL/.test(tx)) return "MCL";
+    if(["AO","CO"].includes(rt)||/ALLOWANCE.*OPTIONAL|AOC|OPT(?:IONAL)?\s*CLM/.test(tx)) return "AOC";
+    if(rt==="A"||/\bALLOWANCE\b|\bALW\b/.test(tx)) return "ALW";
+    if(["R","T"].includes(rt)||/\bSTARTER\b/.test(tx)) return "STARTER";
+    if(rt==="C"||/\bCLAIM(?:ING)?\b|\bCLM\b/.test(tx)) return "CLM";
+    return rt||tx||"OTHER";
+}
+function classTagV769(type,text,claim){
+    const n=number(claim);
+    if(n>0) return n;
+    const fam=classFamilyV769(type,text);
+    if(!["CLM","MCL","AOC","STARTER"].includes(fam)) return 0;
+    const s=String(text||"").toUpperCase();
+    const m=s.match(/\$?\s*(\d+(?:\.\d+)?)\s*K\b/) || s.match(/\$?\s*(\d{4,6})\b/);
+    if(!m) return 0;
+    const v=parseFloat(m[1]);
+    return /K\b/.test(m[0]) ? v*1000 : v;
+}
+function specificClassLabelV769(type,text,claim){
+    const fam=classFamilyV769(type,text);
+    const tag=classTagV769(type,text,claim);
+    return tag ? `${fam} $${Math.round(tag/1000)}K` : fam;
+}
+function exactClassMatchV769(pp,horse){
+    const pf=classFamilyV769(pp.raceType,pp.raceClass);
+    const tf=classFamilyV769(horse.raceType,horse.currentRaceClass);
+    if(!pf||!tf||pf!==tf) return false;
+    const pt=classTagV769(pp.raceType,pp.raceClass,pp.claimingPrice);
+    const tt=classTagV769(horse.raceType,horse.currentRaceClass,horse.claimingPrice);
+    if(pt&&tt) return Math.abs(pt-tt)/tt<=0.15;
+    return true;
+}
+function classSpecificReadV769(horse){
+    const pps=(horse.ppRaces||[]).filter(p=>number(p.fin)>0 && number(p.fin)<90).slice(0,6);
+    const exact=pps.filter(p=>exactClassMatchV769(p,horse));
+    const competitive=exact.filter(p=>{
+        const f=number(p.fin), n=number(p.entrants);
+        return f===1 || f<=3 || (n>=4 && f<=Math.ceil(n*.40));
+    });
+    const wins=exact.filter(p=>number(p.fin)===1).length;
+    return {
+        label:specificClassLabelV769(horse.raceType,horse.currentRaceClass,horse.claimingPrice),
+        seen:exact.length, competitive:competitive.length, wins,
+        strong: exact.length>=2 && (competitive.length/exact.length)>=0.50,
+        weak: exact.length>=2 && competitive.length===0
+    };
+}
+
+/* Comments are evidence, not an automatic excuse. Separate adverse-trip language
+   from positive trip/form language and attach it to the same PP line. */
+function ppCommentReadV769(comment){
+    const s=String(comment||"").trim();
+    if(!s) return {text:"", trouble:false, positive:false};
+    const trouble=/\b(stead(?:ied|y)|check(?:ed|ing)?|blocked|no room|bump(?:ed|ing)?|stumbled?|slow start|off slow|pinched|squeezed|shuffled|traffic|forced|carried|shut off|boxed|crowded|hit gate|dwelt|hesitated|awkward|bobbl|eased|pulled up|lost action|rank|wide|hung)\b/i.test(s);
+    const positive=/\b(drew clear|clear|game|gamely|strongly|finished well|rallied|closed|bid|dueled|pressed|stalked|all out|determined|willingly|held well)\b/i.test(s);
+    return {text:s,trouble,positive};
+}
+function classSpecificHTMLV769(horse){
+    const r=classSpecificReadV769(horse);
+    if(!r.seen) return `<span class="note"><b>Specific class:</b> no prior ${safe(r.label)} start in the last six usable PPs.</span>`;
+    return `<span class="note"><b>Specific class:</b> ${safe(r.label)} — ${r.competitive}/${r.seen} competitive, ${r.wins} win${r.wins===1?"":"s"}.</span>`;
+}
+
+/* v7.69 RSS fix: v7.66 referenced this helper without defining it.
    Compute surface/distance fit directly from parsed PP evidence. */
 function surfaceDistanceFit(horse){
     const pps=(horse.ppRaces||[]).filter(p=>number(p.fin)>0 && number(p.fin)<90);
@@ -3567,7 +3644,7 @@ function calculateHorseScore(horse,field){
         field.map(conditionSpeedScore)
     );
 
-    // v7.68: morning line is NOT a contender-selection input.
+    // v7.69: morning line is NOT a contender-selection input.
     // Race shape and rider evidence receive more weight.
     let score =
         pp*.18 +
@@ -3695,7 +3772,7 @@ function pedigreeHTML(h){
  </div>`;
 }
 
-// v7.68 — FIELD-RELATIVE PACE ENGINE.
+// v7.69 — FIELD-RELATIVE PACE ENGINE.
 // Race shape is calculated from every active runner using BRIS run style,
 // Speed Points and the runner's actual recent PP early-pace figures.
 function recentEarlyPaceV764(h){
@@ -4575,7 +4652,7 @@ function buildReason(top,second,field){
 
 
 /* ============================================================
-   v7.68 — CONTENDER CONFIRMATIONS + QUESTIONABLE EXCUSES
+   v7.69 — CONTENDER CONFIRMATIONS + QUESTIONABLE EXCUSES
    A contender must be supported by evidence beyond morning line.
    Signals are descriptive card evidence; they are not guarantees.
 ============================================================ */
@@ -4695,7 +4772,7 @@ function classificationEvidence(item,scored,field){
     if(price!==null && price>=12) cutReasons.push(`${safe(horse.odds)} — 12-1 or longer`);
     if(marketRank!==null && marketRank>5) cutReasons.push(`${marketRank}th choice of ${market.length}`);
 
-    // v7.68: protect evidence-rich Top-4 model horses from a market-only cut.
+    // v7.69: protect evidence-rich Top-4 model horses from a market-only cut.
     if(rank>0 && rank<=4){
         if(confirmations.length>=2){
             return {label:"CONTENDER",
@@ -4749,6 +4826,13 @@ function classificationEvidence(item,scored,field){
         return {label:"PRETENDER",reason:`${cutReasons.join("; ")}; fewer than two independent confirmations and no strong comparable-form override.`,confirmations};
     }
 
+    const specificClass=classSpecificReadV769(horse);
+    if(rank>4 && specificClass.weak && confirmations.length<2){
+        return {label:"PRETENDER",
+          reason:`Specific class concern: 0/${specificClass.seen} competitive at ${specificClass.label}, with fewer than two independent confirmations.`,
+          confirmations};
+    }
+
     // Poor comparable result: only Questionable when there is a real excuse
     // or enough independent evidence to justify review. Otherwise cull it.
     if(pp.length){
@@ -4778,7 +4862,7 @@ function classificationEvidence(item,scored,field){
         confirmations};
     }
 
-    // v7.68 Questionable cull:
+    // v7.69 Questionable cull:
     // one weak confirmation is not enough unless the horse is model Top-4
     // (handled above), a debutant, or has a documented trip excuse.
     const excuse=questionableExcuseV766(horse);
@@ -5274,6 +5358,7 @@ function renderRaceHorsePP(horse){
           ${horse.tjStarts?`<br>T/J combo: <b>${horse.tjStarts}-${horse.tjWins||0}</b> (${pct761(horse.tjWins,horse.tjStarts)} wins)`:''}
           <br>Class move: ${classMoveBadge(horse)}
           &nbsp; | &nbsp; Entry level fit: ${entryLevelHTML(horse)}
+          <br>${classSpecificHTMLV769(horse)}
         </div>
         ${races.length ? `
         <div class="note" style="margin:0 0 7px;"><b>Jockey evidence:</b> today's rider, meet/year win rate and trainer/jockey combination are shown above. This parser does not label a prior PP race with a rider unless that historical rider field is explicitly available, so it will not invent horse/rider win-loss history. P2/P4/P6/P8 = BRIS pace figures at those calls; LP = late pace.</div>
@@ -5298,7 +5383,7 @@ function renderRaceHorsePP(horse){
                 <td><b>${safe(p.speed)}</b></td>
                 ${ppPaceCells(p)}
                 <td>${safe(p.raceClass || "-")}</td>
-                <td>${safe(p.comment)}</td>
+                <td>${(()=>{const cr=ppCommentReadV769(p.comment); if(!cr.text)return "—"; return `${cr.trouble?'<span class="badge badge-red">TRIP</span> ':''}${cr.positive?'<span class="badge badge-green">FORM</span> ':''}${safe(cr.text)}`;})()}</td>
               </tr>`).join("")}
             </tbody>
           </table>
@@ -7145,7 +7230,7 @@ function renderContenderPastPerformances(horse){
               <td><b>${safe(p.speed)}</b></td>
               ${ppPaceCells(p)}
               <td>${safe(p.raceClass || "-")}</td>
-              <td>${safe(p.comment)}</td>
+              <td>${(()=>{const cr=ppCommentReadV769(p.comment); if(!cr.text)return "—"; return `${cr.trouble?'<span class="badge badge-red">TRIP</span> ':''}${cr.positive?'<span class="badge badge-green">FORM</span> ':''}${safe(cr.text)}`;})()}</td>
             </tr>`).join("")}
         </tbody>
       </table>
@@ -7589,6 +7674,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.68 · September 20, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v7.69 · September 21, 2026 · iPhone/Safari</div>
 </body>
 </html>
