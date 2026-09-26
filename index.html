@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v7.94 · September 26, 2026 — Recent Form Read</title>
+<title>Horse Handicap v7.95 · September 26, 2026 — Running-Line Pace Fix</title>
 
 <style>
 :root{
@@ -1154,6 +1154,12 @@ button,input,select,textarea{font-size:16px;max-width:100%}
 .form-read-v794 .cf-line{margin-top:3px;}
 </style>
 
+
+<style id="v795-running-line-shape">
+.pace-shape-v795{margin:8px 0;padding:8px 10px;border-left:4px solid #315A7D;background:rgba(49,90,125,.07);border-radius:5px;font-size:12.5px;line-height:1.55;}
+.pp-shape-v795{margin-top:3px;font-size:10.5px;line-height:1.35;font-weight:700;white-space:normal;color:var(--ink-soft);}
+</style>
+
 </head>
 
 <body>
@@ -1162,7 +1168,7 @@ button,input,select,textarea{font-size:16px;max-width:100%}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.94 · Sep 26, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.95 · Sep 26, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -2165,7 +2171,12 @@ function loadDRF(text){
                     entrants:getNumber(fields,346+i),
                     post:getField(fields,356+i),
                     fin:getField(fields,616+i),
+                    // v7.95: BRIS Single File fields:
+                    // 686+i = 2nd-call beaten lengths only; 746+i = finish beaten lengths only.
+                    // Keep legacy beatenLengths at 686+i so established selection logic is unchanged.
                     beatenLengths:getNumber(fields,686+i),
+                    secondCallLengths:getNumber(fields,686+i),
+                    finishBeatenLengths:getNumber(fields,746+i),
                     speed:getNumber(fields,846+i),
                     pace2:getNumber(fields,766+i),
                     pace4:getNumber(fields,776+i),
@@ -5111,6 +5122,37 @@ function surfaceTagV794(s){
     if(x==="T") return "t";
     return "d";
 }
+
+/* v7.95 — within-race late shape from the RUNNING LINE, never from
+   unlike BRIS pace-figure scales. Positive gain means the horse reduced
+   its deficit from the second call to the finish. Facts only. */
+function runningLineShapeV795(p){
+    if(!p) return null;
+    const second=Number(p.secondCallLengths);
+    const finish=Number(p.finishBeatenLengths);
+    if(!Number.isFinite(second) || !Number.isFinite(finish)) return null;
+    const gain=second-finish;
+    const label=gain>=2 ? "CLOSED LATE" : gain<=-2 ? "FADED LATE" : "EVEN SHAPE";
+    return {label,second,finish,gain};
+}
+function runningLineShapeTextV795(p){
+    const s=runningLineShapeV795(p);
+    if(!s) return "";
+    const move=s.gain>=0 ? `gained ${Math.abs(s.gain).toFixed(1)}L`
+                         : `lost ${Math.abs(s.gain).toFixed(1)}L`;
+    return `${s.label} · 2nd call ${s.second.toFixed(1)}L → finish ${s.finish.toFixed(1)}L (${move})`;
+}
+function latestRunningLineShapeHTMLV795(horse){
+    const p=(horse?.ppRaces||[])[0];
+    if(!p) return "";
+    const s=runningLineShapeTextV795(p);
+    if(!s) return "";
+    const c=String(p.comment||"").trim() || "no chart comment";
+    return `<div class="pace-shape-v795"><b>Last-race shape:</b> ${safe(s)}
+      <div class="cf-line"><b>Chart comment:</b> “${safe(c)}”</div>
+      <div class="cf-line">Running-line measurement only; BRIS pace figures remain displayed as numbers.</div></div>`;
+}
+
 function recentFormReadV794(horse){
     const raw=(horse?.ppRaces||[])
       .filter(p=>number(p.fin)>0 && number(p.fin)<90)
@@ -5149,7 +5191,7 @@ function recentFormReadV794(horse){
 
     // Display oldest -> newest so the arrow reads naturally through time.
     const chrono=used.slice().reverse();
-    const vals=chrono.map(p=>number(p.beatenLengths));
+    const vals=chrono.map(p=>number(p.finishBeatenLengths));
     let label="NO TREND";
     if(vals.length>=2){
       const steps=[];
@@ -5161,13 +5203,13 @@ function recentFormReadV794(horse){
       const newestDir=newest < -eps ? -1 : newest > eps ? 1 : 0; // - = closing
       const overallDir=overall < -eps ? -1 : overall > eps ? 1 : 0;
       if(prior.length && newestDir && overallDir && newestDir!==overallDir) label="MIXED";
-      else if(overallDir<0) label="CLOSING";
-      else if(overallDir>0) label="LOSING GROUND";
+      else if(overallDir<0) label="MARGIN IMPROVING";
+      else if(overallDir>0) label="MARGIN WORSENING";
       else label="MIXED";
     }
     const seq=chrono.map(p=>{
       const tag=mixedSurface?` (${surfaceTagV794(p.surf)})`:"";
-      return `${number(p.beatenLengths).toFixed(1)}${tag}`;
+      return `${number(p.finishBeatenLengths).toFixed(1)}${tag}`;
     }).join(" → ");
     const lastComment=String(raw[0].comment||"").trim() || "no chart comment";
     return {label,seq,lastComment,restart,surfaceNote,count:used.length};
@@ -5179,7 +5221,7 @@ function recentFormReadHTMLV794(horse){
     if(f.restart) notes.push(`record restarted after ${f.restart.days}-day layoff`);
     if(f.surfaceNote) notes.push(f.surfaceNote);
     return `<div class="form-read-v794"><span class="badge badge-amber">${safe(f.label)}</span> `
-      + `<b>Recent form:</b> ${safe(f.seq)}`
+      + `<b>Finishing-margin trend:</b> ${safe(f.seq)}`
       + `${notes.length?`<div class="cf-line">${safe(notes.join(" · "))}</div>`:""}`
       + `<div class="cf-line"><b>Last chart comment:</b> “${safe(f.lastComment)}”</div>`
       + `<div class="cf-line">Facts only — this read changes no selection.</div></div>`;
@@ -5231,7 +5273,7 @@ function confirmationGroupsV785(item,scored,field){
     return {all,core,support};
 }
 
-/* v7.94 preserves v7.93 selection logic unchanged; adds facts-only layoff-aware, surface-labeled recent form read with MIXED and last chart comment. */
+/* v7.95 preserves v7.94 selection logic unchanged; fixes descriptive late-shape reasoning to use BRIS 2nd-call vs finish beaten lengths. Pace figures remain numeric only. */
 /* v7.90 — Exact Pick Confirmation: display/research only.
    Exact frozen definitions from the completed 36-card study:
    1) Prime Power = SOLE #1 in the live field; ties do not count.
@@ -5884,7 +5926,7 @@ function ppPaceCells(p){
             <td>${ppPaceFigure(p.pace4)}</td>
             <td>${ppPaceFigure(p.pace6)}</td>
             <td>${ppPaceFigure(p.pace8)}</td>
-            <td><b>${ppPaceFigure(p.latePace)}</b></td>`;
+            <td><b>${ppPaceFigure(p.latePace)}</b>${runningLineShapeTextV795(p)?`<div class="pp-shape-v795">${safe(runningLineShapeTextV795(p))}</div>`:""}</td>`;
 }
 
 function renderRaceHorsePP(horse){
@@ -6489,6 +6531,7 @@ function computeRaceCard(){
             ${selectionGateHTMLV775(selectionGate)}
             ${claudeGateHTMLV792(activeField,top.horse)}
             ${figureNearTieCalloutV793(activeField)}
+            ${latestRunningLineShapeHTMLV795(top.horse)}
             ${recentFormReadHTMLV794(top.horse)}
             ${pickConfirmationHTMLV790(top.horse,activeField)}
             ${pricePlayHTMLV792(pricePlay)}
@@ -7439,7 +7482,7 @@ function renderH2HGroup(group){
 
             <span>
                 <b>${h2hOrdinal(item.pp.fin)}</b>
-                ${number(item.pp.beatenLengths) > 0 ? ` · ${safe(formatH2HLengths(item.pp.beatenLengths))} back` : ""}
+                ${number(item.pp.finishBeatenLengths) > 0 ? ` · ${safe(formatH2HLengths(item.pp.finishBeatenLengths))} back` : ""}
             </span>
 
         </div>
@@ -7926,6 +7969,7 @@ function renderH2HHorse(horse){
                 </td>
                 <td>${ppPaceFigure(p.pace4)}</td>
                 <td><b>${ppPaceFigure(p.latePace)}</b>
+                    ${runningLineShapeTextV795(p)?`<div class="pp-shape-v795">${safe(runningLineShapeTextV795(p))}</div>`:""}
                 </td>
 
             </tr>
