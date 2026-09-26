@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v7.93 · September 26, 2026 — Near-Tie Facts</title>
+<title>Horse Handicap v7.94 · September 26, 2026 — Recent Form Read</title>
 
 <style>
 :root{
@@ -1148,6 +1148,12 @@ button,input,select,textarea{font-size:16px;max-width:100%}
 .nt-flag{color:#8a5a00;background:rgba(217,167,59,.18);padding:2px 5px;border-radius:3px;font-size:11.5px;}
 </style>
 
+
+<style id="v794-form-read">
+.form-read-v794{margin:8px 0;padding:8px 10px;border-left:4px solid #b98222;background:#fff9e8;border-radius:5px;font-size:12.5px;line-height:1.55;}
+.form-read-v794 .cf-line{margin-top:3px;}
+</style>
+
 </head>
 
 <body>
@@ -1156,7 +1162,7 @@ button,input,select,textarea{font-size:16px;max-width:100%}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.93 · Sep 26, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.94 · Sep 26, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -5074,6 +5080,112 @@ function contenderConfirmationsV766(item,scored,field){
     return [...new Set(out)].slice(0,6);
 }
 
+
+/* ============================================================
+   v7.94 — RECENT FORM READ, FACTS ONLY
+   • Uses up to the latest four usable starts.
+   • A 90+ day break WITHIN those starts restarts the record after the break.
+   • Mixed surfaces stay in the record and are tagged (d)/(t)/(a).
+   • If the newest beaten-length step contradicts the prior overall direction,
+     the label is MIXED instead of CLOSING / LOSING GROUND.
+   • The newest start's chart comment is always printed beside the read.
+   Display only: no score, rank, Model Share, C/Q/P, Pick, Price Play,
+   readability or Official Pick changes.
+============================================================ */
+function parsePPDateV794(v){
+    const s=String(v||"").trim();
+    if(!s) return null;
+    let m=s.match(/^(\d{4})[-\/]?(\d{2})[-\/]?(\d{2})$/);
+    if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+    m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/);
+    if(m){
+      let y=+m[3]; if(y<100) y+=2000;
+      return new Date(y,+m[1]-1,+m[2]);
+    }
+    const d=new Date(s);
+    return isNaN(d.getTime())?null:d;
+}
+function surfaceTagV794(s){
+    const x=String(s||"").toUpperCase();
+    if(x==="A") return "a";
+    if(x==="T") return "t";
+    return "d";
+}
+function recentFormReadV794(horse){
+    const raw=(horse?.ppRaces||[])
+      .filter(p=>number(p.fin)>0 && number(p.fin)<90)
+      .slice(0,4);
+    if(!raw.length) return null;
+
+    // ppRaces are newest first. A >=90d gap between adjacent starts means
+    // the older side belongs to the prior form cycle and is dropped.
+    let used=raw.slice();
+    let restart=null;
+    for(let i=0;i<raw.length-1;i++){
+      const newer=parsePPDateV794(raw[i].date), older=parsePPDateV794(raw[i+1].date);
+      if(newer && older){
+        const days=Math.round((newer-older)/86400000);
+        if(days>=90){
+          used=raw.slice(0,i+1);
+          restart={days,date:raw[i].date};
+          break;
+        }
+      }
+    }
+
+    const mixedSurface=new Set(used.map(p=>surfaceTagV794(p.surf))).size>1;
+    const today=surfaceTagV794(horse.currentSurface);
+    const surfaceCounts={d:0,t:0,a:0};
+    used.forEach(p=>surfaceCounts[surfaceTagV794(p.surf)]++);
+    const surfaceNote=(()=>{
+      if(mixedSurface) return "mixed surfaces retained";
+      const tags=Object.keys(surfaceCounts).filter(k=>surfaceCounts[k]>0);
+      if(tags.length===1 && tags[0]!==today){
+        const names={d:"dirt",t:"turf",a:"all-weather"};
+        return `all ${used.length} on ${names[tags[0]]}; today is ${names[today]}`;
+      }
+      return "";
+    })();
+
+    // Display oldest -> newest so the arrow reads naturally through time.
+    const chrono=used.slice().reverse();
+    const vals=chrono.map(p=>number(p.beatenLengths));
+    let label="NO TREND";
+    if(vals.length>=2){
+      const steps=[];
+      for(let i=1;i<vals.length;i++) steps.push(vals[i]-vals[i-1]);
+      const newest=steps[steps.length-1];
+      const prior=steps.slice(0,-1);
+      const overall=vals[vals.length-1]-vals[0];
+      const eps=.25;
+      const newestDir=newest < -eps ? -1 : newest > eps ? 1 : 0; // - = closing
+      const overallDir=overall < -eps ? -1 : overall > eps ? 1 : 0;
+      if(prior.length && newestDir && overallDir && newestDir!==overallDir) label="MIXED";
+      else if(overallDir<0) label="CLOSING";
+      else if(overallDir>0) label="LOSING GROUND";
+      else label="MIXED";
+    }
+    const seq=chrono.map(p=>{
+      const tag=mixedSurface?` (${surfaceTagV794(p.surf)})`:"";
+      return `${number(p.beatenLengths).toFixed(1)}${tag}`;
+    }).join(" → ");
+    const lastComment=String(raw[0].comment||"").trim() || "no chart comment";
+    return {label,seq,lastComment,restart,surfaceNote,count:used.length};
+}
+function recentFormReadHTMLV794(horse){
+    const f=recentFormReadV794(horse);
+    if(!f) return "";
+    const notes=[];
+    if(f.restart) notes.push(`record restarted after ${f.restart.days}-day layoff`);
+    if(f.surfaceNote) notes.push(f.surfaceNote);
+    return `<div class="form-read-v794"><span class="badge badge-amber">${safe(f.label)}</span> `
+      + `<b>Recent form:</b> ${safe(f.seq)}`
+      + `${notes.length?`<div class="cf-line">${safe(notes.join(" · "))}</div>`:""}`
+      + `<div class="cf-line"><b>Last chart comment:</b> “${safe(f.lastComment)}”</div>`
+      + `<div class="cf-line">Facts only — this read changes no selection.</div></div>`;
+}
+
+
 function questionableExcuseV766(horse){
     const pp=(horse.ppRaces||[]).filter(p=>number(p.fin)>0 && number(p.fin)<90);
     if(!pp.length) return null;
@@ -5119,7 +5231,7 @@ function confirmationGroupsV785(item,scored,field){
     return {all,core,support};
 }
 
-/* v7.93 preserves v7.92 logic unchanged; adds facts-only Figure Near-Tie display from one shared function. */
+/* v7.94 preserves v7.93 selection logic unchanged; adds facts-only layoff-aware, surface-labeled recent form read with MIXED and last chart comment. */
 /* v7.90 — Exact Pick Confirmation: display/research only.
    Exact frozen definitions from the completed 36-card study:
    1) Prime Power = SOLE #1 in the live field; ties do not count.
@@ -6377,6 +6489,7 @@ function computeRaceCard(){
             ${selectionGateHTMLV775(selectionGate)}
             ${claudeGateHTMLV792(activeField,top.horse)}
             ${figureNearTieCalloutV793(activeField)}
+            ${recentFormReadHTMLV794(top.horse)}
             ${pickConfirmationHTMLV790(top.horse,activeField)}
             ${pricePlayHTMLV792(pricePlay)}
             ${raceReliabilityHTMLV774(activeField)}
