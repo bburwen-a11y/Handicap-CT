@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v7.96 · September 26, 2026 — Running-Line Pace Fix</title>
+<title>Horse Handicap v7.97 · September 27, 2026 — H2H Threat</title>
 
 <style>
 :root{
@@ -824,13 +824,16 @@ button,input,select,textarea{font-size:16px;max-width:100%}
   .section-head p,.bestof>p{display:none;}
 }
 
-/* v7.96 — concise Decision Board + facts-only Model Separation */
+/* v7.97 — concise Decision Board + H2H Threat integrated into Model Separation */
 .sep-v796{margin:8px 0;padding:8px 10px;border:1px solid #cfd8d3;border-radius:9px;background:#f7faf8;font-size:13px;line-height:1.35}
 .sep-v796 .sep-title{font-weight:800;font-size:14px}.sep-v796 .sep-note{margin-top:3px;color:#3f4b45}
 .decision-more-v796{margin-top:8px;border-top:1px solid #d9dfdc;padding-top:5px}
 .decision-more-v796 summary{cursor:pointer;font-weight:800;font-size:13px;padding:5px 0}
 .decision-key-v796{font-size:13px;line-height:1.35;margin-top:6px}
 @media(max-width:700px){.sep-v796{padding:7px 8px;margin:6px 0}.decision-key-v796{font-size:12.5px}}
+
+.h2h-short-v797{margin:8px 0;padding:8px 10px;font-size:.92rem;line-height:1.25;}
+.h2h-short-v797 .note{font-size:.84em;opacity:.78;}
 </style>
 
 <style id="v79-updates">
@@ -1176,7 +1179,7 @@ button,input,select,textarea{font-size:16px;max-width:100%}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.96 · Sep 26, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v7.97 · Sep 27, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -5281,7 +5284,7 @@ function confirmationGroupsV785(item,scored,field){
     return {all,core,support};
 }
 
-/* v7.96 preserves v7.94 selection logic unchanged; fixes descriptive late-shape reasoning to use BRIS 2nd-call vs finish beaten lengths. Pace figures remain numeric only. */
+/* v7.97 preserves v7.96 ranking and Official Pick logic; adds H2H Threat to separation/readability display only. */
 /* v7.90 — Exact Pick Confirmation: display/research only.
    Exact frozen definitions from the completed 36-card study:
    1) Prime Power = SOLE #1 in the live field; ties do not count.
@@ -6220,22 +6223,23 @@ function modelSeparationV796(scored,field){
     const fts=(field||[]).filter(h=>!h.scratched && (h.ppRaces||[]).filter(p=>number(p.fin)>0&&number(p.fin)<90).length===0).length;
     const ftsPct=(field||[]).filter(h=>!h.scratched).length ? fts/(field||[]).filter(h=>!h.scratched).length : 0;
     const s2=second ? runningLineShapeV795((second.horse.ppRaces||[])[0]) : null;
+    const h2h=topPickH2HContext(field,top.horse,{surface:top.horse.currentSurface,distance:top.horse.currentDistance});
     let label='COMPETITIVE';
     if(gap2<4 || ftsPct>=.25) label='UNSETTLED';
     else if(gap2>=10 && topConf>=2 && topMR!==null && topMR<=2) label='CLEAR';
+    // v7.97: a comparable prior H2H loss prevents a CLEAR label. It does not change the Pick.
+    if(h2h.strong && label==='CLEAR') label='COMPETITIVE';
     const threats=[];
+    if(h2h.strong) threats.push('H2H threat');
+    else if(h2h.hasLoss) threats.push('prior H2H loss');
     if(second){
       if(secondConf>=2) threats.push(`#2 confirmation ${secondConf}/3`);
       if(secondMR!==null&&secondMR<=2) threats.push(`#2 market rank ${secondMR}`);
       if(s2?.label==='CLOSED LATE') threats.push('#2 closed late last start');
     }
     if(ftsPct>=.25) threats.push(`${fts} FTS/thin-data runner${fts===1?'':'s'}`);
-    const why=label==='CLEAR'
-      ? `#1 leads #2 by ${gap2.toFixed(1)} pts · confirmation ${topConf}/3 · M/L rank ${topMR}.`
-      : label==='UNSETTLED'
-        ? `#1 leads #2 by ${gap2.toFixed(1)} pts${threats.length?' · '+threats.join(' · '):''}.`
-        : `#1 leads #2 by ${gap2.toFixed(1)} pts${threats.length?' · '+threats.join(' · '):''}.`;
-    return {label,gap2,gap3,topConf,secondConf,topMR,secondMR,fts,ftsPct,why};
+    const why=`#1–#2 gap ${gap2.toFixed(1)} pts${threats.length?' · '+threats.join(' · '):''}.`;
+    return {label,gap2,gap3,topConf,secondConf,topMR,secondMR,fts,ftsPct,why,h2h};
 }
 function modelSeparationHTMLV796(x){
     if(!x) return '';
@@ -7653,69 +7657,33 @@ function topPickHasH2HLoss(field,topHorse,race){return topPickH2HContext(field,t
 function topPickHasStrongH2HLoss(field,topHorse,race){return topPickH2HContext(field,topHorse,race).strong;}
 
 function topPickH2HWarning(field, topHorse, race){
-
     if(!topHorse) return "";
-
     const groups=currentRaceH2HGroups(field || []);
     const losses=[];
-    const wins=[];
-
     groups.forEach(group=>{
         const mine=group.runners.find(x=>x.horse && x.horse.id===topHorse.id);
         if(!mine) return;
-
         const myFin=h2hFinishNumber(mine.pp.fin);
         if(myFin===null) return;
-
         group.runners.forEach(other=>{
             if(!other.horse || other.horse.id===topHorse.id) return;
             const otherFin=h2hFinishNumber(other.pp.fin);
-            if(otherFin===null || otherFin===myFin) return;
-
-            const margin=h2hMarginBetween(mine,other);
-            const marginText=margin ? ` by ${formatH2HLengths(margin)}` : "";
-            const meta=[
-                formatDate(group.date),
-                group.track || "",
-                group.raceNum ? `R${group.raceNum}` : ""
-            ].filter(Boolean).join(" · ");
-
-            if(otherFin < myFin){
-                losses.push({
-                    date:String(group.date||""),
-                    html:`<b>#${safe(other.horse.post)} ${safe(other.horse.horse)}</b> beat <b>#${safe(topHorse.post)} ${safe(topHorse.horse)}</b>${marginText} (${h2hOrdinal(other.pp.fin)} vs ${h2hOrdinal(mine.pp.fin)})${meta ? ` · ${safe(meta)}` : ""}`
-                });
-            }else if(myFin < otherFin){
-                wins.push({
-                    date:String(group.date||""),
-                    html:`<b>#${safe(topHorse.post)} ${safe(topHorse.horse)}</b> beat <b>#${safe(other.horse.post)} ${safe(other.horse.horse)}</b>${marginText}${meta ? ` · ${safe(meta)}` : ""}`
-                });
-            }
+            if(otherFin===null || otherFin>=myFin) return;
+            const ts=surfaceGroup(topHorse.currentSurface||race?.surface||"");
+            const td=number(topHorse.currentDistance||race?.distance||0);
+            const ps=surfaceGroup(mine.pp.surface||mine.pp.surf||mine.pp.trackSurface||"");
+            const pd=number(mine.pp.distanceFurlongs||mine.pp.distance||mine.pp.dist||0);
+            const comparable=!!(ts&&ps&&ts===ps&&td&&pd&&Math.abs(td-pd)<=1);
+            losses.push({date:String(group.date||""),other,comparable});
         });
     });
-
-    losses.sort((a,b)=>b.date.localeCompare(a.date));
-    wins.sort((a,b)=>b.date.localeCompare(a.date));
-
-    if(losses.length){
-        return `
-          <div class="warning-box" style="border-width:2px;">
-            <b>H2H WARNING — TOP PICK HAS LOST TO TODAY'S RIVAL:</b><br>
-            ${losses.map(x=>`<div style="margin-top:5px;">${x.html}</div>`).join("")}
-            <div class="note" style="margin-top:6px;">Direct prior loss is a decision-board warning. It does not automatically replace the model's top pick.</div>
-          </div>`;
-    }
-
-    if(wins.length){
-        return `
-          <div class="metric-line">
-            <b>H2H support:</b> ${wins.map(x=>x.html).join(" · ")}
-          </div>`;
-    }
-
-    return "";
+    if(!losses.length) return "";
+    losses.sort((a,b)=>(Number(b.comparable)-Number(a.comparable)) || b.date.localeCompare(a.date));
+    const x=losses[0];
+    const tag=x.comparable?'H2H THREAT':'H2H CAUTION';
+    const trip=x.comparable?' · comparable surface/distance':'';
+    return `<div class="warning-box h2h-short-v797"><b>${tag}:</b> #${safe(x.other.horse.post)} ${horseNameLinkHTML(x.other.horse)} previously beat Pick #${safe(topHorse.post)} ${safe(topHorse.horse)}${trip}. <span class="note">Warning only — Pick unchanged.</span></div>`;
 }
-
 function buildH2H(){
     // H2H now renders inline inside Contenders / Pretenders.
 }
