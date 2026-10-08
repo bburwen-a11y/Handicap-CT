@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.40 · October 8, 2026 — Value Horse + Fade Notes</title>
+<title>Horse Handicap v8.41 · October 8, 2026 — Value Horse + Fade Notes</title>
 
 <style>
 :root{
@@ -1287,7 +1287,7 @@ details.decision-facts-v831[open]>summary:before{transform:rotate(90deg)}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.40 · Oct 8, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.41 · Oct 8, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -6825,7 +6825,7 @@ function nonPickFlagV801(selectionGate,readability,decision,field,top){
     if(paceRiskV799(field,top)) reasons.push('pace risk');
     const imp=improvingRivalV799(field,top); if(imp) reasons.push(`improving rival #${safe(imp.horse.post)} ${safe(imp.horse.horse)}`);
     const uniq=[...new Set(reasons.filter(Boolean))];
-    return uniq.length?`<div class="decision-nopick-v801"><b>WHY NO CHOICE:</b> ${safe(uniq.join(' · '))}</div>`:'';
+    return uniq.length?`<div class="decision-nopick-v801"><b>WHY NO BET:</b> ${safe(uniq.join(' · '))}</div>`:'';
 }
 
 function modelSeparationV796(scored,field){
@@ -6925,7 +6925,7 @@ function wagerDecisionHTMLV815(w){
       return `<div class="decision-play-v801"><b>BET PICK:</b> WIN #${safe(w.horse.post)} · SOLE #1 Last Speed · Recent Form ${safe(w.confirm.itm)}/${safe(w.confirm.starts)} ITM · Quirin ${safe(w.quirin)}</div>`;
     }
     const qNote=(w.quirin<2)?` · Quirin ${safe(w.quirin)} below wager minimum 2`:'';
-    return `<div class="decision-alert"><b>NO CHOICE — NO WAGER.</b>${qNote} Rank #1 remains the Top Choice; Rank #2 remains the Main Threat.</div>`;
+    return `<div class="decision-alert"><b>NO BET.</b>${qNote} Rank #1 remains the Top Choice; Rank #2 remains the Main Threat.</div>`;
 }
 function confidenceLabelV815(w){
     if(!w) return 'UNRATED';
@@ -7075,7 +7075,7 @@ function wagerDecisionHTMLV822(w){
     if(!(w.claudeGate?.ok && w.claudeGate?.horse && String(w.claudeGate.horse.id)===String(w.horse.id))) why.push('not M/L favorite + sole #1 Avg-3');
     if(w.confirm?.count!==3) why.push(`Core ${safe(w.confirm?.count||0)}/3`);
     if(w.quirin<2) why.push(`Quirin ${safe(w.quirin)} below 2`);
-    return `<div class="decision-alert"><b>NO CHOICE — NO WAGER.</b>${why.length?' '+safe(why.join(' · '))+'.':''} Rank #1 remains the Top Choice; Rank #2 is the Main Threat.</div>`;
+    return `<div class="decision-alert"><b>NO BET.</b>${why.length?' '+safe(why.join(' · '))+'.':''} Rank #1 remains the Top Choice; Rank #2 is the Main Threat.</div>`;
 }
 function computeRaceCard(){
 
@@ -7280,7 +7280,7 @@ function computeRaceCard(){
                 <div>
                     <div class="best-race"><span class="race-number-link" onclick="goToRaceCard('${safe(raceNum)}')">RACE ${safe(raceNum)}</span></div>
                     <div class="best-horse">
-                      ${wagerV815.type==='BET_PICK'?`<span class="badge badge-green">PICK</span>`:`<span class="badge badge-red">NO CHOICE</span>`}
+                      ${wagerV815.type==='BET_PICK'?`<span class="badge badge-green">PICK</span>`:`<span class="badge badge-amber">NO BET</span>`}
                       ${modelSeparation?.label==='CLEAR'?`<span class="badge badge-blue">CLEAR #1 RANK</span>`:''}
                       <div class="decision-model-horse"><span class="post">#${safe(top.horse.post)}</span>${horseNameLinkHTML(top.horse)} <span style="font-size:11px;font-weight:800;opacity:.72;">RANK #1 · TOP CHOICE</span></div>
                       <span data-strongest-race="${safe(raceNum)}"></span>
@@ -7408,7 +7408,7 @@ function computeRaceCard(){
     });
     const wagerRacesV815=rankedBetRaces.filter(x=>x.wager && x.wager.type==='BET_PICK');
     const wagerSummaryV815=wagerRacesV815.length ? `<div class="bestof" style="margin-bottom:16px;">
-      <h3>Today's Picks — v8.40</h3>
+      <h3>Today's Picks — v8.41</h3>
       <div class="small-note" style="margin-bottom:8px;">PICK = existing model wager signal. NO CHOICE = no official wager, but continue reviewing Rank #1 and Rank #2/Main Threat. PASS RACE is reserved for a future historically validated race-rejection rule and is not assigned by this build.</div>
       ${wagerRacesV815.map(x=>`<div class="best-pick" style="padding:10px 12px;margin:8px 0;">
         <b><span class="race-number-link" onclick="goToContendersRace('${safe(x.race)}')">Race ${safe(x.race)}</span> — #${safe(x.wager.horse.post)} ${horseNameLinkHTML(x.wager.horse)}</b>
@@ -7451,7 +7451,7 @@ function computeRaceCard(){
           ${raceTypeTagV799(x.horse,false)}
           ${(x.readability?.level==='green' && x.selectionGate?.status==='PICK' && x.selectionGate?.officialPick===true)
             ? '<span class="badge badge-green">OFFICIAL PICK · 3/3</span>'
-            : '<span class="badge badge-red">INFORMATION ONLY · NO CHOICE</span>'}
+            : '<span class="badge badge-red">INFORMATION ONLY · NO BET</span>'}
           ${itmConsistencyHTMLV781(x.horse,true)}
           ${x.readability?.level!=='green'?`<span class="badge badge-red">${safe((x.readability?.label||'READABILITY VETO'))}</span>`:''}
           ${x.pass?'<span class="badge badge-red">STRUCTURAL PASS</span>':''}
@@ -7539,7 +7539,7 @@ function computeRaceCard(){
                 Race Decision Board
             </h3>
 
-            <div class="small-note" style="margin:4px 0 10px;">VERDICT BOARD: BET = one qualifying horse; PASS = no wager; INSUFFICIENT DATA = cannot rank. Existing decision cards below retain their original labels. Tap horse for PP</div>
+            <div class="small-note" style="margin:4px 0 10px;">VERDICT BOARD: QUALIFIED describes selection strength; BET / NO BET describes wagering. Existing legacy decision cards below may use older internal labels. Tap horse for PP</div>
             ${bestHTML}
             <details class="race-card" style="margin-top:12px;"><summary><b>TOP 4 — ALL RACES</b></summary><div id="top4Board" style="margin-top:8px;"></div></details>
             <details class="race-card" style="margin-top:10px;"><summary><b>SECOND LOOK / VALUE ALERTS</b></summary><div id="longshotsBoard" style="margin-top:8px;"></div></details>
@@ -7593,7 +7593,7 @@ function computeRaceCard(){
             <h3><span class="race-number-link" onclick="goToRaceCard('${safe(x.race)}')">Race ${safe(x.race)}</span> — 3/3 CONCURRENCE</h3>
             <div class="best-horse concurrent-pick">#${safe(x.horse.post)} ${horseNameLinkHTML(x.horse)}</div>
             <div class="metric-line"><b>Agreement:</b> ${safe((x.concurrence.notes||[]).join(' · '))}</div>
-            ${x.wager && x.wager.type==='BET_PICK' ? '<span class="badge badge-green">PICK</span>' : '<span class="badge badge-red">NO CHOICE / INFORMATION ONLY</span>'}
+            ${x.wager && x.wager.type==='BET_PICK' ? '<span class="badge badge-green">PICK</span>' : '<span class="badge badge-red">NO BET / INFORMATION ONLY</span>'}
           </div>`).join('') : '<div class="warning-box">No 3/3 concurrence race on this card.</div>'}
     `;
 
@@ -7792,32 +7792,40 @@ function valueHorseHTMLV838(field){
     </div>`;
 }
 
-/* v8.40 — one BET horse maximum per race. No rank-2 ROI extrapolation.
+/* v8.41 — one BET horse maximum per race. No rank-2 ROI extrapolation.
    Existing v8.38 wager gate is retained; missing price means no BET.
    Uncalibrated model share is NOT treated as a validated value edge. */
+/* v8.41 — separate selection qualification from wager authorization.
+   Concurrence 3/3 supports qualification, never guarantees value or BET. */
 function hhVerdictV840(field){
   const active=(field||[]).filter(h=>!h.scratched && h.horse);
-  if(active.length<2) return {tier:'INSUFFICIENT DATA',horse:null,rank:0,ranked:[],reason:'Fewer than two active runners with data'};
+  if(active.length<2) return {tier:'INSUFFICIENT DATA',horse:null,rank:0,ranked:[],qualified:false,reason:'Fewer than two active runners'};
   const scored=calculateProbabilities(active);
   const ranked=lowerRankFieldV822(scored,active);
-  if(!ranked.length || !ranked[0]?.horse) return {tier:'INSUFFICIENT DATA',horse:null,rank:0,ranked:[],reason:'Model rankings unavailable'};
-  const first=ranked[0], w=wagerDecisionV822(first,active);
-  const price=oddsDecimal(first.horse.odds ?? first.horse.ml);
-  if(w.type==='BET_PICK' && price!==null && Number.isFinite(price) && price>0){
-    return {tier:'BET',horse:first.horse,rank:1,ranked,reason:'Existing official wager conditions met; listed odds '+price.toFixed(1)+'-1. Confirm live odds before betting. Price edge not independently calibrated.'};
-  }
-  const reason=w.type==='BET_PICK' ? 'Official gate met, but no usable odds are available' : 'No horse meets the existing official wager gate';
-  return {tier:'PASS',horse:null,rank:0,ranked,reason};
+  if(!ranked.length || !ranked[0]?.horse) return {tier:'INSUFFICIENT DATA',horse:null,rank:0,ranked:[],qualified:false,reason:'Model rankings unavailable'};
+  const first=ranked[0], h=first.horse;
+  const cc=concurrenceSupport(active,h,{horse:h,activeField:active,race:String(h.race||'')});
+  const read=raceReadabilityV777(active);
+  const qualified=cc.full && read?.level!=='red' && read?.hardVeto!==true;
+  const w=wagerDecisionV822(first,active);
+  const price=oddsDecimal(h.odds ?? h.ml);
+  const bet=qualified && w.type==='BET_PICK' && price!==null && Number.isFinite(price) && price>0;
+  const reason=bet?'Official wager conditions met; verify final odds before betting.':
+    !qualified?(cc.full?'3/3 agreement, but race-readability restriction prevents qualification.':'Selection not qualified: '+cc.count+'/3 concurrence.'):
+    w.type!=='BET_PICK'?'Selection qualified; additional wager conditions not met.':
+    'Selection qualified; usable odds unavailable.';
+  return {tier:bet?'BET':'NO BET',horse:h,rank:1,ranked,qualified,concurrence:cc,reason};
 }
 function hhVerdictBoardV840(races){
   const lines=(races||[]).map(x=>{
     const v=hhVerdictV840(x.activeField);
-    const color=v.tier==='BET'?'#2E6E45':v.tier==='PASS'?'#8A6A26':'#777';
-    const name=v.horse?`<b>#${safe(v.horse.post||v.horse.pgm||'')} ${horseNameLinkHTML(v.horse)}</b>`:'';
+    const color=v.tier==='BET'?'#2E6E45':v.tier==='NO BET'?'#8A6A26':'#777';
+    const name=v.horse?`<b>TOP PICK: #${safe(v.horse.post||v.horse.pgm||'')} ${horseNameLinkHTML(v.horse)}</b>`:'';
+    const selection=v.horse?`<div class="metric-line"><b>SELECTION:</b> ${v.qualified?'QUALIFIED':'NOT QUALIFIED'} · Concurrence ${safe(v.concurrence?.count??0)}/3</div>`:'';
     const contenders=v.ranked.slice(0,3).map((y,i)=>`<span style="display:inline-block;margin:3px 10px 2px 0">${i+1}. #${safe(y.horse.post||y.horse.pgm||'')} ${horseNameLinkHTML(y.horse)} <span class="small-note">M/L ${safe(y.horse.ml||y.horse.odds||'N/A')}</span></span>`).join('');
-    return `<div style="padding:12px 2px;border-bottom:1px solid var(--paper-line);line-height:1.55"><b>RACE ${safe(x.race)}</b> <span class="badge" style="background:${color};color:#fff">${safe(v.tier)}</span> ${name}<div class="small-note">${safe(v.reason)}</div>${contenders?`<div class="small-note" style="margin-top:5px"><b>Top 3 contenders (model order, not additional bets):</b><br>${contenders}</div>`:''}</div>`;
+    return `<div style="padding:12px 2px;border-bottom:1px solid var(--paper-line);line-height:1.55"><b>RACE ${safe(x.race)}</b> <span class="badge" style="background:${color};color:#fff">${safe(v.tier)}</span><div>${name}</div>${selection}<div class="small-note">${safe(v.reason)}</div>${contenders?`<div class="small-note" style="margin-top:5px"><b>Top 3 contenders (only one possible BET):</b><br>${contenders}</div>`:''}</div>`;
   }).join('');
-  return `<div class="bestof" style="margin:0 0 16px"><h3>HORSE HANDICAP VERDICTS · v8.40</h3><div class="small-note">One BET maximum per race. BET uses the existing official wager gate and requires readable listed odds; PASS means no qualifying wager; INSUFFICIENT DATA means the race cannot be ranked. Top three are shown for context only. Historical rank-2 ROI is not used as a betting rule. Listed morning-line odds are not final; value probabilities are not yet calibrated.</div>${lines}</div>`;
+  return `<div class="bestof" style="margin:0 0 16px"><h3>HORSE HANDICAP VERDICTS · v8.41</h3><div class="small-note">Selection: QUALIFIED / NOT QUALIFIED. Wager: BET / NO BET. 3/3 concurrence supports selection, but does not guarantee a wager. One BET maximum per race. Odds and uncalibrated probabilities cannot establish a proven edge.</div>${lines}</div>`;
 }
 
 function renderTop4Board(){
@@ -9411,6 +9419,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.40 · October 8, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.41 · October 8, 2026 · iPhone/Safari</div>
 </body>
 </html>
