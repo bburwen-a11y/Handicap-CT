@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.45 · October 8, 2026 — Value Horse + Fade Notes</title>
+<title>Horse Handicap v8.46 · October 8, 2026 — Value Horse + Fade Notes</title>
 
 <style>
 :root{
@@ -1287,7 +1287,7 @@ details.decision-facts-v831[open]>summary:before{transform:rotate(90deg)}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.45 · Oct 8, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.46 · Oct 8, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -7038,21 +7038,31 @@ function mainThreatHTMLV814(scored,field,classMap,hasOfficialPick=true,isNoChoic
 ============================================================ */
 function lowerRankFieldV822(scored,field){
     const live=(field||[]).filter(h=>!h.scratched);
-    const mlOrder=live.filter(h=>oddsDecimal(h.odds)!==null)
-      .slice().sort((a,b)=>oddsDecimal(a.odds)-oddsDecimal(b.odds));
+    const lifetimeStarts=h=>{ const n=Number(h.starts ?? h.ltStarts ?? 0); return Number.isFinite(n)&&n>=0?n:0; };
+    const experienced=live.filter(h=>lifetimeStarts(h)>=2).length;
+    const thin=live.length>0 && experienced*2<live.length;
+    const mlOrder=live.filter(h=>oddsDecimal(h.odds ?? h.ml)!==null)
+      .slice().sort((a,b)=>oddsDecimal(a.odds ?? a.ml)-oddsDecimal(b.odds ?? b.ml));
     const avgRows=live.map(h=>({h,v:avg3RaceSpeed(h)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
     const ppRows=live.map(h=>({h,v:number(h.primePower||h.score)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
-    const rankVal=(rows,h)=>{ const row=rows.find(x=>String(x.h.id)===String(h.id)); return row ? 1+rows.filter(x=>x.v>row.v).length : 15; };
+    const rankVal=(rows,h)=>{const row=rows.find(x=>String(x.h.id)===String(h.id));return row?1+rows.filter(x=>x.v>row.v).length:15;};
     const out=(scored||[]).map(item=>{
-      const h=item.horse;
-      const fr=Math.min(rankVal(avgRows,h),15);
-      const pp=Math.min(rankVal(ppRows,h),15);
-      const starts=number(h.starts||h.ltStarts||0);
-      const pr=starts<3 ? fr : pp;
+      const h=item.horse,starts=lifetimeStarts(h);
+      const fr=Math.min(rankVal(avgRows,h),15),pp=Math.min(rankVal(ppRows,h),15);
       const mi=mlOrder.findIndex(x=>String(x.id)===String(h.id));
-      const mr=mi>=0 ? mi+1 : 15;
-      const lowerScore=fr+pr+2*mr;
-      return Object.assign({},item,{lowerScore,lowerWhy:`${lowerScore} = ${fr} + ${starts<3?fr+'*':pr} + ${mr}×2`,lowerParts:{avg3Rank:fr,ppRank:pp,usedPPRank:pr,mlRank:mr,starts}});
+      const mr=mi>=0?mi+1:15;
+      // In a thin field, an unraced horse has no BRIS figure to rank.
+      // Use its market rank for both missing historical slots, but do not
+      // create a fictitious speed figure or a 3/3 concurrence.
+      const ftsThin=thin && starts===0;
+      const usedFigureRank=ftsThin?mr:fr;
+      const pr=ftsThin?mr:(starts<3?fr:pp);
+      const lowerScore=usedFigureRank+pr+2*mr;
+      const lowerWhy=ftsThin
+        ? `${lowerScore} = ${mr} + ${mr} + ${mr}×2 · first-time starter in a lightly raced field, ranked by morning line #${mr} · lower is better`
+        : `${lowerScore} = ${fr} + ${starts<3?fr+'*':pr} + ${mr}×2`;
+      return Object.assign({},item,{lowerScore,lowerWhy,ftsThin,
+        lowerParts:{avg3Rank:ftsThin?null:fr,ppRank:pp,usedPPRank:pr,mlRank:mr,starts,thinField:thin,ftsThin}});
     });
     out.sort((a,b)=>a.lowerScore-b.lowerScore || a.lowerParts.mlRank-b.lowerParts.mlRank || b.probability-a.probability);
     out.forEach((x,i)=>x.lowerRank=i+1);
@@ -7408,7 +7418,7 @@ function computeRaceCard(){
     });
     const wagerRacesV815=rankedBetRaces.filter(x=>x.wager && x.wager.type==='BET_PICK');
     const wagerSummaryV815=wagerRacesV815.length ? `<div class="bestof" style="margin-bottom:16px;">
-      <h3>Today's Picks — v8.45</h3>
+      <h3>Today's Picks — v8.46</h3>
       <div class="small-note" style="margin-bottom:8px;">PICK = existing model wager signal. NO CHOICE = no official wager, but continue reviewing Rank #1 and Rank #2/Main Threat. PASS RACE is reserved for a future historically validated race-rejection rule and is not assigned by this build.</div>
       ${wagerRacesV815.map(x=>`<div class="best-pick" style="padding:10px 12px;margin:8px 0;">
         <b><span class="race-number-link" onclick="goToContendersRace('${safe(x.race)}')">Race ${safe(x.race)}</span> — #${safe(x.wager.horse.post)} ${horseNameLinkHTML(x.wager.horse)}</b>
@@ -7825,10 +7835,10 @@ function hhVerdictBoardV840(races){
     const color=v.tier==='DEFINITE BET'?'#2E6E45':v.tier==='NO BET'?'#8A6A26':'#777';
     const name=v.horse?`<b>MODEL TOP PICK: #${safe(v.horse.post||v.horse.pgm||'')} ${horseNameLinkHTML(v.horse)}</b>`:'';
     const selection=v.horse?`<div class="metric-line"><b>SELECTION:</b> ${v.qualified?'QUALIFIED':'NOT QUALIFIED'} · Concurrence ${safe(v.concurrence?.count??0)}/3 · Core ${safe(v.core?.count??0)}/3 (informational) · Quirin ${safe(v.quirin??'—')} (informational)</div>`:'';
-    const contenders=v.ranked.slice(0,3).map((y,i)=>`<span style="display:inline-block;margin:3px 10px 2px 0">${i+1}. #${safe(y.horse.post||y.horse.pgm||'')} ${horseNameLinkHTML(y.horse)} <span class="small-note">M/L ${safe(y.horse.ml||y.horse.odds||'N/A')}</span></span>`).join('');
+    const contenders=v.ranked.slice(0,3).map((y,i)=>`<span style="display:inline-block;margin:3px 10px 2px 0">${i+1}. #${safe(y.horse.post||y.horse.pgm||'')} ${horseNameLinkHTML(y.horse)} <span class="small-note">M/L ${safe(y.horse.ml||y.horse.odds||'N/A')}${y.ftsThin?' · FTS OPPORTUNITY':''}</span></span>`).join('');
     return `<div style="padding:12px 2px;border-bottom:1px solid var(--paper-line);line-height:1.55"><b>RACE ${safe(x.race)}</b> <span class="badge" style="background:${color};color:#fff">${safe(v.tier)}</span><div>${name}</div>${selection}<div class="small-note">${safe(v.reason)}</div>${contenders?`<div class="small-note" style="margin-top:5px"><b>Lower-score top 3:</b><br>${contenders}</div>`:''}</div>`;
   }).join('');
-  return `<div class="bestof" style="margin:0 0 16px"><h3>HORSE HANDICAP VERDICTS · v8.45</h3><div class="small-note">DEFINITE BET: model #1 is M/L favorite and sole #1 Avg-3 Speed (3/3 concurrence), with no RED race readability veto. Core and Quirin are displayed as information, not hidden extra gates. One BET maximum per race. Rule-based designation, not a profit guarantee. Older panels may show legacy wager decisions.</div>${lines}</div>`;
+  return `<div class="bestof" style="margin:0 0 16px"><h3>HORSE HANDICAP VERDICTS · v8.46</h3><div class="small-note">DEFINITE BET: model #1 is M/L favorite and sole #1 Avg-3 Speed (3/3 concurrence), with no RED race readability veto. Core and Quirin are displayed as information, not hidden extra gates. One BET maximum per race. Rule-based designation, not a profit guarantee. Thin-field first-time starters are ranked provisionally by morning line; this does not create 3/3 concurrence. Older panels may show legacy wager decisions.</div>${lines}</div>`;
 }
 
 function renderTop4Board(){
@@ -9422,6 +9432,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.45 · October 8, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.46 · October 8, 2026 · iPhone/Safari</div>
 </body>
 </html>
