@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.47 · October 9, 2026 — Value Horse + Fade Notes</title>
+<title>Horse Handicap v8.48 · October 9, 2026 — Value Horse + Fade Notes</title>
 
 <style>
 :root{
@@ -1287,7 +1287,7 @@ details.decision-facts-v831[open]>summary:before{transform:rotate(90deg)}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.47 · Oct 9, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.48 · Oct 9, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -3024,11 +3024,11 @@ function applyRSS(raw,fileName="Pasted Content"){
         try{ if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }catch(e){}
         computeRaceCard();
         showTab("best");
-        const decisionTarget=document.querySelector('#bestSection .race-anchor-target') || $("bestSection");
+        const decisionTarget=document.querySelector('#bestSection .bestof') || $("bestSection");
         const holdDecisionBoard=()=>{
             showTab("best");
             try{ if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }catch(e){}
-            if(decisionTarget) decisionTarget.scrollIntoView({behavior:"auto",block:"start"});
+            if(decisionTarget) decisionTarget.scrollIntoView({behavior:"instant",block:"start"});
         };
         requestAnimationFrame(()=>requestAnimationFrame(holdDecisionBoard));
         setTimeout(holdDecisionBoard,180);
@@ -7418,7 +7418,7 @@ function computeRaceCard(){
     });
     const wagerRacesV815=rankedBetRaces.filter(x=>x.wager && x.wager.type==='BET_PICK');
     const wagerSummaryV815=wagerRacesV815.length ? `<div class="bestof" style="margin-bottom:16px;">
-      <h3>Today's Picks — v8.47</h3>
+      <h3>Today's Picks — v8.48</h3>
       <div class="small-note" style="margin-bottom:8px;">PICK = existing model wager signal. NO CHOICE = no official wager, but continue reviewing Rank #1 and Rank #2/Main Threat. PASS RACE is reserved for a future historically validated race-rejection rule and is not assigned by this build.</div>
       ${wagerRacesV815.map(x=>`<div class="best-pick" style="padding:10px 12px;margin:8px 0;">
         <b><span class="race-number-link" onclick="goToContendersRace('${safe(x.race)}')">Race ${safe(x.race)}</span> — #${safe(x.wager.horse.post)} ${horseNameLinkHTML(x.wager.horse)}</b>
@@ -7826,7 +7826,11 @@ function hhVerdictV840(field){
   return {tier,horse:h,rank:1,ranked,qualified:definite,concurrence:cc,core,quirin,read,ftsCandidates,reason};
 }
 function hhVerdictBoardV840(races){
-  const lines=(races||[]).map(x=>{
+  const ordered=[...(races||[])].sort((a,b)=>{
+    const an=Number(a.race), bn=Number(b.race);
+    return Number.isFinite(an)&&Number.isFinite(bn) ? an-bn : String(a.race).localeCompare(String(b.race),undefined,{numeric:true});
+  });
+  const lines=ordered.map(x=>{
     const v=hhVerdictV840(x.activeField);
     const color=v.tier==='DEFINITE BET'?'#2E6E45':v.tier==='FTS OPPORTUNITY'?'#315A7D':v.tier==='INSUFFICIENT DATA'?'#777':'#8A6A26';
     const name=v.horse?`<b>TOP PICK: #${safe(v.horse.post||v.horse.pgm||'')} ${horseNameLinkHTML(v.horse)}</b>`:'<b>TOP PICK: unavailable</b>';
@@ -7834,7 +7838,7 @@ function hhVerdictBoardV840(races){
     const contenders=v.ranked.slice(0,3).map((y,i)=>`<span style="display:inline-block;margin:3px 10px 2px 0">${i+1}. #${safe(y.horse.post||y.horse.pgm||'')} ${horseNameLinkHTML(y.horse)} <span class="small-note">M/L ${safe(y.horse.ml||y.horse.odds||'N/A')}${y.ftsThin?' · FTS OPPORTUNITY':''}</span></span>`).join('');
     return `<div style="padding:12px 2px;border-bottom:1px solid var(--paper-line);line-height:1.55"><b>RACE ${safe(x.race)}</b> <span class="badge" style="background:${color};color:#fff">${safe(v.tier)}</span><div>${name}</div>${selection}<div class="small-note">${safe(v.reason)}</div>${contenders?`<div class="small-note" style="margin-top:5px"><b>Top 3 contenders:</b><br>${contenders}</div>`:''}</div>`;
   }).join('');
-  return `<div class="bestof" style="margin:0 0 16px"><h3>HORSE HANDICAP VERDICTS · v8.47</h3><div class="small-note">Every race names its model top pick. DEFINITE BET requires 3/3 concurrence and no RED data veto. FTS OPPORTUNITY identifies provisional debut contenders in thin fields, not a definite wager. TOP PICK — NOT QUALIFIED names the selection without a wager. INSUFFICIENT DATA means no reliable verdict. Maximum one DEFINITE BET per race. Historical profitability is not established; older panels retain legacy labels.</div>${lines}</div>`;
+  return `<div class="bestof" style="margin:0 0 16px"><h3>HORSE HANDICAP VERDICTS · v8.48</h3><div class="small-note">Every race names its model top pick. DEFINITE BET requires 3/3 concurrence and no RED data veto. FTS OPPORTUNITY identifies provisional debut contenders in thin fields, not a definite wager. TOP PICK — NOT QUALIFIED names the selection without a wager. INSUFFICIENT DATA means no reliable verdict. Maximum one DEFINITE BET per race. Historical profitability is not established; older panels retain legacy labels.</div>${lines}</div>`;
 }
 
 function renderTop4Board(){
@@ -9428,6 +9432,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.47 · October 9, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.48 · October 9, 2026 · iPhone/Safari</div>
 </body>
 </html>
