@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.61 · October 11, 2026 — Value Horse + Fade Notes</title>
+<title>Horse Handicap v8.62 · October 11, 2026 — Value Horse + Fade Notes</title>
 
 <style>
 :root{
@@ -7149,7 +7149,7 @@ function hh59H2H(field){
   });
   return edges;
 }
-/* v8.61 — Protected baseline + independently verified contender review.
+/* v8.62 — Protected baseline + independently verified contender review.
    Explicitly NO automatic challenger promotion pending out-of-sample validation.
    Morning line is excluded from contender qualification and winner selection. */
 function hh61ContenderEvidence(h,field,rank){
@@ -7485,6 +7485,13 @@ function computeRaceCard(){
         analysisHTML += `
         <div class="analysis-card race-anchor-target" id="contenders-race-${safe(raceNum)}">
           <h3><span class="race-number-link" onclick="goToRaceCard('${safe(raceNum)}')">Race ${safe(raceNum)}</span> — True Contenders</h3>
+          <div class="hh-top-choice-v862" style="background:#eaf4ed;border:2px solid #2E6E45;border-radius:8px;padding:12px;margin:10px 0 14px">
+            <div style="font:800 11px var(--mono);letter-spacing:.05em;color:#205a35">OFFICIAL TOP CHOICE · ORIGINAL MODEL #1</div>
+            <div style="font-size:20px;font-weight:900;margin:5px 0">#${safe(top.horse.post)} ${horseNameLinkHTML(top.horse)}</div>
+            <div style="font-size:12px;line-height:1.5"><b>Model share:</b> ${modelPct(top.probability)} · <b>Evidence category:</b> ${safe(classMap[top.horse.id]?.label||'UNCLASSIFIED')}</div>
+            <div style="font-size:12px;margin-top:5px">${safe(classMap[top.horse.id]?.reason||'Evidence classification unavailable.')}</div>
+            ${classMap[top.horse.id]?.label!=='CONTENDER'?'<div style="font-size:12px;margin-top:7px;color:#8B2A2A"><b>Important:</b> The top-ranked model selection does not meet the separate True Contender evidence threshold. It remains the official selection, but its qualification is disputed; it is not silently promoted.</div>':''}
+          </div>
           <div class="note"><b>v7.74 LAST-FIGURE RESCUE + RSS AUTO COMPUTE:</b> A sharp single latest BRIS Speed figure can rescue a horse into Questionable; it needs another independent performance signal for True Contender. Avg-3 remains in the main model.</div>
           <div class="note"><b>90% COVERAGE RESEARCH FIELD:</b> ${coverageField.map(x=>`#${safe(x.horse.post)} ${safe(x.horse.horse)}`).join(" · ") || "None"}. This is a candidate coverage set pending historical validation — not a claimed 90% probability.</div>
           ${multiTrainers.length ? `<div class="warning-box"><b>TRAINER MULTIPLE ENTRY:</b> ${multiTrainers.map(k=>{const h=activeField.find(x=>normalizeName(x.trainer)===k);return safe(h?h.trainer:k);}).join(', ')}</div>` : ''}
@@ -9633,6 +9640,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.61 · October 11, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.62 · October 11, 2026 · iPhone/Safari</div>
 </body>
 </html>
