@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.49 · October 9, 2026 — Value Horse + Fade Notes</title>
+<title>Horse Handicap v8.52 · October 11, 2026 — Value Horse + Fade Notes</title>
 
 <style>
 :root{
@@ -1287,7 +1287,7 @@ details.decision-facts-v831[open]>summary:before{transform:rotate(90deg)}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.49 · Oct 9, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.52 · Oct 11, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -7418,7 +7418,7 @@ function computeRaceCard(){
     });
     const wagerRacesV815=rankedBetRaces.filter(x=>x.wager && x.wager.type==='BET_PICK');
     const wagerSummaryV815=wagerRacesV815.length ? `<div class="bestof" style="margin-bottom:16px;">
-      <h3>Today's Picks — v8.49</h3>
+      <h3>Today's Picks — v8.52</h3>
       <div class="small-note" style="margin-bottom:8px;">PICK = existing model wager signal. NO CHOICE = no official wager, but continue reviewing Rank #1 and Rank #2/Main Threat. PASS RACE is reserved for a future historically validated race-rejection rule and is not assigned by this build.</div>
       ${wagerRacesV815.map(x=>`<div class="best-pick" style="padding:10px 12px;margin:8px 0;">
         <b><span class="race-number-link" onclick="goToContendersRace('${safe(x.race)}')">Race ${safe(x.race)}</span> — #${safe(x.wager.horse.post)} ${horseNameLinkHTML(x.wager.horse)}</b>
@@ -7802,13 +7802,67 @@ function valueHorseHTMLV838(field){
     </div>`;
 }
 
-/* v8.49 — separate ranking, independent evidence, and price qualification.
+
+/* v8.52: pre-race last-start reliability audit. ADVISORY ONLY.
+   Does not alter the canonical ranking or wagering verdict. */
+function hhLastRaceReliabilityV851(h){
+  const pp=(h.ppRaces||[]).filter(p=>p && Number(p.fin)>0 && Number(p.fin)<90);
+  if(!pp.length) return {level:'UNKNOWN',notes:['No prior race: first-time starter or missing past performances'],flags:[]};
+  const p=pp[0], prev=pp.slice(1,4), notes=[], flags=[];
+  const days=Number(h.daysSinceLast), validDays=Number.isFinite(days)&&days>0;
+  const fin=Number(p.fin), speed=Number(p.speed);
+  const oldSpeeds=prev.map(x=>Number(x.speed)).filter(x=>Number.isFinite(x)&&x>0);
+  const avg=oldSpeeds.length?oldSpeeds.reduce((a,b)=>a+b,0)/oldSpeeds.length:null;
+  if(validDays) notes.push(days+' days since previous race');
+  else notes.push('Layoff days unavailable');
+  notes.push('Previous finish: '+fin+(fin===1?' (win)':''));
+  if(speed>0) notes.push('Previous BRIS speed: '+speed);
+  if(avg!==null && speed>0){
+    const d=speed-avg;
+    notes.push('Previous speed vs prior '+oldSpeeds.length+' avg: '+(d>=0?'+':'')+d.toFixed(1));
+    if(d>=12) flags.push('SPEED SPIKE — inspect, do not automatically penalize');
+    if(d<=-12) flags.push('SPEED DECLINE');
+  }
+  const prevSurf=String(p.surf||'').toUpperCase(), todaySurf=String(h.currentSurface||'').toUpperCase();
+  if(prevSurf && todaySurf && prevSurf!==todaySurf) flags.push('SURFACE CHANGE');
+  const beaten=Number(p.finishBeatenLengths);
+  if(fin>1 && Number.isFinite(beaten) && beaten>=8) flags.push('BEATEN 8+ LENGTHS LAST START');
+  let level='SUPPORTED';
+  if(validDays && days>=181){
+    if(fin>=6){level='CAUTION';flags.unshift('181+ DAY LAYOFF + LAST FINISH 6TH OR WORSE');}
+    else if(fin<=3){level='REVIEW';flags.unshift('181+ DAY LAYOFF + TOP-3 LAST FINISH: potential contender');}
+    else {level='REVIEW';flags.unshift('181+ DAY LAYOFF: check fitness and class');}
+  } else if(validDays && days>=61){
+    if(fin>=6){level='CAUTION';flags.unshift('61–180 DAY LAYOFF + LAST FINISH 6TH OR WORSE');}
+    else if(fin<=3){level='REVIEW';flags.unshift('61–180 DAY LAYOFF + TOP-3 LAST FINISH');}
+    else {level='REVIEW';flags.unshift('61–180 DAY LAYOFF');}
+  } else if(!validDays) level='UNKNOWN';
+  if(level==='SUPPORTED' && flags.some(f=>f==='SPEED DECLINE'||f==='BEATEN 8+ LENGTHS LAST START')) level='REVIEW';
+  const works=Array.isArray(h.ppWorks)?h.ppWorks:(Array.isArray(h.workouts)?h.workouts:[]);
+  if(validDays && days>=61){
+    notes.push('Workouts on file: '+works.length+' (recency/quality not scored)');
+    notes.push('Trainer layoff record and class change not independently validated');
+  }
+  return {level,flags,notes,days:validDays?days:null,last:p};
+}
+function hhReliabilityHTMLV851(h){
+  const x=hhLastRaceReliabilityV851(h);
+  const colors={CAUTION:'#A44B36',REVIEW:'#A17724',SUPPORTED:'#2E6E45',UNKNOWN:'#777'};
+  return `<div style="margin:7px 0;padding:9px 11px;border-left:4px solid ${colors[x.level]};background:rgba(128,128,128,.06);border-radius:4px">
+    <b>LAYOFF + PREVIOUS FORM · ${safe(x.level)}</b>
+    <div class="small-note">${safe(x.notes.join(' · '))}</div>
+    ${x.flags.length?`<div class="small-note"><b>Review:</b> ${safe(x.flags.join(' · '))}</div>`:''}
+    <div class="small-note">Historical matched-starter audit: 181–365 days, prior top-3 finish 10/37 wins (27.0%); prior finish 6th+ 2/29 (6.9%). Small, unadjusted samples; not calibrated win probabilities. Advisory only; rankings and betting decisions unchanged.</div>
+  </div>`;
+}
+
+/* v8.52 — separate ranking, independent evidence, and price qualification.
    Experimental prospective rules; no outcome data enters this decision. */
 function hhVerdictV840(field){
   const active=(field||[]).filter(h=>!h.scratched && h.horse);
   if(!active.length) return {tier:'INSUFFICIENT DATA',horse:null,ranked:[],reason:'No active runners',qualified:false};
   const scored=calculateProbabilities(active);
-  const ranked=lowerRankFieldV822(scored,active);
+  const ranked=scored.map((x,i)=>({...x,canonicalRank:i+1})); // canonical model-score order; never mix lower-rank order into the official top-three
   if(!scored.length || !scored[0]?.horse) return {tier:'INSUFFICIENT DATA',horse:null,ranked,reason:'Model ranking unavailable',qualified:false};
   const h=scored[0].horse;
   const cc=concurrenceSupport(active,h,{horse:h,activeField:active,race:String(h.race||'')});
@@ -7816,7 +7870,8 @@ function hhVerdictV840(field){
   const quirin=horseSpeedPoints(h);
   const read=raceReadabilityV777(active);
   const red=read?.level==='red';
-  const ftsCandidates=ranked.slice(0,3).filter(x=>x.ftsThin);
+  const alternativeRanked=lowerRankFieldV822(scored,active);
+  const ftsCandidates=alternativeRanked.slice(0,3).filter(x=>x.ftsThin);
   const ml=oddsDecimal(h.ml||h.odds);
   // Independent confirmations: Prime Power and last speed; recent ITM form is an additional check.
   // The 3/3 concurrence already contains Avg-3 and morning-line rank, so do not double-count those.
@@ -7848,9 +7903,9 @@ function hhVerdictBoardV840(races){
     const name=v.horse?`<b>MODEL TOP PICK: #${safe(v.horse.post||v.horse.pgm||'')} ${horseNameLinkHTML(v.horse)}</b>`:'<b>MODEL TOP PICK: unavailable</b>';
     const selection=v.horse?`<div class="metric-line"><b>RANKING:</b> Concurrence ${safe(v.concurrence?.count??0)}/3 · Readability ${safe(String(v.read?.level||'unknown').toUpperCase())}</div><div class="metric-line"><b>INDEPENDENT CHECKS:</b> ${safe(v.evidence)}/3 · Prime Power ${v.core.ppYes?'YES':'NO'} · Last Speed ${v.core.lastYes?'YES':'NO'} · Recent ITM ${v.core.formYes?'YES':'NO'}</div><div class="metric-line"><b>PRICE:</b> M/L ${v.ml===null?'unavailable':safe(v.ml.toFixed(2))+'-1'} · ${v.priceOk?'Meets provisional 2-1 minimum':'Below minimum / unavailable'} · Actual post-time odds must be checked separately</div>`:'';
     const contenders=v.ranked.slice(0,3).map((y,i)=>`<span style="display:inline-block;margin:3px 10px 2px 0">${i+1}. #${safe(y.horse.post||y.horse.pgm||'')} ${horseNameLinkHTML(y.horse)} <span class="small-note">M/L ${safe(y.horse.ml||y.horse.odds||'N/A')}${y.ftsThin?' · FTS OPPORTUNITY':''}</span></span>`).join('');
-    return `<div style="padding:12px 2px;border-bottom:1px solid var(--paper-line);line-height:1.55"><b>RACE ${safe(x.race)}</b> <span class="badge" style="background:${color};color:#fff">${safe(v.tier)}</span><div>${name}</div>${selection}<div class="small-note"><b>VERDICT REASON:</b> ${safe(v.reason)}</div>${contenders?`<div class="small-note" style="margin-top:5px"><b>Top 3 contenders:</b><br>${contenders}</div>`:''}</div>`;
+    return `<div style="padding:12px 2px;border-bottom:1px solid var(--paper-line);line-height:1.55"><b>RACE ${safe(x.race)}</b> <span class="badge" style="background:${color};color:#fff">${safe(v.tier)}</span><div>${name}</div>${selection}${v.horse?hhReliabilityHTMLV851(v.horse):""}<div class="small-note"><b>VERDICT REASON:</b> ${safe(v.reason)}</div>${contenders?`<div class="small-note" style="margin-top:5px"><b>Top 3 by the same model ranking:</b><br>${contenders}</div>`:''}</div>`;
   }).join('');
-  return `<div class="bestof" style="margin:0 0 16px"><h3>HORSE HANDICAP VERDICTS · v8.49</h3><div class="small-note">Experimental forward-test screen: model ranking and wager qualification are separate. CONDITIONAL BET requires 3/3 concurrence, no RED readability, at least two independent confirmations (Prime Power, last speed, recent ITM), and morning line of at least 2-1. Bet only if post-time odds remain at least 2-1. FTS OPPORTUNITY is not a wager. Every race retains a top pick. This rule has not demonstrated positive ROI. Older panels retain legacy labels and are not wagering instructions.</div>${lines}</div>`;
+  return `<div class="bestof" style="margin:0 0 16px"><h3>HORSE HANDICAP VERDICTS · v8.52</h3><div class="small-note">Experimental forward-test screen: model ranking and wager qualification are separate. CONDITIONAL BET requires 3/3 concurrence, no RED readability, at least two independent confirmations (Prime Power, last speed, recent ITM), and morning line of at least 2-1. Bet only if post-time odds remain at least 2-1. FTS OPPORTUNITY is not a wager. Every race retains a top pick. This rule has not demonstrated positive ROI. The official top pick and the top-three below now use the same model-score order. Other panels may show an alternative lower-rank analysis; those are not separate official picks or wagering instructions.</div>${lines}</div>`;
 }
 
 function renderTop4Board(){
@@ -7864,14 +7919,14 @@ function renderTop4Board(){
         const scored=lowerRankFieldV822(calculateProbabilities(activeField),activeField).slice(0,4);
         html += `<div class="race-card race-anchor-target" id="top4-race-${safe(raceNum)}">
           <h3><span class="race-number-link" onclick="goToContendersRace('${safe(raceNum)}')">Race ${safe(raceNum)}</span></h3>
-          <div class="small-note">Top ${scored.length} of ${activeField.length} active runners · tap race number for full Contenders.</div>
+          <div class="small-note">Alternative lower-rank ordering (not the official model pick) · ${scored.length} of ${activeField.length} active runners · tap race number for full Contenders.</div>
           ${valueHorseHTMLV838(activeField)}
           ${scored.map((x,i)=>{
               const h=x.horse;
               const cons=signalConsensus(activeField,h);
               const ls=longshotSecondLookForHorse(activeField,h,{activeField,race:String(raceNum),horse:h});
               return `<div class="metric-line" style="padding:8px 0;border-bottom:1px solid rgba(0,0,0,.08);">
-                <b>RANK #${i+1}${i===1?" · TOP CHOICE":i===2?" · MAIN THREAT":" · CONTENDER"} — #${safe(h.post||h.pgm||"")} ${horseNameLinkHTML(h)}</b> ${surfaceBadgeHTML(h)}
+                <b>ALTERNATIVE LOWER-RANK #${i+1}${i===0?" · LEADER":i===1?" · SECOND":" · CONTENDER"} — #${safe(h.post||h.pgm||"")} ${horseNameLinkHTML(h)}</b> ${surfaceBadgeHTML(h)}
                 ${itmConsistencyHTMLV781(h,true)}
                 ${concurrenceSupport(activeField,h,{
                     horse:h,activeField,race:String(raceNum),
@@ -9444,6 +9499,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.49 · October 9, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.52 · October 11, 2026 · iPhone/Safari</div>
 </body>
 </html>
