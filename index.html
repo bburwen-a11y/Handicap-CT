@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.56 — Integrated Dual-Engine Edition</title>
+<title>Horse Handicap v8.57 — Integrated Dual-Engine Edition</title>
 <!-- crossorigin lets the browser hand us the REAL message if this script
      throws. Without it every failure inside it arrives as a bare
      "Script error." with no file or line, which is what the red bar was
@@ -1210,7 +1210,7 @@
 <body>
 <div class="wrap">
   <header>
-    <p class="eyebrow">Horse Handicap · <span class="ver">v8.56</span> · 11 October 2026</p>
+    <p class="eyebrow">Horse Handicap · <span class="ver">v8.57</span> · 11 October 2026</p>
     <h1>Horse Handicap</h1>
     <p class="tagline">Upload a data file or program PDF. Horse Handicap compares two independent engines and lays out the whole card: past performances, scratches, money moves, and where the board likes a horse.</p>
   </header>
@@ -8336,7 +8336,7 @@ function hhExportPreRace(){
     const pos=d.hh?d.ranked.findIndex(x=>x.h===d.hh)+1:'';
     const bet=['STRONG','BET','VALUE','THREAT'].includes(v.tier);
     const h=v.h||null;
-    const row={date:'',track:'',race:rs.race,verdict:vLabel(v),horse:h?h.horse:'',ml:h?(h.mlOddsStr||''):'',post_odds:'',finish:'',win_bet:bet?'1':'0',win_return:'',exacta_combos:'',exacta_return:'',winner:'',top_pick:d.claude?d.claude.horse:'',top_pick_finish:'',winner_rank:'',ai1_top:d.claude?d.claude.horse:'',ai2_top:d.hh?d.hh.horse:'',comparison:d.state,ai2_status:d.state==='PENDING'?'PENDING':d.state==='ERROR'?'ERROR':d.state==='UNAVAILABLE'?'UNAVAILABLE':'READY',verdict_reason:v.why||'',ai1_rank_of_ai2:pos,source_version:'Horse Handicap v8.56'};
+    const row={date:'',track:'',race:rs.race,verdict:vLabel(v),horse:h?h.horse:'',ml:h?(h.mlOddsStr||''):'',post_odds:'',finish:'',win_bet:bet?'1':'0',win_return:'',exacta_combos:'',exacta_return:'',winner:'',top_pick:d.claude?d.claude.horse:'',top_pick_finish:'',winner_rank:'',ai1_top:d.claude?d.claude.horse:'',ai2_top:d.hh?d.hh.horse:'',comparison:d.state,ai2_status:d.state==='PENDING'?'PENDING':d.state==='ERROR'?'ERROR':d.state==='UNAVAILABLE'?'UNAVAILABLE':'READY',verdict_reason:v.why||'',ai1_rank_of_ai2:pos,source_version:'Horse Handicap v8.57'};
     lines.push(header.map(k=>q(row[k])).join(','));
   });
   const blob=new Blob([lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
@@ -8426,6 +8426,23 @@ function renderFullField(mode){
           <td class="raw-col">${rawPPCell}</td>
         </tr>`;
     }).join('');
+    // v8.57: RESEARCH ONLY. Raw BRIS Prime Power, not the ML-blended modelProb.
+    // No change to either engine's picks, verdicts, or betting gates.
+    const allRaceHorses = rc.horses;
+    const valid = allRaceHorses.filter(h => Number.isFinite(Number(h.rawScore)) && Number(h.rawScore) > 0);
+    const coverage = valid.length / Math.max(1, allRaceHorses.length);
+    const denom = valid.reduce((sum,h) => sum + Math.pow(Number(h.rawScore),2), 0);
+    const fairRows = horses.map(h => {
+      const raw = Number(h.rawScore);
+      const p = coverage >= .8 && denom > 0 && Number.isFinite(raw) && raw > 0 ? raw*raw/denom : null;
+      const fair = p != null && p > 0 ? (1-p)/p : null;
+      const ml = h.mlOddsStr || '—';
+      // decimalOdds may be final odds when available; use the explicit ML string for display.
+      const fairTxt = fair == null ? '—' : fair.toFixed(2) + '–1';
+      const marketTxt = h.finalOddsStr || '—';
+      return `<tr><td>${escHtml(h.post||'')}</td><td>${escHtml(h.horse)}</td><td>${escHtml(ml)}</td><td>${fairTxt}</td><td>${marketTxt}</td><td>${p==null?'—':(p*100).toFixed(1)+'%'}</td></tr>`;
+    }).join('');
+    const fairStudy = `<details style="margin:12px 0;padding:10px;border:1px solid #cfc2a0;border-radius:5px;background:#fff"><summary style="font-weight:800;cursor:pointer">FAIR ODDS STUDY · independent of morning line</summary><p style="font-size:12px;line-height:1.5">Experimental Prime Power-only probability proxy (rating squared, normalized across the entire field). <b>Not calibrated fair odds</b> and not a recommendation to bet. The existing Model % blends market prices and must not be mistaken for independent fair odds. Missing ratings suppress this study if coverage is below 80%. Final odds are shown for later comparison, never used to calculate this proxy.</p><div style="overflow-x:auto"><table class="field-table"><thead><tr><th>Post</th><th>Horse</th><th>ML</th><th>Facts proxy</th><th>Final</th><th>Proxy win %</th></tr></thead><tbody>${fairRows}</tbody></table></div><p style="font-size:11px">Coverage: ${valid.length}/${allRaceHorses.length}. This uses raw BRIS Prime Power only, not all race facts. Validate against held-out results before calling these true fair odds.</p></details>`;
     const ratedCount = horses.filter(h => h.modelProb != null).length;
     const metaLine = raceMeta(horses);
     const sparseWarning = (rc.hasRatings && horses.length > 0 && ratedCount / horses.length < 0.6)
@@ -8439,6 +8456,7 @@ function renderFullField(mode){
         </div>
         ${raceCondsLine(horses)}
         ${sparseWarning}
+        ${fairStudy}
         <table class="field-table">
           <thead><tr><th>Post</th><th>Horse</th><th>Odds</th><th title="Final odds against the morning line">Move</th><th title="Beaten-lengths direction over recent comparable starts. Display only.">Form</th><th title="Quirin speed points, read against the field. LONE = highest and at least 2 clear.">Speed</th><th title="Recent works at today's track. Green = bullet.">Works</th><th title="BRIS speed rating: most recent figure, with the horse's best in brackets. Display only — nothing here is scored on it.">Spd</th><th title="Odds-implied win probability, normalized across the field">Market %</th><th class="diag-col">Model %</th><th class="diag-col">Edge</th><th class="raw-col" title="Prime Power as supplied by the data file">Raw PP</th></tr></thead>
           <tbody>${rowsHtml}</tbody>
@@ -9041,7 +9059,7 @@ renderRows();
 
 ;window.__obMainLoaded=true;
 </script>
-  <div style="text-align:center; padding:14px 0 24px; font-family:var(--mono); font-size:10px; color:var(--paper-line); opacity:.7;">Horse Handicap v8.56 · 11 October 2026 · dual-engine build</div>
+  <div style="text-align:center; padding:14px 0 24px; font-family:var(--mono); font-size:10px; color:var(--paper-line); opacity:.7;">Horse Handicap v8.57 · 11 October 2026 · dual-engine build</div>
 <div id="errBar" class="no-print">
   <div id="errBarMsg"></div>
   <div class="eb-actions">
