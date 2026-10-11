@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.59 · October 11, 2026 — Value Horse + Fade Notes</title>
+<title>Horse Handicap v8.61 · October 11, 2026 — Value Horse + Fade Notes</title>
 
 <style>
 :root{
@@ -7149,27 +7149,77 @@ function hh59H2H(field){
   });
   return edges;
 }
-function hh59Review(scored,field){
-  if(!scored||!scored.length)return '';
+/* v8.61 — Protected baseline + independently verified contender review.
+   Explicitly NO automatic challenger promotion pending out-of-sample validation.
+   Morning line is excluded from contender qualification and winner selection. */
+function hh61ContenderEvidence(h,field,rank){
+  const live=field.filter(x=>!x.scratched);
+  const pp=number(h.primePower);
+  const ppOrder=live.filter(x=>number(x.primePower)>0).sort((a,b)=>number(b.primePower)-number(a.primePower));
+  const ppRank=ppOrder.findIndex(x=>String(x.id)===String(h.id))+1;
+  const speed=recentSpeedScore(h);
+  const spOrder=live.filter(x=>recentSpeedScore(x)>0).sort((a,b)=>recentSpeedScore(b)-recentSpeedScore(a));
+  const speedRank=spOrder.findIndex(x=>String(x.id)===String(h.id))+1;
+  const races=(h.ppRaces||[]).filter(x=>number(x.fin)>0&&number(x.fin)<90).slice(0,4);
+  const competitive=races.filter(x=>number(x.fin)<=3 || (number(x.entrants)>=5 && number(x.fin)<=Math.ceil(number(x.entrants)*.35))).length;
+  const e=hh59Evidence(h,live);
+  // Independent groups: figures, form, and class/suitability. Class drop and
+  // prior class competitiveness are deliberately one group, not two votes.
+  const figure=(ppRank>0&&ppRank<=3)||(speedRank>0&&speedRank<=3);
+  const form=races.length>=2&&competitive>=2;
+  const classFitPositive=e.delta!==null&&e.delta>.75 && e.good.some(x=>x.startsWith('Prior competitive effort'));
+  const suitability=number(surfaceDistanceFit(h))>=.62;
+  const groups=[figure,form,classFitPositive||suitability].filter(Boolean).length;
+  const evidence=[];
+  if(ppRank>0&&ppRank<=3)evidence.push('Prime Power rank '+ppRank);
+  if(speedRank>0&&speedRank<=3)evidence.push('Recent speed rank '+speedRank);
+  if(form)evidence.push(competitive+' of '+races.length+' recent competitive finishes');
+  if(classFitPositive)evidence.push('Class relief with previous competitive form');
+  if(suitability)evidence.push('Surface/distance fit');
+  const firstTime=races.length===0;
+  const label=groups>=2?'VERIFIED CONTENDER':firstTime?'UNPROVEN / QUESTIONABLE':'QUESTIONABLE';
+  return {label,groups,evidence,firstTime,ppRank,speedRank};
+}
+function hh60Decision(scored,field){
+  if(!scored?.length)return {horse:null,bet:false,reason:'No scored runners',reviews:[]};
   const original=scored[0].horse;
-  const ranked=scored.slice(0,Math.min(4,scored.length));
-  const reviews=ranked.map((x,i)=>({...hh59Evidence(x.horse,field),rank:i+1,prob:x.probability}));
+  const candidates=scored.slice(0,Math.min(8,scored.length));
+  const reviews=candidates.map((x,i)=>({...hh59Evidence(x.horse,field),rank:i+1,prob:x.probability,verify:hh61ContenderEvidence(x.horse,field,i+1)}));
   const edges=hh59H2H(field);
   reviews.forEach(r=>{
-    const wins=edges.filter(e=>e.winner.id===r.horse.id);
-    const losses=edges.filter(e=>e.loser.id===r.horse.id);
-    if(wins.length){const e=wins[0];r.good.push('Beat #'+e.loser.post+' '+e.loser.horse+' on '+e.date+' race '+e.race+' ('+e.first+'th vs '+e.second+'th)');r.net+=Math.min(.9,wins.length*.45);}
-    if(losses.length){const e=losses[0];r.bad.push('Lost to #'+e.winner.post+' '+e.winner.horse+' on '+e.date+' race '+e.race+' ('+e.second+' vs '+e.first+')');r.net-=Math.min(.9,losses.length*.45);}
+    const wins=edges.filter(e=>String(e.winner.id)===String(r.horse.id));
+    const losses=edges.filter(e=>String(e.loser.id)===String(r.horse.id));
+    if(wins.length){const e=wins[0];r.good.push('Beat '+e.loser.horse+' on '+e.date+' ('+e.first+' vs '+e.second+')');}
+    if(losses.length){const e=losses[0];r.bad.push('Lost to '+e.winner.horse+' on '+e.date+' ('+e.second+' vs '+e.first+')');}
   });
-  // Evidence comparison is advisory: require clear lead and material weakness.
-  const strongest=[...reviews].sort((a,b)=>b.net-a.net)[0];
-  const lead=reviews[0];
-  const flip=strongest.horse.id!==original.id && strongest.net-lead.net>=1.25 && strongest.good.length>=2 && (lead.bad.length>=1||strongest.net-lead.net>=2.0);
-  const vulnerable=lead.bad.length>=2 || (strongest.horse.id!==original.id&&strongest.net-lead.net>=.6);
-  const label=flip?'CHALLENGER PREFERRED':vulnerable?'VULNERABLE ORIGINAL PICK':lead.good.length>=2&&lead.bad.length===0?'CONFIRMED PICK':'NO CLEAR ADVANTAGE';
-  const chosen=flip?strongest:lead;
-  const lines=reviews.map(r=>`<div class="hh-compare"><b>#${safe(r.horse.post)} ${safe(r.horse.horse)}</b> · original model #${r.rank} · comparative evidence ${r.net.toFixed(2)} <span class="hh-note">(research score, not win probability)</span><div class="hh-pos"><b>For:</b> ${r.good.length?r.good.map(safe).join('; '):'No strong corroborating fact detected'}</div><div class="hh-neg"><b>Against:</b> ${r.bad.length?r.bad.map(safe).join('; '):'No specific negative fact detected'}</div></div>`).join('');
-  return `<div class="hh-review"><h4>FINAL HANDICAPPING REVIEW · v8.59</h4><b>${label}</b> · Original: #${safe(original.post)} ${safe(original.horse)}${flip?` · <b>Evidence challenger: #${safe(chosen.horse.post)} ${safe(chosen.horse.horse)}</b>`:''}<div class="hh-note">Independent pre-race fact challenge. The original model ranking and wagering gates remain unchanged. Review scores are unvalidated, not fair odds or calibrated probabilities.</div><details><summary style="cursor:pointer;font-weight:800;padding:7px 0">Why? Compare top ${reviews.length} horses</summary>${lines}</details></div>`;
+  const leader=reviews[0];
+  // Rank gap is not erased by a second, unvalidated evidence-point ranking.
+  // Strong alternative evidence is displayed as a CHALLENGE, never an automatic switch.
+  const alternatives=reviews.slice(1).filter(r=>r.verify.groups>=2);
+  const challenger=alternatives.sort((a,b)=>b.net-a.net||a.rank-b.rank)[0]||null;
+  const leaderWeak=leader.bad.length>0;
+  const challenged=!!(challenger&&leaderWeak&&challenger.net>leader.net+1.25);
+  const core=pickConfirmationV790(original,field);
+  const cc=concurrenceSupport(field,original,{horse:original,activeField:field,race:String(original.race||'')});
+  const read=raceReadabilityV777(field);
+  const ml=oddsDecimal(original.ml||original.odds);
+  // A win candidate and a wager are different questions. M/L is NOT used to
+  // determine the selected horse or verified contenders. It is a provisional
+  // price input only; without live odds, no actual bet is authorized.
+  const evidenceQualified=field.length>=3 && cc.full && read?.level!=='red' &&
+    [core.ppYes,core.lastYes,core.formYes].filter(Boolean).length>=2;
+  return {horse:original,original,switched:false,bet:false,
+    verdict:challenged?'ORIGINAL CHALLENGED — REVIEW':'ORIGINAL RETAINED',
+    reason:leader.good.slice(0,3).join('; ')||'Original model ranking retained; independent support is limited',
+    concerns:leader.bad.slice(0,3),reviews,challenger,challenged,ml,evidenceQualified};
+}
+function hh60DecisionHTML(d){
+  if(!d?.horse)return '';
+  const review=d.reviews||[];
+  const challengers=review.filter(r=>r.verify.groups>=2&&r.rank>1);
+  const challengerText=d.challenged&&d.challenger
+    ? `<div class="hh-neg"><b>CHALLENGE REQUIRES REVIEW:</b> #${safe(d.challenger.horse.post)} ${horseNameLinkHTML(d.challenger.horse)} has ${d.challenger.verify.groups} independent evidence groups. This does not overturn the model without validated switch rules.</div>`:'';
+  return `<div class="hh-review" style="border-left:5px solid #2E6E45"><h4>ONE WINNER SELECTION · v8.61</h4><div style="font-size:20px;font-weight:900">#${safe(d.horse.post)} ${horseNameLinkHTML(d.horse)}</div><b>${safe(d.verdict)}</b> · <b>WAGER: PASS pending actual odds and qualified price</b><div class="hh-pos"><b>For:</b> ${safe(d.reason)}</div>${d.concerns.length?`<div class="hh-neg"><b>Against:</b> ${safe(d.concerns.join('; '))}</div>`:''}${challengerText}<div class="hh-note"><b>Verified alternatives:</b> ${challengers.length?challengers.map(r=>'#'+safe(r.horse.post)+' '+safe(r.horse.horse)).join(' · '):'None verified by two independent evidence groups'}. Morning line is not used to qualify contenders.</div><details><summary>Inspect all contenders and contrary facts (${review.length})</summary>${review.map(r=>`<div class="hh-compare"><b>#${safe(r.horse.post)} ${safe(r.horse.horse)}</b> · model rank ${r.rank} · <b>${safe(r.verify.label)}</b> (${r.verify.groups}/3 independent groups)<div class="hh-pos">Supporting facts: ${safe(r.verify.evidence.join('; ')||'No qualifying independent evidence')}</div><div class="hh-pos">Other positive facts: ${safe(r.good.join('; ')||'None')}</div><div class="hh-neg">Contrary facts: ${safe(r.bad.join('; ')||'None')}</div></div>`).join('')}</details><div class="hh-note">Protected v8.52 selection. No unvalidated automatic switches. PASS is a conservative research status, not a claim of negative expected value.</div></div>`;
 }
 
 function computeRaceCard(){
@@ -7365,6 +7415,7 @@ function computeRaceCard(){
 
         const officialPickV801=(readability.level==='green' && selectionGate.status==='PICK' && selectionGate.officialPick);
         const wagerV815=wagerDecisionV822(top,activeField);
+        const finalV860=hh60Decision(scored,activeField);
         if(betRaceRows.length) betRaceRows[betRaceRows.length-1].wager=wagerV815;
 
         bestHTML += `
@@ -7375,23 +7426,20 @@ function computeRaceCard(){
                 <div>
                     <div class="best-race"><span class="race-number-link" onclick="goToRaceCard('${safe(raceNum)}')">RACE ${safe(raceNum)}</span></div>
                     <div class="best-horse">
-                      ${wagerV815.type==='BET_PICK'?`<span class="badge badge-green">PICK</span>`:`<span class="badge badge-amber">NO BET</span>`}
-                      ${modelSeparation?.label==='CLEAR'?`<span class="badge badge-blue">CLEAR #1 RANK</span>`:''}
-                      <div class="decision-model-horse"><span class="post">#${safe(top.horse.post)}</span>${horseNameLinkHTML(top.horse)} <span style="font-size:11px;font-weight:800;opacity:.72;">RANK #1 · TOP CHOICE</span></div>
+                      <span class="badge badge-amber">RESEARCH · NO AUTOMATIC BET</span>
+                      
+                      <div class="decision-model-horse"><span class="post">#${safe(finalV860.horse.post)}</span>${horseNameLinkHTML(finalV860.horse)} <span style="font-size:11px;font-weight:800;opacity:.72;">FINAL SELECTION</span></div>
                       <span data-strongest-race="${safe(raceNum)}"></span>
                     </div>
                 </div>
                 <div class="model-prob"><button class="prob-button" onclick="openProbability('${safe(raceNum)}')" aria-label="Open probability details">${(top.probability*100).toFixed(1)}%</button><div class="confidence">HH SHARE · ${safe(confidenceLabelV815(wagerV815))}</div></div>
             </div>
-            ${hh59Review(scored,activeField)}
-            ${mainThreatHTMLV814(scored,activeField,decisionClassMap,officialPickV801,wagerV815.type!=='BET_PICK')}
-            ${decisionTop4FactsV831(scored,activeField,decisionClassMap,wagerV815.type!=='BET_PICK')}
-            ${valueHorseHTMLV838(activeField)}
+            ${hh60DecisionHTML(finalV860)}
             <div class="decision-type-line">${raceTypeTagV799(top.horse,wagerV815.type==='BET_PICK')}</div>
 
             ${officialPickV801 ? decisionAlertsV799(activeField,top.horse,{raceNum}) : ''}
             ${hiddenSupportHTMLV803(activeField,top.horse)}
-            ${wagerV815.type==='BET_PICK' ? wagerDecisionHTMLV822(wagerV815) : ''}
+            
 
 
             ${''/* v8.14: no separate closeness verdict; Main Threat is descriptive only */}
@@ -7628,14 +7676,14 @@ function computeRaceCard(){
     $("bestSection").innerHTML = `
 
         ${raceJumpBarHTML(raceKeys,"best")}
-        ${hhVerdictBoardV840(rankedBetRaces)}
+        
         <div class="bestof">
 
             <h3>
                 Race Decision Board
             </h3>
 
-            <div class="small-note" style="margin:4px 0 10px;">VERDICT BOARD: QUALIFIED describes selection strength; BET / NO BET describes wagering. Existing legacy decision cards below may use older internal labels. Tap horse for PP</div>
+            <div class="small-note" style="margin:4px 0 10px;">WINNER: protected original model selection. VERIFIED CONTENDERS require two independent evidence groups. M/L is price information, not a contender qualification. Research mode: no automatic wager.</div>
             ${bestHTML}
             <details class="race-card" style="margin-top:12px;"><summary><b>TOP 4 — ALL RACES</b></summary><div id="top4Board" style="margin-top:8px;"></div></details>
             <details class="race-card" style="margin-top:10px;"><summary><b>SECOND LOOK / VALUE ALERTS</b></summary><div id="longshotsBoard" style="margin-top:8px;"></div></details>
@@ -7991,7 +8039,7 @@ function hhVerdictBoardV840(races){
     const contenders=v.ranked.slice(0,3).map((y,i)=>`<span style="display:inline-block;margin:3px 10px 2px 0">${i+1}. #${safe(y.horse.post||y.horse.pgm||'')} ${horseNameLinkHTML(y.horse)} <span class="small-note">M/L ${safe(y.horse.ml||y.horse.odds||'N/A')}${y.ftsThin?' · FTS OPPORTUNITY':''}</span></span>`).join('');
     return `<div style="padding:12px 2px;border-bottom:1px solid var(--paper-line);line-height:1.55"><b>RACE ${safe(x.race)}</b> <span class="badge" style="background:${color};color:#fff">${safe(v.tier)}</span><div>${name}</div>${selection}${v.horse?hhReliabilityHTMLV851(v.horse):""}<div class="small-note"><b>VERDICT REASON:</b> ${safe(v.reason)}</div>${contenders?`<div class="small-note" style="margin-top:5px"><b>Top 3 by the same model ranking:</b><br>${contenders}</div>`:''}</div>`;
   }).join('');
-  return `<div class="bestof" style="margin:0 0 16px"><h3>HORSE HANDICAP VERDICTS · v8.52</h3><div class="small-note">Experimental forward-test screen: model ranking and wager qualification are separate. CONDITIONAL BET requires 3/3 concurrence, no RED readability, at least two independent confirmations (Prime Power, last speed, recent ITM), and morning line of at least 2-1. Bet only if post-time odds remain at least 2-1. FTS OPPORTUNITY is not a wager. Every race retains a top pick. This rule has not demonstrated positive ROI. The official top pick and the top-three below now use the same model-score order. Other panels may show an alternative lower-rank analysis; those are not separate official picks or wagering instructions.</div>${lines}</div>`;
+  return `<div class="bestof" style="margin:0 0 16px"><h3>HORSE HANDICAP VERDICTS · v8.60</h3><div class="small-note">Experimental forward-test screen: model ranking and wager qualification are separate. CONDITIONAL BET requires 3/3 concurrence, no RED readability, at least two independent confirmations (Prime Power, last speed, recent ITM), and morning line of at least 2-1. Bet only if post-time odds remain at least 2-1. FTS OPPORTUNITY is not a wager. Every race retains a top pick. This rule has not demonstrated positive ROI. The official top pick and the top-three below now use the same model-score order. Other panels may show an alternative lower-rank analysis; those are not separate official picks or wagering instructions.</div>${lines}</div>`;
 }
 
 function renderTop4Board(){
@@ -9585,6 +9633,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.59 · October 11, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.61 · October 11, 2026 · iPhone/Safari</div>
 </body>
 </html>
