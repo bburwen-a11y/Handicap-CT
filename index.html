@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.62 · October 11, 2026 — Value Horse + Fade Notes</title>
+<title>Horse Handicap v8.63 · October 11, 2026 — Value Horse + Fade Notes</title>
 
 <style>
 :root{
@@ -7035,7 +7035,7 @@ function mainThreatHTMLV814(scored,field,classMap,hasOfficialPick=true,isNoChoic
      lower-score Top 2: 257 / 482 = 53.3%
      lower-score Top 4: 378 / 482 = 78.4%
 
-   Score = Avg-3 Speed rank + Prime Power rank + 2× morning-line rank.
+   Score = Avg-3 Speed rank + Prime Power rank + 1× morning-line rank.
    For runners with fewer than 3 lifetime starts, Avg-3 rank stands in for
    Prime Power rank. Lower score is better. This changes ordering only; the
    underlying Horse Handicap probability engine is retained as supporting data.
@@ -7061,14 +7061,14 @@ function lowerRankFieldV822(scored,field){
       const ftsThin=thin && starts===0;
       const usedFigureRank=ftsThin?mr:fr;
       const pr=ftsThin?mr:(starts<3?fr:pp);
-      const lowerScore=usedFigureRank+pr+2*mr;
+      const lowerScore=usedFigureRank+pr+mr;
       const lowerWhy=ftsThin
-        ? `${lowerScore} = ${mr} + ${mr} + ${mr}×2 · first-time starter in a lightly raced field, ranked by morning line #${mr} · lower is better`
-        : `${lowerScore} = ${fr} + ${starts<3?fr+'*':pr} + ${mr}×2`;
+        ? `${lowerScore} = ${mr} + ${mr} + ${mr}×1 · first-time starter in a lightly raced field, ranked by morning line #${mr} · lower is better`
+        : `${lowerScore} = ${fr} + ${starts<3?fr+'*':pr} + ${mr}×1`;
       return Object.assign({},item,{lowerScore,lowerWhy,ftsThin,
         lowerParts:{avg3Rank:ftsThin?null:fr,ppRank:pp,usedPPRank:pr,mlRank:mr,starts,thinField:thin,ftsThin}});
     });
-    out.sort((a,b)=>a.lowerScore-b.lowerScore || a.lowerParts.mlRank-b.lowerParts.mlRank || b.probability-a.probability);
+    out.sort((a,b)=>a.lowerScore-b.lowerScore || b.probability-a.probability || a.lowerParts.mlRank-b.lowerParts.mlRank);
     out.forEach((x,i)=>x.lowerRank=i+1);
     return out;
 }
@@ -7219,7 +7219,7 @@ function hh60DecisionHTML(d){
   const challengers=review.filter(r=>r.verify.groups>=2&&r.rank>1);
   const challengerText=d.challenged&&d.challenger
     ? `<div class="hh-neg"><b>CHALLENGE REQUIRES REVIEW:</b> #${safe(d.challenger.horse.post)} ${horseNameLinkHTML(d.challenger.horse)} has ${d.challenger.verify.groups} independent evidence groups. This does not overturn the model without validated switch rules.</div>`:'';
-  return `<div class="hh-review" style="border-left:5px solid #2E6E45"><h4>ONE WINNER SELECTION · v8.61</h4><div style="font-size:20px;font-weight:900">#${safe(d.horse.post)} ${horseNameLinkHTML(d.horse)}</div><b>${safe(d.verdict)}</b> · <b>WAGER: PASS pending actual odds and qualified price</b><div class="hh-pos"><b>For:</b> ${safe(d.reason)}</div>${d.concerns.length?`<div class="hh-neg"><b>Against:</b> ${safe(d.concerns.join('; '))}</div>`:''}${challengerText}<div class="hh-note"><b>Verified alternatives:</b> ${challengers.length?challengers.map(r=>'#'+safe(r.horse.post)+' '+safe(r.horse.horse)).join(' · '):'None verified by two independent evidence groups'}. Morning line is not used to qualify contenders.</div><details><summary>Inspect all contenders and contrary facts (${review.length})</summary>${review.map(r=>`<div class="hh-compare"><b>#${safe(r.horse.post)} ${safe(r.horse.horse)}</b> · model rank ${r.rank} · <b>${safe(r.verify.label)}</b> (${r.verify.groups}/3 independent groups)<div class="hh-pos">Supporting facts: ${safe(r.verify.evidence.join('; ')||'No qualifying independent evidence')}</div><div class="hh-pos">Other positive facts: ${safe(r.good.join('; ')||'None')}</div><div class="hh-neg">Contrary facts: ${safe(r.bad.join('; ')||'None')}</div></div>`).join('')}</details><div class="hh-note">Protected v8.52 selection. No unvalidated automatic switches. PASS is a conservative research status, not a claim of negative expected value.</div></div>`;
+  return `<div class="hh-review" style="border-left:5px solid #2E6E45"><h4>ORIGINAL PROBABILITY MODEL · INDEPENDENT CHECK</h4><div style="font-size:20px;font-weight:900">#${safe(d.horse.post)} ${horseNameLinkHTML(d.horse)}</div><b>MODEL BENCHMARK — ${safe(d.verdict)}</b> · <b>WAGER: PASS pending actual odds and qualified price</b><div class="hh-pos"><b>For:</b> ${safe(d.reason)}</div>${d.concerns.length?`<div class="hh-neg"><b>Against:</b> ${safe(d.concerns.join('; '))}</div>`:''}${challengerText}<div class="hh-note"><b>Verified alternatives:</b> ${challengers.length?challengers.map(r=>'#'+safe(r.horse.post)+' '+safe(r.horse.horse)).join(' · '):'None verified by two independent evidence groups'}. Morning line is not used to qualify contenders.</div><details><summary>Inspect all contenders and contrary facts (${review.length})</summary>${review.map(r=>`<div class="hh-compare"><b>#${safe(r.horse.post)} ${safe(r.horse.horse)}</b> · model rank ${r.rank} · <b>${safe(r.verify.label)}</b> (${r.verify.groups}/3 independent groups)<div class="hh-pos">Supporting facts: ${safe(r.verify.evidence.join('; ')||'No qualifying independent evidence')}</div><div class="hh-pos">Other positive facts: ${safe(r.good.join('; ')||'None')}</div><div class="hh-neg">Contrary facts: ${safe(r.bad.join('; ')||'None')}</div></div>`).join('')}</details><div class="hh-note">Original v8.52 model retained as independent benchmark; ML ×1 is a separate research ranking. No unvalidated automatic switches. PASS is a conservative research status, not a claim of negative expected value.</div></div>`;
 }
 
 function computeRaceCard(){
@@ -7296,11 +7296,9 @@ function computeRaceCard(){
         }
 
 
-        const scored =
-            lowerRankFieldV822(
-                calculateProbabilities(activeField),
-                activeField
-            );
+        const probabilityScored=calculateProbabilities(activeField);
+        const modelLeader=probabilityScored[0];
+        const scored=lowerRankFieldV822(probabilityScored,activeField);
 
 
         const top =
@@ -7415,7 +7413,7 @@ function computeRaceCard(){
 
         const officialPickV801=(readability.level==='green' && selectionGate.status==='PICK' && selectionGate.officialPick);
         const wagerV815=wagerDecisionV822(top,activeField);
-        const finalV860=hh60Decision(scored,activeField);
+        const finalV860=hh60Decision(probabilityScored,activeField);
         if(betRaceRows.length) betRaceRows[betRaceRows.length-1].wager=wagerV815;
 
         bestHTML += `
@@ -7428,12 +7426,13 @@ function computeRaceCard(){
                     <div class="best-horse">
                       <span class="badge badge-amber">RESEARCH · NO AUTOMATIC BET</span>
                       
-                      <div class="decision-model-horse"><span class="post">#${safe(finalV860.horse.post)}</span>${horseNameLinkHTML(finalV860.horse)} <span style="font-size:11px;font-weight:800;opacity:.72;">FINAL SELECTION</span></div>
+                      <div class="decision-model-horse"><span class="post">#${safe(top.horse.post)}</span>${horseNameLinkHTML(top.horse)} <span style="font-size:11px;font-weight:800;opacity:.72;">ML ×1 RANK LEADER · RESEARCH</span></div>
                       <span data-strongest-race="${safe(raceNum)}"></span>
                     </div>
                 </div>
-                <div class="model-prob"><button class="prob-button" onclick="openProbability('${safe(raceNum)}')" aria-label="Open probability details">${(top.probability*100).toFixed(1)}%</button><div class="confidence">HH SHARE · ${safe(confidenceLabelV815(wagerV815))}</div></div>
+                <div class="model-prob"><button class="prob-button" onclick="openProbability('${safe(raceNum)}')" aria-label="Open probability details">${(top.probability*100).toFixed(1)}%</button><div class="confidence">THIS HORSE'S MODEL SHARE · ${safe(confidenceLabelV815(wagerV815))}</div></div>
             </div>
+            <div class="hh-review" style="border-left:5px solid #315A7D"><b>INDEPENDENT MODEL LEADER:</b> #${safe(modelLeader.horse.post)} ${horseNameLinkHTML(modelLeader.horse)} · ${(modelLeader.probability*100).toFixed(1)}% model share. <b>ML ×1 RANK LEADER:</b> #${safe(top.horse.post)} ${horseNameLinkHTML(top.horse)} · ${(top.probability*100).toFixed(1)}% model share. ${String(modelLeader.horse.id)===String(top.horse.id)?'<b>AGREE</b>':'<b>DISAGREE — no validated automatic override</b>'}. Rank formula: Avg-3 figure rank + Prime Power rank (young-horse exception) + ML rank ×1. Morning line is used for this research ranking, NOT for evidence contender qualification. <b>WAGER: PASS pending actual odds and qualified price.</b></div>
             ${hh60DecisionHTML(finalV860)}
             <div class="decision-type-line">${raceTypeTagV799(top.horse,wagerV815.type==='BET_PICK')}</div>
 
@@ -7486,11 +7485,11 @@ function computeRaceCard(){
         <div class="analysis-card race-anchor-target" id="contenders-race-${safe(raceNum)}">
           <h3><span class="race-number-link" onclick="goToRaceCard('${safe(raceNum)}')">Race ${safe(raceNum)}</span> — True Contenders</h3>
           <div class="hh-top-choice-v862" style="background:#eaf4ed;border:2px solid #2E6E45;border-radius:8px;padding:12px;margin:10px 0 14px">
-            <div style="font:800 11px var(--mono);letter-spacing:.05em;color:#205a35">OFFICIAL TOP CHOICE · ORIGINAL MODEL #1</div>
+            <div style="font:800 11px var(--mono);letter-spacing:.05em;color:#205a35">ML ×1 RANK LEADER · INDEPENDENT MODEL CHECK</div>
             <div style="font-size:20px;font-weight:900;margin:5px 0">#${safe(top.horse.post)} ${horseNameLinkHTML(top.horse)}</div>
-            <div style="font-size:12px;line-height:1.5"><b>Model share:</b> ${modelPct(top.probability)} · <b>Evidence category:</b> ${safe(classMap[top.horse.id]?.label||'UNCLASSIFIED')}</div>
+            <div style="font-size:12px;line-height:1.5"><b>ML ×1 leader's model share:</b> ${modelPct(top.probability)} · <b>Original probability leader:</b> #${safe(modelLeader.horse.post)} ${horseNameLinkHTML(modelLeader.horse)} (${modelPct(modelLeader.probability)}) · <b>Evidence category:</b> ${safe(classMap[top.horse.id]?.label||'UNCLASSIFIED')}</div>
             <div style="font-size:12px;margin-top:5px">${safe(classMap[top.horse.id]?.reason||'Evidence classification unavailable.')}</div>
-            ${classMap[top.horse.id]?.label!=='CONTENDER'?'<div style="font-size:12px;margin-top:7px;color:#8B2A2A"><b>Important:</b> The top-ranked model selection does not meet the separate True Contender evidence threshold. It remains the official selection, but its qualification is disputed; it is not silently promoted.</div>':''}
+            ${classMap[top.horse.id]?.label!=='CONTENDER'?'<div style="font-size:12px;margin-top:7px;color:#8B2A2A"><b>Important:</b> The top-ranked model selection does not meet the separate True Contender evidence threshold. It remains the ML ×1 research leader, but its contender qualification is disputed; it is not silently promoted.</div>':''}
           </div>
           <div class="note"><b>v7.74 LAST-FIGURE RESCUE + RSS AUTO COMPUTE:</b> A sharp single latest BRIS Speed figure can rescue a horse into Questionable; it needs another independent performance signal for True Contender. Avg-3 remains in the main model.</div>
           <div class="note"><b>90% COVERAGE RESEARCH FIELD:</b> ${coverageField.map(x=>`#${safe(x.horse.post)} ${safe(x.horse.horse)}`).join(" · ") || "None"}. This is a candidate coverage set pending historical validation — not a claimed 90% probability.</div>
@@ -9640,6 +9639,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.62 · October 11, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.63 · October 11, 2026 · iPhone/Safari</div>
 </body>
 </html>
