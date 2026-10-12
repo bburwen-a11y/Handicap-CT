@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.66 · October 12, 2026 — Value Horse + Fade Notes</title>
+<title>Horse Handicap v8.67 · October 12, 2026 — Value Horse + Fade Notes</title>
 
 <style>
 :root{
@@ -6692,6 +6692,46 @@ function pricePlayHTMLV792(p){
 }
 
 
+
+/* v8.67 — PACE SCENARIO VERDICT REVIEW. Informational, never changes picks,
+   ranks, model probabilities, wager logic or evidence qualification. */
+function hh67PaceVerdict(field,horse){
+  const live=(field||[]).filter(h=>!h.scratched);
+  const p=relativePaceV762(live);
+  const my=(p.profiles||[]).find(x=>String(x.h.id)===String(horse?.id));
+  const st=my?.style||String(horse?.runStyle||'').toUpperCase().replace('E/P','EP');
+  const speed=['E','EP'].includes(st), close=['S','SS','P/S'].includes(st);
+  const cluster=(p.credible||[]).map(x=>`#${x.h.post||x.h.pgm} ${x.h.horse}`);
+  const enough=(p.profiles||[]).filter(x=>x.ppEarly!==null).length>=Math.max(2,Math.ceil(live.length*.4));
+  let verdict='PACE UNCERTAIN', level='neutral', reason='Insufficient comparable recent early-pace figures to establish a reliable pace scenario.';
+  if(!enough){ verdict='PACE DATA LIMITED'; }
+  else if(p.label==='CONTESTED / FAST'){
+    if(speed && (p.credible||[]).some(x=>String(x.h.id)===String(horse.id))){verdict='PACE DUEL RISK — VERDICT HORSE';level='risk';reason='This horse projects into a crowded early-speed group and could expend energy in a duel; a collapse is possible, not assured.';}
+    else if(close){verdict='PACE COLLAPSE MAY HELP VERDICT HORSE';level='help';reason='Several early-speed rivals project to contest the pace; this runner may benefit from tracking or closing if the duel materializes.';}
+    else {verdict='CONTESTED PACE — TRIP REVIEW';level='watch';reason='Three or more credible early-speed runners; review whether this horse can secure a stalking trip.';}
+  }else if(p.label==='PRESSURED'){
+    if(speed && (p.credible||[]).some(x=>String(x.h.id)===String(horse.id))){verdict='EARLY PRESSURE — VERDICT HORSE';level='watch';reason='Two credible early-speed runners may challenge each other. This is not a confirmed speed collapse.';}
+    else if(close){verdict='PRESSURE MAY HELP CLOSER';level='watch';reason='Two early runners project to supply pressure, possibly improving the trip for a late runner.';}
+  }else if(p.label==='LONE SPEED'){
+    if(p.loneSpeed && String(p.loneSpeed.id)===String(horse.id)){verdict='LONE SPEED ADVANTAGE — VERDICT HORSE';level='help';reason='The verdict horse has the clearest path to an uncontested lead.';}
+    else if(close){verdict='SOFT PACE RISK — VERDICT HORSE';level='risk';reason='A lone front-runner may slow the pace, leaving this closer too much to do late.';}
+  }
+  return {verdict,level,reason,shape:p.label,cluster,style:st||'UNKNOWN',nPace:(p.profiles||[]).filter(x=>x.ppEarly!==null).length,n:live.length};
+}
+function hh67PaceVerdictHTML(field,horse,label){
+  if(!horse)return '';
+  const v=hh67PaceVerdict(field,horse);
+  const colors={risk:'#9b2c2c',help:'#216b3a',watch:'#9a6c13',neutral:'#66717a'};
+  const color=colors[v.level]||colors.neutral;
+  return `<div class="hh67-pace" style="margin:10px 0;padding:12px;border:2px solid ${color};border-left-width:7px;border-radius:8px;background:#fff;line-height:1.5">
+    <div style="font-weight:900;color:${color};font-size:15px">PACE VERDICT · ${safe(v.verdict)}</div>
+    <div><b>${safe(label||'Verdict horse')}:</b> #${safe(horse.post||horse.pgm||'')} ${horseNameLinkHTML(horse)} · Style ${safe(v.style)} · Projected ${safe(v.shape)}</div>
+    <div>${safe(v.reason)}</div>
+    <div style="font-size:12px;margin-top:5px"><b>Likely early group:</b> ${safe(v.cluster.join(' · ')||'Unclear')} · usable PP pace: ${v.nPace}/${v.n} runners</div>
+    <div style="font-size:11px;opacity:.75;margin-top:5px">Scenario warning only. Does not change RS, CS, model probability, official horse or wager. A projected duel is not proof of an actual collapse.</div>
+  </div>`;
+}
+
 function raceTypeRecordV799(horse){
     const rt=String(horse?.raceType||'').trim().toUpperCase();
     // Fixed research figures supplied for this build. Display only; never updates itself.
@@ -7414,6 +7454,7 @@ function computeRaceCard(){
           <summary><b>RACE ${safe(raceNum)} — RACE FACTS</b> <span class="small-note">Tap to open</span></summary>
           ${raceConditionsHTML(top.horse)}
           ${hh64CaseSummary(hh64CaseBoard(scored,activeField))}
+          ${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}
           ${raceFactsHTMLV806(activeField,scored)}
         </details>`;
 
@@ -7471,7 +7512,9 @@ function computeRaceCard(){
             </div>
             <div class="hh-review" style="border-left:5px solid #315A7D"><b>INDEPENDENT MODEL LEADER:</b> #${safe(modelLeader.horse.post)} ${horseNameLinkHTML(modelLeader.horse)} · ${(modelLeader.probability*100).toFixed(1)}% model share. <b>ML ×1 RANK LEADER:</b> #${safe(top.horse.post)} ${horseNameLinkHTML(top.horse)} · ${(top.probability*100).toFixed(1)}% model share. ${String(modelLeader.horse.id)===String(top.horse.id)?'<b>AGREE</b>':'<b>DISAGREE — no validated automatic override</b>'}. Rank formula: Avg-3 figure rank + Prime Power rank (young-horse exception) + ML rank ×1. Morning line is used for this research ranking, NOT for evidence contender qualification. <b>WAGER: PASS pending actual odds and qualified price.</b></div>
             ${hh64CaseLine(top.horse,hh64CaseBoard(scored,activeField),true)}
+            ${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}
             ${hh60DecisionHTML(finalV860,hh64CaseBoard(scored,activeField))}
+            ${String(finalV860?.horse?.id)!==String(top.horse.id)?hh67PaceVerdictHTML(activeField,finalV860.horse,"Original model verdict horse"):""}
             <div class="decision-type-line">${raceTypeTagV799(top.horse,wagerV815.type==='BET_PICK')}</div>
 
             ${officialPickV801 ? decisionAlertsV799(activeField,top.horse,{raceNum}) : ''}
@@ -9693,6 +9736,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.66 · October 12, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.67 · October 12, 2026 · iPhone/Safari</div>
 </body>
 </html>
