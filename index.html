@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.64 · October 11, 2026 — Value Horse + Fade Notes</title>
+<title>Horse Handicap v8.65 · October 11, 2026 — Value Horse + Fade Notes</title>
 
 <style>
 :root{
@@ -6226,7 +6226,7 @@ function firstTimerEvidenceRowV808(h){
     return `<tr class="rf806-fts"><td colspan="20"><div class="rf806-fts-grid"><span class="rf806-fts-head">FIRST-TIME STARTER — USE NON-RACE EVIDENCE</span><span><b>M/L:</b> ${safe(mlDisplayV804(h.odds))}</span><span><b>Trainer:</b> ${tr}</span><span><b>FTS angle:</b> ${firstTimerTrainerAngleV808(h)}</span><span><b>Jockey:</b> ${jk}</span><span><b>Works:</b> ${firstTimerWorksV808(h)}</span><span><b>Pedigree:</b> ${ped}</span><span><b>Weight:</b> ${safe(h.weight||'—')}${h.apprenticeAllowance?` (-${safe(h.apprenticeAllowance)})`:''}</span><span><b>Med/Equip:</b> ${safe(medicationLabelV806(h.todayMedication))} · ${safe(equipmentLabelV806(h.equipmentChange))}</span></div></td></tr>`;
 }
 
-/* v8.64 — DISPLAY-ONLY CASE companion to RS. Uses native BRIS fields and
+/* v8.65 — DISPLAY-ONLY CASE companion to RS. Uses native BRIS fields and
    pre-existing evidence review. Never alters ranking, probabilities or wagers. */
 function hh64CaseBoard(scored,field){
  const live=(field||[]).filter(h=>!h.scratched), out=new Map();
@@ -7249,13 +7249,13 @@ function hh60Decision(scored,field){
     reason:leader.good.slice(0,3).join('; ')||'Original model ranking retained; independent support is limited',
     concerns:leader.bad.slice(0,3),reviews,challenger,challenged,ml,evidenceQualified};
 }
-function hh60DecisionHTML(d){
+function hh60DecisionHTML(d,caseBoard=null){
   if(!d?.horse)return '';
   const review=d.reviews||[];
   const challengers=review.filter(r=>r.verify.groups>=2&&r.rank>1);
   const challengerText=d.challenged&&d.challenger
     ? `<div class="hh-neg"><b>CHALLENGE REQUIRES REVIEW:</b> #${safe(d.challenger.horse.post)} ${horseNameLinkHTML(d.challenger.horse)} has ${d.challenger.verify.groups} independent evidence groups. This does not overturn the model without validated switch rules.</div>`:'';
-  return `<div class="hh-review" style="border-left:5px solid #2E6E45"><h4>ORIGINAL PROBABILITY MODEL · INDEPENDENT CHECK</h4><div style="font-size:20px;font-weight:900">#${safe(d.horse.post)} ${horseNameLinkHTML(d.horse)}</div><b>MODEL BENCHMARK — ${safe(d.verdict)}</b> · <b>WAGER: PASS pending actual odds and qualified price</b><div class="hh-pos"><b>For:</b> ${safe(d.reason)}</div>${d.concerns.length?`<div class="hh-neg"><b>Against:</b> ${safe(d.concerns.join('; '))}</div>`:''}${challengerText}<div class="hh-note"><b>Verified alternatives:</b> ${challengers.length?challengers.map(r=>'#'+safe(r.horse.post)+' '+safe(r.horse.horse)).join(' · '):'None verified by two independent evidence groups'}. Morning line is not used to qualify contenders.</div><details><summary>Inspect all contenders and contrary facts (${review.length})</summary>${review.map(r=>`<div class="hh-compare"><b>#${safe(r.horse.post)} ${safe(r.horse.horse)}</b> · model rank ${r.rank} · <b>${safe(r.verify.label)}</b> (${r.verify.groups}/3 independent groups)<div class="hh-pos">Supporting facts: ${safe(r.verify.evidence.join('; ')||'No qualifying independent evidence')}</div><div class="hh-pos">Other positive facts: ${safe(r.good.join('; ')||'None')}</div><div class="hh-neg">Contrary facts: ${safe(r.bad.join('; ')||'None')}</div></div>`).join('')}</details><div class="hh-note">Original v8.52 model retained as independent benchmark; ML ×1 is a separate research ranking. No unvalidated automatic switches. PASS is a conservative research status, not a claim of negative expected value.</div></div>`;
+  return `<div class="hh-review" style="border-left:5px solid #2E6E45"><h4>ORIGINAL PROBABILITY MODEL · INDEPENDENT CHECK</h4><div style="font-size:20px;font-weight:900">#${safe(d.horse.post)} ${horseNameLinkHTML(d.horse)}</div>${caseBoard?hh64CaseLine(d.horse,caseBoard,true):''}<b>MODEL BENCHMARK — ${safe(d.verdict)}</b> · <b>WAGER: PASS pending actual odds and qualified price</b><div class="hh-pos"><b>For:</b> ${safe(d.reason)}</div>${d.concerns.length?`<div class="hh-neg"><b>Against:</b> ${safe(d.concerns.join('; '))}</div>`:''}${challengerText}<div class="hh-note"><b>Verified alternatives:</b> ${challengers.length?challengers.map(r=>'#'+safe(r.horse.post)+' '+safe(r.horse.horse)).join(' · '):'None verified by two independent evidence groups'}. Morning line is not used to qualify contenders.</div><details><summary>Inspect all contenders and contrary facts (${review.length})</summary>${review.map(r=>`<div class="hh-compare"><b>#${safe(r.horse.post)} ${safe(r.horse.horse)}</b> · model rank ${r.rank} · <b>${safe(r.verify.label)}</b> (${r.verify.groups}/3 independent groups)<div class="hh-pos">Supporting facts: ${safe(r.verify.evidence.join('; ')||'No qualifying independent evidence')}</div><div class="hh-pos">Other positive facts: ${safe(r.good.join('; ')||'None')}</div><div class="hh-neg">Contrary facts: ${safe(r.bad.join('; ')||'None')}</div></div>`).join('')}</details><div class="hh-note">Original v8.52 model retained as independent benchmark; ML ×1 is a separate research ranking. No unvalidated automatic switches. PASS is a conservative research status, not a claim of negative expected value.</div></div>`;
 }
 
 function computeRaceCard(){
@@ -7471,8 +7471,7 @@ function computeRaceCard(){
             </div>
             <div class="hh-review" style="border-left:5px solid #315A7D"><b>INDEPENDENT MODEL LEADER:</b> #${safe(modelLeader.horse.post)} ${horseNameLinkHTML(modelLeader.horse)} · ${(modelLeader.probability*100).toFixed(1)}% model share. <b>ML ×1 RANK LEADER:</b> #${safe(top.horse.post)} ${horseNameLinkHTML(top.horse)} · ${(top.probability*100).toFixed(1)}% model share. ${String(modelLeader.horse.id)===String(top.horse.id)?'<b>AGREE</b>':'<b>DISAGREE — no validated automatic override</b>'}. Rank formula: Avg-3 figure rank + Prime Power rank (young-horse exception) + ML rank ×1. Morning line is used for this research ranking, NOT for evidence contender qualification. <b>WAGER: PASS pending actual odds and qualified price.</b></div>
             ${hh64CaseLine(top.horse,hh64CaseBoard(scored,activeField),true)}
-            ${String(modelLeader.horse.id)!==String(top.horse.id)?hh64CaseLine(modelLeader.horse,hh64CaseBoard(scored,activeField),false):''}
-            ${hh60DecisionHTML(finalV860)}
+            ${hh60DecisionHTML(finalV860,hh64CaseBoard(scored,activeField))}
             <div class="decision-type-line">${raceTypeTagV799(top.horse,wagerV815.type==='BET_PICK')}</div>
 
             ${officialPickV801 ? decisionAlertsV799(activeField,top.horse,{raceNum}) : ''}
@@ -9680,6 +9679,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.64 · October 11, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.65 · October 11, 2026 · iPhone/Safari</div>
 </body>
 </html>
