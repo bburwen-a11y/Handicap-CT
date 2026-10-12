@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.63 · October 11, 2026 — Value Horse + Fade Notes</title>
+<title>Horse Handicap v8.64 · October 11, 2026 — Value Horse + Fade Notes</title>
 
 <style>
 :root{
@@ -883,6 +883,7 @@ details.facts-race-fold>summary .small-note{margin-left:auto;font-weight:700}
 /* v8.59 — independent comparative review, original Horse Handicap architecture */
 .hh-review{margin:11px 0;padding:12px;border:1px solid var(--paper-line);border-left:5px solid var(--board-900);background:#fff;border-radius:6px;font-size:12.5px;line-height:1.55}
 .hh-review h4{margin:0 0 6px;font-size:14px}.hh-review .hh-compare{border-top:1px solid var(--paper-line);padding:8px 0}.hh-review .hh-pos{color:#1f6b3a}.hh-review .hh-neg{color:#8B2A2A}.hh-review .hh-note{color:var(--ink-soft);font-size:11.5px}
+ .hh64-case{margin:7px 0;padding:7px 9px;border:1px solid #aebeb3;border-radius:5px;background:#f2f7f3;font-size:12px;line-height:1.6;color:#173c29}.hh64-case b{font-weight:800}.hh64-muted{opacity:.75}.hh64-evidence{margin-top:4px}.hh64-evidence summary{cursor:pointer;font-weight:700}.hh64-evidence div{margin-top:4px;overflow-wrap:anywhere}
 </style>
 
 <style id="v79-updates">
@@ -6224,8 +6225,43 @@ function firstTimerEvidenceRowV808(h){
     const jk=h.jockeyYearStarts?`${safe(h.jockey||'—')} year ${pct761(h.jockeyYearWins,h.jockeyYearStarts)} (${h.jockeyYearStarts} st)`:safe(h.jockey||'—');
     return `<tr class="rf806-fts"><td colspan="20"><div class="rf806-fts-grid"><span class="rf806-fts-head">FIRST-TIME STARTER — USE NON-RACE EVIDENCE</span><span><b>M/L:</b> ${safe(mlDisplayV804(h.odds))}</span><span><b>Trainer:</b> ${tr}</span><span><b>FTS angle:</b> ${firstTimerTrainerAngleV808(h)}</span><span><b>Jockey:</b> ${jk}</span><span><b>Works:</b> ${firstTimerWorksV808(h)}</span><span><b>Pedigree:</b> ${ped}</span><span><b>Weight:</b> ${safe(h.weight||'—')}${h.apprenticeAllowance?` (-${safe(h.apprenticeAllowance)})`:''}</span><span><b>Med/Equip:</b> ${safe(medicationLabelV806(h.todayMedication))} · ${safe(equipmentLabelV806(h.equipmentChange))}</span></div></td></tr>`;
 }
+
+/* v8.64 — DISPLAY-ONLY CASE companion to RS. Uses native BRIS fields and
+   pre-existing evidence review. Never alters ranking, probabilities or wagers. */
+function hh64CaseBoard(scored,field){
+ const live=(field||[]).filter(h=>!h.scratched), out=new Map();
+ const rank=(h,get)=>{const v=get(h);if(!(v>0))return null;return 1+live.filter(x=>get(x)>v).length;};
+ const getPP=h=>number(h.primePower||h.score), getL=h=>number(h.lastSpeed), getA=h=>number(last3AverageV806(h));
+ const odds=live.filter(h=>oddsDecimal(h.odds??h.ml)!==null).slice().sort((a,b)=>oddsDecimal(a.odds??a.ml)-oddsDecimal(b.odds??b.ml));
+ for(const h of live){
+   const F=[],A=[],add=(arr,t)=>{if(!arr.includes(t))arr.push(t);};
+   for(const [name,get] of [['Avg-3 speed',getA],['Prime Power',getPP],['last speed',getL]]){
+      const r=rank(h,get);if(r===1)add(F,'Best '+name);else if(r!==null&&r>=4)add(A,name+' rank #'+r);
+   }
+   const mi=odds.findIndex(x=>String(x.id)===String(h.id));if(mi===0)add(F,'Morning-line favorite');else if(mi>=2)add(A,'Morning-line rank #'+(mi+1));
+   const q=number(h.speedPoints);if(q>=2){if(q===Math.max(...live.map(x=>number(x.speedPoints))))add(F,'Top early-speed points');}else if(q===0&&live.some(x=>number(x.speedPoints)>=2))add(A,'No early-speed points');
+   const recent=(h.ppRaces||[]).slice(0,4).filter(x=>number(x.fin)>0&&number(x.fin)<90);
+   if(recent.length>=2){const itm=recent.filter(x=>number(x.fin)<=3).length;if(itm>=3)add(F,'In money '+itm+'/'+recent.length+' recent starts');else if(itm<=1)add(A,'In money '+itm+'/'+recent.length+' recent starts');if(number(recent[0].fin)===1)add(F,'Won last race');}
+   const ev=hh59Evidence(h,live);ev.good.forEach(x=>add(F,x));ev.bad.forEach(x=>add(A,x));
+   const item=(scored||[]).find(x=>String(x.horse.id)===String(h.id));if(item&&item.lowerRank>1)add(A,'RS leader ranks higher');
+   out.set(String(h.id),{horse:h,F,A,tally:F.length-A.length,rs:item?.lowerScore??null,rsRank:item?.lowerRank??null});
+ }
+ for(const v of out.values())v.csRank=1+[...out.values()].filter(x=>x.tally>v.tally).length;
+ return out;
+}
+function hh64CaseLine(h,board,details=false){
+ const v=board?.get(String(h?.id));if(!v)return '';
+ const sign=v.tally>0?'+':'';
+ return `<div class="hh64-case"><b>RS ${safe(v.rs??'—')}</b> <span class="hh64-muted">(rank #${safe(v.rsRank??'—')})</span> · <b>CS ${safe(v.csRank)}</b> <span class="hh64-muted">(case rank; lower is better)</span> · ${v.F.length} FOR / ${v.A.length} AGAINST (${sign}${v.tally})${details?`<details class="hh64-evidence"><summary>Show positive and negative race facts</summary><div><b>FOR:</b> ${v.F.length?v.F.map(safe).join(' · '):'None identified'}</div><div><b>AGAINST:</b> ${v.A.length?v.A.map(safe).join(' · '):'None identified'}</div></details>`:''}</div>`;
+}
+function hh64CaseSummary(board){
+ const arr=[...board.values()].sort((a,b)=>a.csRank-b.csRank||a.rsRank-b.rsRank);
+ return `<div class="hh64-case"><b>RS / CS — lower is better</b> · CS ranks favorable minus unfavorable race facts, not a probability or an automatic pick.<div>${arr.map(v=>`<div><b>#${safe(v.horse.post)} ${safe(v.horse.horse)}</b> · RS ${safe(v.rs)} (#${safe(v.rsRank)}) · CS ${safe(v.csRank)} · ${v.F.length} FOR / ${v.A.length} AGAINST</div>`).join('')}</div></div>`;
+}
+
 function raceFactsHTMLV806(field,scored){
     const active=(field||[]).filter(h=>!h.scratched);
+    const hh64=hh64CaseBoard(scored,active);
     const ppRank=rankMapV806(active,h=>number(h.primePower||h.score));
     const lastRank=rankMapV806(active,h=>number(h.lastSpeed));
     const l3Rank=rankMapV806(active,h=>last3AverageV806(h));
@@ -6233,14 +6269,14 @@ function raceFactsHTMLV806(field,scored){
     const scoreRank=new Map((scored||[]).map((x,i)=>[x.horse.id,i+1]));
     const rows=[...active].sort((a,b)=>(scoreRank.get(a.id)||99)-(scoreRank.get(b.id)||99));
     return `<details class="rf806"><summary>RACE FACTS — EVERY HORSE SIDE BY SIDE</summary><div class="rf806-wrap"><table class="rf806-table"><thead><tr>
-      <th>Rk</th><th>Horse</th><th>M/L</th><th>Last-3</th><th>Last</th><th>Prime Power</th><th>Surface</th><th>Distance</th><th>Cond Speed</th><th>Class</th><th>Last Race</th><th>$/Start</th><th>Style</th><th>Days</th><th>Wt</th><th>Med</th><th>Equip</th><th>Trainer</th><th>Trainer Angles / Changes</th><th>Jockey</th><th>Jockey Angle</th>
+      <th>Rk</th><th>Horse</th><th>RS</th><th>CS</th><th>FOR / AGAINST</th><th>M/L</th><th>Last-3</th><th>Last</th><th>Prime Power</th><th>Surface</th><th>Distance</th><th>Cond Speed</th><th>Class</th><th>Last Race</th><th>$/Start</th><th>Style</th><th>Days</th><th>Wt</th><th>Med</th><th>Equip</th><th>Trainer</th><th>Trainer Angles / Changes</th><th>Jockey</th><th>Jockey Angle</th>
     </tr></thead><tbody>${rows.map(h=>{
       const sr=surfaceRecordV806(h), l3=last3AverageV806(h), cs=conditionsSpeedV805(h), cm=classMoveSupportV805(h,field), eps=careerEPS(h), flags=changeFlagsV806(h);
       const js=h.jockeySpecialStarts?`${safe(h.jockeySpecialLabel||'Jky angle')} ${safe(h.jockeySpecialStarts)} st/${safe(h.jockeySpecialWins||0)} w · ROI ${safe(h.jockeySpecialROI??'—')}`:'';
       const tr=h.trainerStarts?`${safe(h.trainer)} ${pct761(h.trainerWins,h.trainerStarts)}`:safe(h.trainer||'—');
       const jk=h.jockeyStarts?`${safe(h.jockey)} ${pct761(h.jockeyWins,h.jockeyStarts)}`:safe(h.jockey||'—');
       const best=(rank)=>rank===1?' class="rf806-best"':'';
-      return `<tr><td>${scoreRank.get(h.id)||'—'}</td><td><b>${horseNameLinkHTML(h)}</b></td><td>${safe(mlDisplayV804(h.odds))}</td>
+      return `<tr><td>${scoreRank.get(h.id)||'—'}</td><td><b>${horseNameLinkHTML(h)}</b></td><td><b>${safe(hh64.get(String(h.id))?.rs??'—')}</b></td><td><b>${safe(hh64.get(String(h.id))?.csRank??'—')}</b></td><td>${hh64CaseLine(h,hh64,true)}</td><td>${safe(mlDisplayV804(h.odds))}</td>
        <td${best(l3Rank.get(h.id))}>${l3!==null?l3.toFixed(1):'—'}${l3Rank.get(h.id)?` #${l3Rank.get(h.id)}`:''}</td>
        <td${best(lastRank.get(h.id))}>${h.lastSpeed||'—'}${lastRank.get(h.id)?` #${lastRank.get(h.id)}`:''}</td>
        <td${best(ppRank.get(h.id))}>${safe(h.primePower||h.score||'—')}${ppRank.get(h.id)?` #${ppRank.get(h.id)}`:''}</td>
@@ -7377,6 +7413,7 @@ function computeRaceCard(){
         factsHTML += `<details class="race-card race-anchor-target facts-race-fold" id="facts-race-${safe(raceNum)}">
           <summary><b>RACE ${safe(raceNum)} — RACE FACTS</b> <span class="small-note">Tap to open</span></summary>
           ${raceConditionsHTML(top.horse)}
+          ${hh64CaseSummary(hh64CaseBoard(scored,activeField))}
           ${raceFactsHTMLV806(activeField,scored)}
         </details>`;
 
@@ -7433,6 +7470,8 @@ function computeRaceCard(){
                 <div class="model-prob"><button class="prob-button" onclick="openProbability('${safe(raceNum)}')" aria-label="Open probability details">${(top.probability*100).toFixed(1)}%</button><div class="confidence">THIS HORSE'S MODEL SHARE · ${safe(confidenceLabelV815(wagerV815))}</div></div>
             </div>
             <div class="hh-review" style="border-left:5px solid #315A7D"><b>INDEPENDENT MODEL LEADER:</b> #${safe(modelLeader.horse.post)} ${horseNameLinkHTML(modelLeader.horse)} · ${(modelLeader.probability*100).toFixed(1)}% model share. <b>ML ×1 RANK LEADER:</b> #${safe(top.horse.post)} ${horseNameLinkHTML(top.horse)} · ${(top.probability*100).toFixed(1)}% model share. ${String(modelLeader.horse.id)===String(top.horse.id)?'<b>AGREE</b>':'<b>DISAGREE — no validated automatic override</b>'}. Rank formula: Avg-3 figure rank + Prime Power rank (young-horse exception) + ML rank ×1. Morning line is used for this research ranking, NOT for evidence contender qualification. <b>WAGER: PASS pending actual odds and qualified price.</b></div>
+            ${hh64CaseLine(top.horse,hh64CaseBoard(scored,activeField),true)}
+            ${String(modelLeader.horse.id)!==String(top.horse.id)?hh64CaseLine(modelLeader.horse,hh64CaseBoard(scored,activeField),false):''}
             ${hh60DecisionHTML(finalV860)}
             <div class="decision-type-line">${raceTypeTagV799(top.horse,wagerV815.type==='BET_PICK')}</div>
 
@@ -7494,6 +7533,7 @@ function computeRaceCard(){
           <div class="note"><b>v7.74 LAST-FIGURE RESCUE + RSS AUTO COMPUTE:</b> A sharp single latest BRIS Speed figure can rescue a horse into Questionable; it needs another independent performance signal for True Contender. Avg-3 remains in the main model.</div>
           <div class="note"><b>90% COVERAGE RESEARCH FIELD:</b> ${coverageField.map(x=>`#${safe(x.horse.post)} ${safe(x.horse.horse)}`).join(" · ") || "None"}. This is a candidate coverage set pending historical validation — not a claimed 90% probability.</div>
           ${multiTrainers.length ? `<div class="warning-box"><b>TRAINER MULTIPLE ENTRY:</b> ${multiTrainers.map(k=>{const h=activeField.find(x=>normalizeName(x.trainer)===k);return safe(h?h.trainer:k);}).join(', ')}</div>` : ''}
+          ${hh64CaseSummary(hh64CaseBoard(scored,activeField))}
           ${raceFactsHTMLV806(activeField,scored)}
           <div class="analysis-grid">
             <div class="analysis-box contender"><h4>Contenders (${contenders.length})</h4>
@@ -7512,6 +7552,7 @@ function computeRaceCard(){
                     ${ls?'<span class="badge badge-blue">SECOND LOOK</span>':''}
                     ${speedConfirmedBadge(activeField,item.horse)}
                     <br>Model: <b>${modelPct(item.probability)} MODEL SHARE</b>
+                    ${hh64CaseLine(item.horse,hh64CaseBoard(scored,activeField),true)}
                     ${cc.full?`<br><span class="note"><b>Concurrent support:</b> ${safe(cc.notes.join(" · "))}</span>`:''}
                     ${ls?`<br><span class="note"><b>Longshot support:</b> ${safe(item.horse.odds||item.horse.ml||"")} M/L · ${safe(ls.reasons.join(" · "))}</span>`:''}
                     <br><span class="note">${safe(classMap[item.horse.id].reason)}</span>
@@ -7769,7 +7810,7 @@ function computeRaceCard(){
         <div class="race-card">
           <h3>Other Tabs</h3>
           <div class="metric-line"><b>Race Card</b> — Full field in ranked order. Tap a horse for past performances.</div>
-          <div class="metric-line"><b>Race Facts</b> — Side-by-side evidence for every active horse.</div>
+          <div class="metric-line"><b>Race Facts</b> — Side-by-side evidence for every active horse. RS is the original lower-is-better numerical score; CS is the lower-is-better rank of positive minus negative race facts. CS is display-only and does not change a pick, probability, contender category or wager.</div>
           <div class="metric-line"><b>Contenders</b> — Supporting contender analysis and classifications.</div>
           <div class="metric-line"><b>Concurrence</b> — Shows independent methods agreeing on the same horse. Concurrence is supporting evidence only and does not override the wager gate.</div>
         </div>
@@ -9639,6 +9680,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.63 · October 11, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.64 · October 11, 2026 · iPhone/Safari</div>
 </body>
 </html>
