@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.65 · October 11, 2026 — Value Horse + Fade Notes</title>
+<title>Horse Handicap v8.66 · October 12, 2026 — Value Horse + Fade Notes</title>
 
 <style>
 :root{
@@ -7498,6 +7498,19 @@ function computeRaceCard(){
                 ""
             }
 
+            <details class="hh-top4-inline" style="margin-top:12px;padding:10px 12px;border:1px solid #cfc2a0;border-radius:8px;background:#fff;">
+              <summary style="font-weight:800;cursor:pointer;">TOP 4 CONTENDERS · RACE ${safe(raceNum)} — tap to expand</summary>
+              <div class="small-note" style="margin:8px 0;">ML ×1 research ranking; lower RS and CS are better. This list does not replace the original probability-model leader.</div>
+              ${hh64CaseBoard(scored,activeField) ? lowerRankFieldV822(calculateProbabilities(activeField),activeField).slice(0,4).map((x,i)=>{
+                const h=x.horse;
+                const cb=hh64CaseBoard(scored,activeField);
+                return `<div style="padding:9px 0;border-top:1px solid #ddd;line-height:1.5;">
+                  <b>${i+1}. #${safe(h.post||h.pgm||'')} ${horseNameLinkHTML(h)}</b>
+                  <div>${hh64CaseLine(h,cb,false)}</div>
+                  <span class="small-note">Model share ${modelPct(x.probability)} · RS ${safe(x.lowerScore??'—')} · ML ×1 rank #${i+1}</span>
+                </div>`;
+              }).join('') : '<span class="small-note">No ranked runners.</span>'}
+            </details>
         </div>
 
         `;
@@ -7731,7 +7744,6 @@ function computeRaceCard(){
 
             <div class="small-note" style="margin:4px 0 10px;">WINNER: protected original model selection. VERIFIED CONTENDERS require two independent evidence groups. M/L is price information, not a contender qualification. Research mode: no automatic wager.</div>
             ${bestHTML}
-            <details class="race-card" style="margin-top:12px;"><summary><b>TOP 4 — ALL RACES</b></summary><div id="top4Board" style="margin-top:8px;"></div></details>
             <details class="race-card" style="margin-top:10px;"><summary><b>SECOND LOOK / VALUE ALERTS</b></summary><div id="longshotsBoard" style="margin-top:8px;"></div></details>
         </div>
         <div style="margin-top:16px;">${wagerSummaryV815}</div>
@@ -7816,7 +7828,6 @@ function computeRaceCard(){
         <div class="warning-box"><b>Interpretation:</b> Rank #1 answers <b>who is most likely to win</b>. PICK or NO CHOICE answers <b>whether Rank #1 is an official wager</b>. PASS RACE, when a validated rule is eventually added, will mean <b>stop reviewing the race for wagering</b>.</div>
     `;
 
-    renderTop4Board();
     renderLiveLongshots();
 
     bindRaceJumpBars();
@@ -8264,7 +8275,10 @@ function renderLiveLongshots(){
           </div>`).join("")}
         </div>`;
     });
-    box.innerHTML = count ? html : `<div class="empty-state">No horse meets the SECOND LOOK evidence threshold on this card.</div>`;
+    const total=raceKeys.length;
+    const qualifyingRaces=(html.match(/id="longshot-race-/g)||[]).length;
+    const tally=`<div class="small-note" style="padding:8px 0;"><b>Current loaded card:</b> ${qualifyingRaces} of ${total} races (${total?(100*qualifyingRaces/total).toFixed(1):'0'}%) produced at least one SECOND LOOK; ${count} total horses flagged. This is a current-card frequency, not a historical success rate.</div>`;
+    box.innerHTML = tally + (count ? html : `<div class="empty-state">No horse meets the SECOND LOOK evidence threshold on this card.</div>`);
 }
 
 function showTab(tab){
@@ -9679,6 +9693,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.65 · October 11, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.66 · October 12, 2026 · iPhone/Safari</div>
 </body>
 </html>
