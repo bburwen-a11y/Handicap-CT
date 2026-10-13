@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.71 · October 13, 2026 — Prime Challenger & Focus Sorting</title>
+<title>Horse Handicap v8.72 · October 13, 2026 — Prime Challenger & Focus Sorting</title>
 
 <style>
 :root{
@@ -1292,7 +1292,7 @@ details.decision-facts-v831[open]>summary:before{transform:rotate(90deg)}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.71 · Oct 13, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.72 · Oct 13, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -6910,7 +6910,7 @@ function hiddenSupportThreatsV803(field,pick){
     }
     return out.sort((a,b)=>b.score-a.score).slice(0,2);
 }
-/* v8.71: Independent-domain rival challenge. EPS and surface EPS are ONE earnings domain. */
+/* v8.72: Independent-domain rival challenge. EPS and surface EPS are ONE earnings domain. */
 function hh70PrimeChallengers(field,pick){
  const active=(field||[]).filter(h=>!h.scratched);
  if(!pick||active.length<3)return [];
@@ -7581,9 +7581,14 @@ function computeRaceCard(){
         const finalV860=hh60Decision(probabilityScored,activeField);
         if(betRaceRows.length) betRaceRows[betRaceRows.length-1].wager=wagerV815;
 
+        // Historical 501-race audit: agreement 128/327 (39.1%), disagreement 31/174 (17.8%).
+        // Research evidence is a review-order indicator, not an automatic wager qualification.
+        const hh72Agree = String(modelLeader.horse.id)===String(top.horse.id);
+        const hh72Triage=hh68RaceTriage(activeField,top.horse,finalV860.horse);
+        const hh72Priority=hh72Triage.status.startsWith('PRIORITY')?0:hh72Triage.status.startsWith('REVIEW')?1:hh72Triage.status.startsWith('CAUTION')?2:3;
         bestHTML += `
 
-        <div class="best-pick race-anchor-target read-${readability.level}" id="decision-race-${safe(raceNum)}" data-race-order="${Number(raceNum)}" data-focus-order="${hh68RaceTriage(activeField,top.horse,finalV860.horse).status.startsWith('PRIORITY')?0:hh68RaceTriage(activeField,top.horse,finalV860.horse).status.startsWith('REVIEW')?1:hh68RaceTriage(activeField,top.horse,finalV860.horse).status.startsWith('CAUTION')?2:3}">
+        <div class="best-pick race-anchor-target read-${readability.level}" id="decision-race-${safe(raceNum)}" data-race-order="${Number(raceNum)}" data-focus-order="${hh72Priority*2+(hh72Agree?0:1)}">
 
             <div class="best-header">
                 <div>
@@ -7598,6 +7603,10 @@ function computeRaceCard(){
                 <div class="model-prob"><button class="prob-button" onclick="openProbability('${safe(raceNum)}')" aria-label="Open probability details">${(top.probability*100).toFixed(1)}%</button><div class="confidence">THIS HORSE'S MODEL SHARE · ${safe(confidenceLabelV815(wagerV815))}</div></div>
             </div>
             <div class="hh-review" style="border-left:5px solid #315A7D"><b>INDEPENDENT MODEL LEADER:</b> #${safe(modelLeader.horse.post)} ${horseNameLinkHTML(modelLeader.horse)} · ${(modelLeader.probability*100).toFixed(1)}% model share. <b>ML ×1 RANK LEADER:</b> #${safe(top.horse.post)} ${horseNameLinkHTML(top.horse)} · ${(top.probability*100).toFixed(1)}% model share. ${String(modelLeader.horse.id)===String(top.horse.id)?'<b>AGREE</b>':'<b>DISAGREE</b>'}. Rank formula: Avg-3 figure rank + Prime Power rank (young-horse exception) + ML rank ×1. Morning line is used for this ranking, not for contender qualification.</div>
+            <div style="margin:8px 0;padding:10px 12px;border-left:5px solid ${hh72Agree?'#2E6E45':'#B8902E'};background:${hh72Agree?'#eff7f0':'#fff6e7'};border-radius:5px">
+              <b>${hh72Agree?'RANKINGS AGREE — STRONGER HISTORICAL REVIEW SIGNAL':'RANKINGS DISAGREE — LOWER HISTORICAL WIN RATE'}</b>
+              <div style="font-size:12px;margin-top:3px">${hh72Agree?'Both methods select the same horse. Historical original-model record: 128 wins / 327 races (39.1%).':'The methods select different horses. Historical original-model record: 31 wins / 174 races (17.8%).'} Review-order evidence only; not a guarantee or a new betting signal.</div>
+            </div>
             ${hh64CaseLine(top.horse,hh64CaseBoard(scored,activeField),true)}
             ${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}
             ${hh68RaceTriageHTML(activeField,top.horse,finalV860.horse)}
@@ -7741,7 +7750,7 @@ function computeRaceCard(){
                (b.speedConfirmed?1:0)-(a.speedConfirmed?1:0) ||
                number(a.race)-number(b.race);
     });
-    // v8.71: Original wager signals are not automatically qualified picks.
+    // v8.72: Original wager signals are not automatically qualified picks.
     // The conservative time-priority screen is a review filter, not a profit guarantee.
     const qualifiedRacesV869=rankedBetRaces.filter(x=>
         x.wager?.type==='BET_PICK' && !x.pass && !x.close &&
@@ -7750,7 +7759,7 @@ function computeRaceCard(){
         x.timePriority?.status==='PRIORITY REVIEW' && !(x.primeChallengers?.length)
     );
     const wagerSummaryV815=`<div class="bestof" style="margin-bottom:16px;">
-      <h3>Qualified Picks — Clearer Race Picture · v8.71</h3>
+      <h3>Qualified Picks — Clearer Race Picture · v8.72</h3>
       <div class="small-note" style="margin-bottom:8px;">Only existing model PICK signals that also pass the conservative race-clarity screen appear here. Other races retain a TOP RANKED horse but are not Qualified Picks. This is a time-priority screen, not a validated betting edge.</div>
       ${qualifiedRacesV869.length?qualifiedRacesV869.map(x=>`<div class="best-pick" style="padding:10px 12px;margin:8px 0;">
         <b><span class="race-number-link" onclick="goToContendersRace('${safe(x.race)}')">Race ${safe(x.race)}</span> — #${safe(x.wager.horse.post)} ${horseNameLinkHTML(x.wager.horse)}</b>
@@ -7885,7 +7894,7 @@ function computeRaceCard(){
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 14px">
               <label for="hh69-sort" style="font-weight:800">Decision order:</label>
               <select id="hh69-sort" style="max-width:240px" onchange="hh69SortDecisions(this.value)">
-                <option value="race">Race number</option><option value="focus">Focus — best review first</option>
+                <option value="race">Race number</option><option value="focus">Focus — clarity, then ranking agreement</option>
               </select>
             </div>
             <div id="hh69-decision-list">${bestHTML}</div>
@@ -9838,6 +9847,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.71 · October 13, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.72 · October 13, 2026 · iPhone/Safari</div>
 </body>
 </html>
