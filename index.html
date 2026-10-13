@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.68 · October 12, 2026 — Race Priority & Uncertainty Filter</title>
+<title>Horse Handicap v8.69 · October 12, 2026 — Qualified Picks & Focus Sorting</title>
 
 <style>
 :root{
@@ -1292,7 +1292,7 @@ details.decision-facts-v831[open]>summary:before{transform:rotate(90deg)}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.68 · Oct 12, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.69 · Oct 12, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -6735,6 +6735,12 @@ function hh67PaceVerdict(field,horse){
   return {verdict,level,reason,shape:p.label,cluster:p.rivals.map(x=>`#${x.h.post||x.h.pgm} ${x.h.horse}`),style,nPace:p.nPace,n:p.n};
 }
 /* Research triage, not a validated wagering system. Does not alter horse rankings. */
+function hh69SortDecisions(mode){
+ const box=document.getElementById('hh69-decision-list'); if(!box)return;
+ const cards=[...box.children].filter(el=>el.matches('.best-pick[data-race-order]'));
+ cards.sort((a,b)=>mode==='focus'?(Number(a.dataset.focusOrder)-Number(b.dataset.focusOrder)||Number(a.dataset.raceOrder)-Number(b.dataset.raceOrder)):(Number(a.dataset.raceOrder)-Number(b.dataset.raceOrder)));
+ cards.forEach(el=>box.appendChild(el));
+}
 function hh68RaceTriage(field,rankHorse,modelHorse){
   const live=(field||[]).filter(h=>!h.scratched), p=hh68PaceScenario(live);
   const warnings=[];
@@ -7513,6 +7519,7 @@ function computeRaceCard(){
         const perfSupport=performanceEarningsSupport(activeField,top.horse);
         betRaceRows.push({
             race:String(raceNum), horse:top.horse, quality:betQ,
+            timePriority:hh68RaceTriage(activeField,top.horse,probabilityScored?.[0]?.horse),
             pass:passFlag, close:closeRace, marketRank,
             speedConfirmed:speedConfirmedInfo(activeField,top.horse).confirmed,
             recentSpeedConfirmed:recentSpeedConfirmedInfo(activeField,top.horse),
@@ -7543,7 +7550,7 @@ function computeRaceCard(){
 
         bestHTML += `
 
-        <div class="best-pick race-anchor-target read-${readability.level}" id="decision-race-${safe(raceNum)}">
+        <div class="best-pick race-anchor-target read-${readability.level}" id="decision-race-${safe(raceNum)}" data-race-order="${Number(raceNum)}" data-focus-order="${hh68RaceTriage(activeField,top.horse,finalV860.horse).status.startsWith('PRIORITY')?0:hh68RaceTriage(activeField,top.horse,finalV860.horse).status.startsWith('REVIEW')?1:hh68RaceTriage(activeField,top.horse,finalV860.horse).status.startsWith('CAUTION')?2:3}">
 
             <div class="best-header">
                 <div>
@@ -7700,16 +7707,23 @@ function computeRaceCard(){
                (b.speedConfirmed?1:0)-(a.speedConfirmed?1:0) ||
                number(a.race)-number(b.race);
     });
-    const wagerRacesV815=rankedBetRaces.filter(x=>x.wager && x.wager.type==='BET_PICK');
-    const wagerSummaryV815=wagerRacesV815.length ? `<div class="bestof" style="margin-bottom:16px;">
-      <h3>Today's Picks — v8.52</h3>
-      <div class="small-note" style="margin-bottom:8px;">PICK = existing model wager signal. NO CHOICE = no official wager, but continue reviewing Rank #1 and Rank #2/Main Threat. PASS RACE is reserved for a future historically validated race-rejection rule and is not assigned by this build.</div>
-      ${wagerRacesV815.map(x=>`<div class="best-pick" style="padding:10px 12px;margin:8px 0;">
+    // v8.69: Original wager signals are not automatically qualified picks.
+    // The conservative time-priority screen is a review filter, not a profit guarantee.
+    const qualifiedRacesV869=rankedBetRaces.filter(x=>
+        x.wager?.type==='BET_PICK' && !x.pass && !x.close &&
+        x.readability?.level==='green' &&
+        x.selectionGate?.status==='PICK' && x.selectionGate?.officialPick===true &&
+        x.timePriority?.status==='PRIORITY REVIEW'
+    );
+    const wagerSummaryV815=`<div class="bestof" style="margin-bottom:16px;">
+      <h3>Qualified Picks — Clearer Race Picture · v8.69</h3>
+      <div class="small-note" style="margin-bottom:8px;">Only existing model PICK signals that also pass the conservative race-clarity screen appear here. Other races retain a TOP RANKED horse but are not Qualified Picks. This is a time-priority screen, not a validated betting edge.</div>
+      ${qualifiedRacesV869.length?qualifiedRacesV869.map(x=>`<div class="best-pick" style="padding:10px 12px;margin:8px 0;">
         <b><span class="race-number-link" onclick="goToContendersRace('${safe(x.race)}')">Race ${safe(x.race)}</span> — #${safe(x.wager.horse.post)} ${horseNameLinkHTML(x.wager.horse)}</b>
-        <span class="badge badge-green">PICK</span>
+        <span class="badge badge-green">QUALIFIED PICK</span>
         <span class="badge">M/L ${safe(x.wager.horse.odds||'—')}</span>
-      </div>`).join('')}
-    </div>` : `<div class="warning-box">No PICK qualifies on this card. These races are NO CHOICE — continue reviewing Rank #1 and Rank #2/Main Threat; they are not automatically PASS RACE.</div>`;
+      </div>`).join(''):'<div class="small-note">No race qualifies as a clear-picture PICK on this card. The highest-ranked horses remain visible within their races.</div>'}
+    </div>`;
 
     const strongestRace=betRaceRows
         .filter(x=>!x.horse.scratched && x.readability?.level==='green' && x.selectionGate?.status==='PICK' && x.selectionGate?.officialPick===true && !x.pass && x.consensus?.level==='high' && independentConditionConfirmation(x).confirmed && !topPickHasStrongH2HLoss(x.activeField,x.horse,x))
@@ -7834,7 +7848,13 @@ function computeRaceCard(){
             </h3>
 
             <div class="small-note" style="margin:4px 0 10px;">WINNER: protected original model selection. VERIFIED CONTENDERS require two independent evidence groups. M/L is price information, not a contender qualification. Research mode: no automatic wager.</div>
-            ${bestHTML}
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 14px">
+              <label for="hh69-sort" style="font-weight:800">Decision order:</label>
+              <select id="hh69-sort" style="max-width:240px" onchange="hh69SortDecisions(this.value)">
+                <option value="race">Race number</option><option value="focus">Focus — best review first</option>
+              </select>
+            </div>
+            <div id="hh69-decision-list">${bestHTML}</div>
             <details class="race-card" style="margin-top:10px;"><summary><b>SECOND LOOK / VALUE ALERTS</b></summary><div id="longshotsBoard" style="margin-top:8px;"></div></details>
         </div>
         <div style="margin-top:16px;">${wagerSummaryV815}</div>
@@ -9784,6 +9804,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.68 · October 12, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.69 · October 12, 2026 · iPhone/Safari</div>
 </body>
 </html>
