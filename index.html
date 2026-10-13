@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.67 · October 12, 2026 — Value Horse + Fade Notes</title>
+<title>Horse Handicap v8.68 · October 13, 2026 — Value Horse + Fade Notes</title>
 
 <style>
 :root{
@@ -6695,28 +6695,75 @@ function pricePlayHTMLV792(p){
 
 /* v8.67 — PACE SCENARIO VERDICT REVIEW. Informational, never changes picks,
    ranks, model probabilities, wager logic or evidence qualification. */
-function hh67PaceVerdict(field,horse){
+/* v8.68: stricter pace qualification. E/EP with Quirin >=5, plus
+   comparable early figures, rather than counting every broad pressure score. */
+function hh68PaceScenario(field){
   const live=(field||[]).filter(h=>!h.scratched);
-  const p=relativePaceV762(live);
-  const my=(p.profiles||[]).find(x=>String(x.h.id)===String(horse?.id));
-  const st=my?.style||String(horse?.runStyle||'').toUpperCase().replace('E/P','EP');
-  const speed=['E','EP'].includes(st), close=['S','SS','P/S'].includes(st);
-  const cluster=(p.credible||[]).map(x=>`#${x.h.post||x.h.pgm} ${x.h.horse}`);
-  const enough=(p.profiles||[]).filter(x=>x.ppEarly!==null).length>=Math.max(2,Math.ceil(live.length*.4));
-  let verdict='PACE UNCERTAIN', level='neutral', reason='Insufficient comparable recent early-pace figures to establish a reliable pace scenario.';
-  if(!enough){ verdict='PACE DATA LIMITED'; }
-  else if(p.label==='CONTESTED / FAST'){
-    if(speed && (p.credible||[]).some(x=>String(x.h.id)===String(horse.id))){verdict='PACE DUEL RISK — VERDICT HORSE';level='risk';reason='This horse projects into a crowded early-speed group and could expend energy in a duel; a collapse is possible, not assured.';}
-    else if(close){verdict='PACE COLLAPSE MAY HELP VERDICT HORSE';level='help';reason='Several early-speed rivals project to contest the pace; this runner may benefit from tracking or closing if the duel materializes.';}
-    else {verdict='CONTESTED PACE — TRIP REVIEW';level='watch';reason='Three or more credible early-speed runners; review whether this horse can secure a stalking trip.';}
-  }else if(p.label==='PRESSURED'){
-    if(speed && (p.credible||[]).some(x=>String(x.h.id)===String(horse.id))){verdict='EARLY PRESSURE — VERDICT HORSE';level='watch';reason='Two credible early-speed runners may challenge each other. This is not a confirmed speed collapse.';}
-    else if(close){verdict='PRESSURE MAY HELP CLOSER';level='watch';reason='Two early runners project to supply pressure, possibly improving the trip for a late runner.';}
-  }else if(p.label==='LONE SPEED'){
-    if(p.loneSpeed && String(p.loneSpeed.id)===String(horse.id)){verdict='LONE SPEED ADVANTAGE — VERDICT HORSE';level='help';reason='The verdict horse has the clearest path to an uncontested lead.';}
-    else if(close){verdict='SOFT PACE RISK — VERDICT HORSE';level='risk';reason='A lone front-runner may slow the pace, leaving this closer too much to do late.';}
-  }
-  return {verdict,level,reason,shape:p.label,cluster,style:st||'UNKNOWN',nPace:(p.profiles||[]).filter(x=>x.ppEarly!==null).length,n:live.length};
+  const profiles=live.map(fieldPaceProfileV764);
+  const early=profiles.filter(x=>x.ppEarly!==null);
+  const strong=profiles.filter(x=>['E','EP'].includes(x.style)&&x.sp>=5);
+  const maxEarly=early.length?Math.max(...early.map(x=>x.ppEarly)):null;
+  const rivals=strong.filter(x=>x.ppEarly===null||maxEarly===null||x.ppEarly>=maxEarly-8);
+  const close= rivals.length>=2 && rivals.filter(x=>x.ppEarly!==null).length>=2 &&
+    Math.max(...rivals.filter(x=>x.ppEarly!==null).map(x=>x.ppEarly))-
+    Math.min(...rivals.filter(x=>x.ppEarly!==null).map(x=>x.ppEarly))<=5;
+  const coverage=early.length/Math.max(1,live.length);
+  let label='PACE UNPROVEN',level='neutral';
+  if(coverage>=.5 && rivals.length>=3 && close){label='HIGH DUEL RISK';level='risk';}
+  else if(coverage>=.5 && rivals.length>=2 && close){label='EARLY PRESSURE WATCH';level='watch';}
+  else if(coverage>=.5 && rivals.length===1){label='POSSIBLE LONE SPEED';level='help';}
+  else if(coverage>=.5){label='NO CLEAR DUEL';level='neutral';}
+  return {label,level,rivals,profiles,coverage,nPace:early.length,n:live.length};
+}
+function hh67PaceVerdict(field,horse){
+  const p=hh68PaceScenario(field);
+  const my=p.profiles.find(x=>String(x.h.id)===String(horse?.id));
+  const style=my?.style||'UNKNOWN';
+  const isRival=p.rivals.some(x=>String(x.h.id)===String(horse?.id));
+  const closer=['S','SS','P/S'].includes(style);
+  let verdict=p.label,level=p.level;
+  let reason='No sufficiently strong, matched early-speed group established by the available BRIS data.';
+  if(p.label==='HIGH DUEL RISK'){
+    if(isRival){verdict='HIGH DUEL RISK — SELECTED HORSE';level='risk';reason='Three or more qualifying early runners have similar early figures. The selected horse may be involved in a costly duel.';}
+    else if(closer){verdict='POSSIBLE COLLAPSE BENEFIT';level='help';reason='A contested pace may aid this closer, but a collapse is not assured.';}
+    else{verdict='HIGH DUEL RISK — TRIP UNCERTAINTY';level='watch';reason='Several comparable leaders may contest the pace; assess this runner’s likely position.';}
+  }else if(p.label==='EARLY PRESSURE WATCH'){
+    reason='Two credible, comparably fast early runners may pressure one another; this is not automatically a speed collapse.';
+    if(isRival){verdict='EARLY PRESSURE — SELECTED HORSE';level='watch';}
+  }else if(p.label==='POSSIBLE LONE SPEED' && isRival){verdict='POSSIBLE LONE-SPEED ADVANTAGE';reason='One credible early-speed runner stands out in the available data.';}
+  else if(p.coverage<.5){reason='Fewer than half the runners have comparable recent early-pace figures. Do not infer a speed duel.';}
+  return {verdict,level,reason,shape:p.label,cluster:p.rivals.map(x=>`#${x.h.post||x.h.pgm} ${x.h.horse}`),style,nPace:p.nPace,n:p.n};
+}
+/* Research triage, not a validated wagering system. Does not alter horse rankings. */
+function hh68RaceTriage(field,rankHorse,modelHorse){
+  const live=(field||[]).filter(h=>!h.scratched), p=hh68PaceScenario(live);
+  const warnings=[];
+  if(p.label==='HIGH DUEL RISK') warnings.push({key:'pace',text:'High duel risk: 3+ comparable committed early runners'});
+  else if(p.label==='EARLY PRESSURE WATCH') warnings.push({key:'pace',text:'Early pressure watch: two comparable early runners'});
+  if(p.label==='HIGH DUEL RISK' && p.rivals.some(x=>String(x.h.id)===String(rankHorse?.id)))
+    warnings.push({key:'verdict',text:'Selected rank leader is exposed to the projected duel'});
+  const fts=live.filter(isFirstTimeStarterForQuality);
+  const ranked=live.filter(h=>oddsDecimal(h.odds)!=null).sort((a,b)=>oddsDecimal(a.odds)-oddsDecimal(b.odds));
+  const prominent=fts.filter(h=>{const r=ranked.findIndex(x=>String(x.id)===String(h.id));return r>=0&&r<3;});
+  if(prominent.length) warnings.push({key:'fts',text:`${prominent.length} unproven FTS among top three morning-line choices`});
+  if(fts.length>=2) warnings.push({key:'ftsfield',text:`${fts.length} first-time starters add uncertainty`});
+  if(live.length>=11) warnings.push({key:'field',text:`Large field (${live.length}) increases trip uncertainty`});
+  if(rankHorse&&modelHorse&&String(rankHorse.id)!==String(modelHorse.id)) warnings.push({key:'disagree',text:'RS leader and original probability-model leader disagree'});
+  const independent=warnings.filter(x=>x.key!=='verdict').length;
+  let status='PRIORITY REVIEW',detail='No multiple independent uncertainty warnings detected';
+  if(independent>=3 || (independent>=2 && warnings.some(x=>x.key==='verdict'))){status='SKIP — HIGH UNCERTAINTY';detail='Multiple distinct warnings: conserve handicapping time';}
+  else if(independent>=2 || warnings.some(x=>x.key==='verdict')){status='CAUTION — REVIEW LATER';detail='Several factors complicate the selection';}
+  else if(independent===1){status='REVIEW — ONE CAUTION';detail='One material caution to inspect';}
+  return {status,detail,warnings,pace:p,fts:fts.length};
+}
+function hh68RaceTriageHTML(field,rankHorse,modelHorse){
+ const t=hh68RaceTriage(field,rankHorse,modelHorse);
+ const color=t.status.startsWith('SKIP')?'#9B2C2C':t.status.startsWith('CAUTION')?'#986915':'#2E6E45';
+ return `<div class="hh68-triage" style="margin:10px 0;padding:12px;border:2px solid ${color};border-left-width:8px;border-radius:8px;background:#fff">
+ <div style="font-weight:900;font-size:17px;color:${color}">RACE TIME PRIORITY · ${safe(t.status)}</div>
+ <div style="font-size:12px;margin:4px 0">${safe(t.detail)} · Pace: ${safe(t.pace.label)} · FTS: ${t.fts}</div>
+ ${t.warnings.length?`<div style="font-size:12px"><b>Why:</b> ${t.warnings.map(x=>safe(x.text)).join(' · ')}</div>`:'<div style="font-size:12px">No qualifying high-uncertainty flags from these checks.</div>'}
+ <div style="font-size:11px;opacity:.78;margin-top:6px">Time-management screen only. No automatic horse switch or BET authorization. Morning line is not live betting odds; an FTS bet-down cannot be verified without live odds. Rules are preliminary and not backtested.</div></div>`;
 }
 function hh67PaceVerdictHTML(field,horse,label){
   if(!horse)return '';
@@ -7513,6 +7560,7 @@ function computeRaceCard(){
             <div class="hh-review" style="border-left:5px solid #315A7D"><b>INDEPENDENT MODEL LEADER:</b> #${safe(modelLeader.horse.post)} ${horseNameLinkHTML(modelLeader.horse)} · ${(modelLeader.probability*100).toFixed(1)}% model share. <b>ML ×1 RANK LEADER:</b> #${safe(top.horse.post)} ${horseNameLinkHTML(top.horse)} · ${(top.probability*100).toFixed(1)}% model share. ${String(modelLeader.horse.id)===String(top.horse.id)?'<b>AGREE</b>':'<b>DISAGREE — no validated automatic override</b>'}. Rank formula: Avg-3 figure rank + Prime Power rank (young-horse exception) + ML rank ×1. Morning line is used for this research ranking, NOT for evidence contender qualification. <b>WAGER: PASS pending actual odds and qualified price.</b></div>
             ${hh64CaseLine(top.horse,hh64CaseBoard(scored,activeField),true)}
             ${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}
+            ${hh68RaceTriageHTML(activeField,top.horse,finalV860.horse)}
             ${hh60DecisionHTML(finalV860,hh64CaseBoard(scored,activeField))}
             ${String(finalV860?.horse?.id)!==String(top.horse.id)?hh67PaceVerdictHTML(activeField,finalV860.horse,"Original model verdict horse"):""}
             <div class="decision-type-line">${raceTypeTagV799(top.horse,wagerV815.type==='BET_PICK')}</div>
@@ -9736,6 +9784,6 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.67 · October 12, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.68 · October 13, 2026 · iPhone/Safari</div>
 </body>
 </html>
