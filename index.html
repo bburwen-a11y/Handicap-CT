@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.78 · October 14, 2026 — Corrected AI Concurrence</title>
+<title>Horse Handicap v8.81 · October 15, 2026 — Main Threat Focus</title>
 
 <style>
 :root{
@@ -1310,6 +1310,14 @@ details.decision-facts-v831[open]>summary:before{transform:rotate(90deg)}
   .race-jump-bar{position:sticky !important;top:52px !important;}
 }
 </style>
+<style>
+.hh881-review{border:2px solid #b18b39;border-radius:8px;background:#fffaf0;padding:12px;margin:12px 0;color:#25342e;line-height:1.5}
+.hh881-review>b{font-size:14px;letter-spacing:.02em}
+.hh881-intro{font-size:12px;margin:6px 0;color:#48554e}
+.hh881-rival{border-top:1px solid #d6c9a9;padding:9px 0;font-size:12px}
+.hh881-rival>b{font-size:13px}
+.hh881-warning{background:#fff0d8;border-left:4px solid #a46b19;padding:8px;font-size:12px}
+</style>
 </head>
 
 <body>
@@ -1318,7 +1326,7 @@ details.decision-facts-v831[open]>summary:before{transform:rotate(90deg)}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.78 · Oct 14, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.81 · Oct 14, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -6153,7 +6161,7 @@ function paceStyleScore(h){
     return q + (bump[st]!==undefined ? bump[st] : 0);
 }
 
-/* v8.78: All pace labels share the single hh68PaceScenario evidence threshold.
+/* v8.81: All pace labels share the single hh68PaceScenario evidence threshold.
    The former relativePaceV762 projection could claim lone speed while hh68
    simultaneously detected two early rivals. It is no longer a verdict source. */
 function paceProjection(field){
@@ -6265,6 +6273,40 @@ function hh64CaseLine(h,board,details=false){
  const sign=v.tally>0?'+':'';
  return `<div class="hh64-case"><b>RS ${safe(v.rs??'—')}</b> <span class="hh64-muted">(rank #${safe(v.rsRank??'—')})</span> · <b>CS ${safe(v.csRank)}</b> <span class="hh64-muted">(case rank; lower is better)</span> · ${v.F.length} FOR / ${v.A.length} AGAINST (${sign}${v.tally})${details?`<details class="hh64-evidence"><summary>Show positive and negative race facts</summary><div><b>FOR:</b> ${v.F.length?v.F.map(safe).join(' · '):'None identified'}</div><div><b>AGAINST:</b> ${v.A.length?v.A.map(safe).join(' · '):'None identified'}</div></details>`:''}</div>`;
 }
+
+/* v8.81: Explanation-only main-threat review; never changes RS, CS, picks or wagering. */
+function hh881ThreatReview(scored,field,leader){
+  const ranked=lowerRankFieldV822(scored,field);
+  if(!ranked.length||!leader)return '';
+  const board=hh64CaseBoard(scored,field);
+  const rivals=ranked.filter(x=>String(x.horse.id)!==String(leader.id)).slice(0,3);
+  if(!rivals.length)return '';
+  const pace=hh68PaceScenario(field);
+  const profiles=pace.profiles||[];
+  const leadProfile=profiles.find(x=>String(x.h.id)===String(leader.id));
+  const leadEvidence=board.get(String(leader.id));
+  const pp=(leader.ppRaces||[]).slice(0,4);
+  const finishWeak=pp.filter(r=>number(r.fin)>=4&&number(r.fin)<90).length;
+  const leadFlags=[];
+  if(pp.length>=3&&finishWeak>=3)leadFlags.push('Selected horse finished fourth or worse in '+finishWeak+' of its last '+pp.length+' recorded starts');
+  if(pace.rivals.some(x=>String(x.h.id)===String(leader.id))&&['HIGH DUEL RISK','EARLY PRESSURE WATCH'].includes(pace.label))leadFlags.push('Selected horse may face early pressure');
+  if(leadEvidence&&leadEvidence.A.length>=leadEvidence.F.length+2)leadFlags.push('Case evidence has more negatives than positives');
+  const items=rivals.map((r,i)=>{
+    const h=r.horse, b=board.get(String(h.id));
+    const p=profiles.find(x=>String(x.h.id)===String(h.id));
+    const notes=[];
+    if(b&&leadEvidence&&b.csRank<leadEvidence.csRank)notes.push('CS favors this rival over the selection');
+    if(b&&b.F.length>=2)notes.push(b.F.length+' supporting case facts');
+    if(p&&pace.rivals.some(x=>String(x.h.id)===String(h.id)))notes.push('Credible early-pace participant ('+p.style+', Quirin '+p.sp+')');
+    if(p&&leadProfile&&p.ppEarly!==null&&leadProfile.ppEarly!==null&&p.ppEarly>leadProfile.ppEarly)notes.push('Higher recent early-pace figure than selection');
+    const hPP=number(h.primePower||h.score),lPP=number(leader.primePower||leader.score);
+    if(hPP>0&&lPP>0&&hPP>=lPP-3)notes.push('Prime Power within 3 points of selection');
+    if(!notes.length)notes.push('Next highest RS ranking; no independent threat advantage confirmed');
+    return `<div class="hh881-rival"><b>${i===0?'MAIN THREAT':'OTHER CONTENDER'} · #${safe(h.post||h.pgm||'?')} ${horseNameLinkHTML(h)}</b><div>RS #${safe(r.lowerRank||'?')} · CS #${safe(b?.csRank??'?')} · ${safe(notes.join(' · '))}</div></div>`;
+  }).join('');
+  return `<section class="hh881-review" aria-label="Main threat and selection risks"><b>MAIN THREAT & SELECTION RISKS · v8.81</b><div class="hh881-intro">Rankings unchanged. A rival can win even when the RS leader is a defensible selection. This review is descriptive, not a new betting signal.</div>${items}${leadFlags.length?`<div class="hh881-warning"><b>SELECTION CAUTION:</b> ${safe(leadFlags.join(' · '))}</div>`:''}<div class="hh881-intro">Projected pace is uncertain; no automatic pace-duel or troubled-trip bonus is applied.</div></section>`;
+}
+
 function hh64CaseSummary(board){
  const arr=[...board.values()].sort((a,b)=>a.csRank-b.csRank||a.rsRank-b.rsRank);
  return `<div class="hh64-case"><b>RS / CS — lower is better</b> · CS ranks favorable minus unfavorable race facts, not a probability or an automatic pick.<div>${arr.map(v=>`<div><b>#${safe(v.horse.post)} ${safe(v.horse.horse)}</b> · RS ${safe(v.rs)} (#${safe(v.rsRank)}) · CS ${safe(v.csRank)} · ${v.F.length} FOR / ${v.A.length} AGAINST</div>`).join('')}</div></div>`;
@@ -7676,6 +7718,7 @@ function computeRaceCard(){
               <div class="hh74-ai-result" style="margin-top:6px;font-weight:800">Calculating AI(1) ranking…</div>
               <div class="hh74-top" style="font-size:11px;opacity:.8;margin-top:3px"></div>
             </div>
+            ${hh881ThreatReview(scored,activeField,top.horse)}
             ${hh64CaseLine(top.horse,hh64CaseBoard(scored,activeField),true)}
             ${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}
             ${hh68RaceTriageHTML(activeField,top.horse,finalV860.horse)}
@@ -9917,7 +9960,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.78 · October 14, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.81 · October 14, 2026 · iPhone/Safari</div>
 
 <script>
 (function(){
