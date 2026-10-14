@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.81 · October 15, 2026 — Main Threat Focus</title>
+<title>Horse Handicap v8.83 · October 15, 2026 — Floating Navigation Repair</title>
 
 <style>
 :root{
@@ -1318,6 +1318,18 @@ details.decision-facts-v831[open]>summary:before{transform:rotate(90deg)}
 .hh881-rival>b{font-size:13px}
 .hh881-warning{background:#fff0d8;border-left:4px solid #a46b19;padding:8px;font-size:12px}
 </style>
+<style id="v882-navigation-repair">
+/* Restore floating review controls; earlier v8.75 sticky overrides broke them. */
+.tabbar{position:fixed!important;top:env(safe-area-inset-top,0px)!important;left:50%!important;transform:translateX(-50%)!important;width:min(1100px,calc(100% - 10px))!important;margin:0!important;z-index:900!important;}
+.race-jump-bar{position:sticky!important;top:calc(env(safe-area-inset-top,0px) + 55px)!important;left:auto!important;transform:none!important;width:100%!important;z-index:89!important;}
+.race-anchor-target{scroll-margin-top:115px!important;}
+#ppOverlay.show,#probOverlay.show{z-index:2000!important;}
+@media(max-width:700px){.tabbar{position:fixed!important;top:env(safe-area-inset-top,0px)!important;}.race-jump-bar{position:sticky!important;top:calc(env(safe-area-inset-top,0px) + 55px)!important;}}
+</style>
+<style id="v883-nav-gate">
+/* Keep navigation off the upload/title screen until a race card is computed. */
+body:not(.hh-nav-ready) #tabbar{display:none!important;}
+</style>
 </head>
 
 <body>
@@ -1326,7 +1338,7 @@ details.decision-facts-v831[open]>summary:before{transform:rotate(90deg)}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.81 · Oct 14, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.83 · Oct 15, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -8104,6 +8116,7 @@ function computeRaceCard(){
 
     $("tabbar").style.display =
         "flex";
+    document.body.classList.add("hh-nav-ready");
 
 
     showTab("best");
@@ -8613,7 +8626,14 @@ document
                 showTab(
                     button.dataset.tab
                 );
+                // Keep horizontal tab selection visible without moving the whole page.
                 try{ button.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"}); }catch(e){}
+                const destination=document.getElementById("tabbar");
+                if(destination){
+                    const top=destination.getBoundingClientRect().height + 12;
+                    const content=document.getElementById(({best:"bestSection",card:"cardSection",facts:"factsSection",analysis:"analysisSection",concurrence:"concurrenceSection",help:"helpSection"})[button.dataset.tab]);
+                    if(content){window.scrollTo({top:Math.max(0,window.scrollY+content.getBoundingClientRect().top-top),behavior:"smooth"});}
+                }
             }
         );
 
