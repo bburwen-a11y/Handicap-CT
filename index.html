@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.76 · October 14, 2026 — Corrected AI Concurrence</title>
+<title>Horse Handicap v8.78 · October 14, 2026 — Corrected AI Concurrence</title>
 
 <style>
 :root{
@@ -1318,7 +1318,7 @@ details.decision-facts-v831[open]>summary:before{transform:rotate(90deg)}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.76 · Oct 14, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.78 · Oct 14, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -6153,38 +6153,23 @@ function paceStyleScore(h){
     return q + (bump[st]!==undefined ? bump[st] : 0);
 }
 
+/* v8.78: All pace labels share the single hh68PaceScenario evidence threshold.
+   The former relativePaceV762 projection could claim lone speed while hh68
+   simultaneously detected two early rivals. It is no longer a verdict source. */
 function paceProjection(field){
-    const p=relativePaceV762(field);
-    const names=p.credible.slice(0,4).map(x=>`#${x.h.post} ${x.h.horse}`);
-    if(p.label==='LONE SPEED') return {label:'LONE SPEED',detail:`#${p.loneSpeed.post} ${p.loneSpeed.horse} has the clearest field-relative early advantage`};
-    if(p.label==='CONTESTED / FAST') return {label:'CONTESTED',detail:`${names.join(', ')} form the principal early-pace cluster; stalking/closing trips gain value`};
-    if(p.label==='PRESSURED') return {label:'PRESSURED',detail:`${names.join(' and ')} project to supply meaningful early pressure`};
-    if(p.label==='BALANCED / UNCERTAIN') return {label:'BALANCED / UNCERTAIN',detail:'No runner owns a decisive field-relative early edge; actual PP pace figures prevent a false lone-speed call'};
-    return {label:'PACE UNKNOWN',detail:'not enough field pace evidence'};
+  const p=hh68PaceScenario(field);
+  const names=p.rivals.map(x=>`#${x.h.post} ${x.h.horse}`);
+  const detail=p.label==='POSSIBLE LONE SPEED'
+    ? `${names[0]||'One runner'} is the sole qualifying early-speed candidate in comparable available data; not a guaranteed uncontested lead.`
+    : p.label==='EARLY PRESSURE WATCH'||p.label==='HIGH DUEL RISK'
+    ? `${names.join(' · ')} are qualifying early-speed candidates; the lead may be contested.`
+    : `Comparable early-pace figures for ${p.nPace}/${p.n} runners; no defensible sole-leader projection.`;
+  return {label:p.label,detail};
 }
 function paceProjectionHTML(field){
-    const p=paceProjection(field);
-    const active=(field||[]).filter(h=>!h.scratched);
-    const rp=relativePaceV762(active);
-    const cls=p.label==="LONE SPEED" ? "badge-green" : p.label==="CONTESTED" ? "badge-red" : "badge-blue";
-    let shape="";
-    if(rp.loneSpeed){
-        shape=` <b>Race shape:</b> #${safe(rp.loneSpeed.post)} ${safe(rp.loneSpeed.horse)} has the clearest path to the lead`;
-        if(rp.firstStalker) shape+=`; #${safe(rp.firstStalker.post)} ${safe(rp.firstStalker.horse)} projects as first stalker`;
-        shape+=". Favor the front end unless class/surface evidence strongly contradicts it.";
-    }else if(p.label==="CONTESTED"){
-        const closers=active.filter(h=>/^(S|SS|P\/S)$/i.test(String(h.runStyle||"")));
-        shape=` <b>Race shape:</b> multiple early runners can force pressure`;
-        if(closers.length) shape+=`; closers/stalkers ${closers.slice(0,3).map(h=>`#${safe(h.post)} ${safe(h.horse)}`).join(", ")} deserve extra contender attention`;
-        shape+=".";
-    }else if(p.label==="PRESSURED"){
-        shape=" <b>Race shape:</b> two credible speed horses should keep each other honest; tactical stalkers can benefit.";
-    }else{
-        shape=" <b>Race shape:</b> no decisive pace edge; rely more heavily on class, speed, rider and surface/distance fit.";
-    }
-    return `<div class="note" style="margin:7px 0 10px;line-height:1.55;"><b>Projected pace:</b> <span class="badge ${cls}">${safe(p.label)}</span> ${safe(p.detail)}${shape}</div>`;
+  const p=paceProjection(field);
+  return `<div class="note" style="margin:7px 0 10px;line-height:1.55"><b>Projected pace (same scenario as Decisions):</b> ${safe(p.label)} · ${safe(p.detail)}</div>`;
 }
-
 // v8.08 — FULL RACE FACTS. Display-only evidence; Pick/ranking math is unchanged.
 function medicationLabelV806(v){
     const n=number(v);
@@ -6751,7 +6736,7 @@ function hh67PaceVerdict(field,horse){
   let reason='No sufficiently strong, matched early-speed group established by the available BRIS data.';
   if(p.label==='HIGH DUEL RISK'){
     if(isRival){verdict='HIGH DUEL RISK — SELECTED HORSE';level='risk';reason='Three or more qualifying early runners have similar early figures. The selected horse may be involved in a costly duel.';}
-    else if(closer){verdict='POSSIBLE COLLAPSE BENEFIT';level='help';reason='A contested pace may aid this closer, but a collapse is not assured.';}
+    else if(closer){verdict='HIGH DUEL RISK — CLOSER';level='watch';reason='Contested pace may aid a closer, but a collapse is not assured.';}
     else{verdict='HIGH DUEL RISK — TRIP UNCERTAINTY';level='watch';reason='Several comparable leaders may contest the pace; assess this runner’s likely position.';}
   }else if(p.label==='EARLY PRESSURE WATCH'){
     reason='Two credible, comparably fast early runners may pressure one another; this is not automatically a speed collapse.';
@@ -7611,6 +7596,7 @@ function computeRaceCard(){
         factsHTML += `<details class="race-card race-anchor-target facts-race-fold" id="facts-race-${safe(raceNum)}">
           <summary><b>RACE ${safe(raceNum)} — RACE FACTS</b> <span class="small-note">Tap to open</span></summary>
           ${raceConditionsHTML(top.horse)}
+          <div class="note"><b>PACE / QUIRIN — ALL RUNNERS:</b> ${hh68PaceScenario(activeField).profiles.map(p=>`#${safe(p.h.post||p.h.pgm||'?')} ${safe(p.h.horse)}: ${safe(p.style||'unknown')} / Q ${Number.isFinite(Number(p.sp))?safe(p.sp):'—'}`).join(' · ')}. <b>Race scenario:</b> ${safe(hh68PaceScenario(activeField).label)}. Quirin points reflect early-running tendency, not finishing strength; projected pace is uncertain when comparable early figures are missing.</div>
           ${hh64CaseSummary(hh64CaseBoard(scored,activeField))}
           ${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}
           ${raceFactsHTMLV806(activeField,scored)}
@@ -7658,7 +7644,11 @@ function computeRaceCard(){
         // Research evidence is a review-order indicator, not an automatic wager qualification.
         const hh72Agree = String(modelLeader.horse.id)===String(top.horse.id);
         const hh72Triage=hh68RaceTriage(activeField,top.horse,finalV860.horse);
-        const hh72Priority=hh72Triage.status.startsWith('PRIORITY')?0:hh72Triage.status.startsWith('REVIEW')?1:hh72Triage.status.startsWith('CAUTION')?2:3;
+        const hh877Pace=hh68PaceScenario(activeField);
+        const hh877TopFour=probabilityScored.slice(0,4);
+        const hh877Outside=hh877TopFour.filter(x=>decisionClassMap[x.horse.id]?.label!=='CONTENDER');
+        const hh877Caution=(hh877Pace.label==='PACE UNPROVEN'||hh877Pace.label==='HIGH DUEL RISK'||hh877Pace.label==='EARLY PRESSURE WATCH'||hh877Outside.length>=2);
+        const hh72Priority=Math.max(hh72Triage.status.startsWith('PRIORITY')?0:hh72Triage.status.startsWith('REVIEW')?1:hh72Triage.status.startsWith('CAUTION')?2:3,hh877Caution?2:0);
         bestHTML += `
 
         <div class="best-pick race-anchor-target read-${readability.level}" id="decision-race-${safe(raceNum)}" data-race-order="${Number(raceNum)}" data-focus-order="${hh72Priority*2+(hh72Agree?0:1)}">
@@ -7689,8 +7679,8 @@ function computeRaceCard(){
             ${hh64CaseLine(top.horse,hh64CaseBoard(scored,activeField),true)}
             ${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}
             ${hh68RaceTriageHTML(activeField,top.horse,finalV860.horse)}
+            ${hh877Caution?`<div style="border-left:5px solid #9a6c13;padding:10px;background:#fff6e7;margin:8px 0"><b>FOCUS CAUTION — competing evidence:</b> ${safe(hh877Pace.label)}${hh877Outside.length>=2?' · '+hh877Outside.length+' of top four fail strict True Contender evidence':''}. This race is not promoted to first focus solely because of high model share.</div>`:''}
             ${String(finalV860?.horse?.id)!==String(top.horse.id)?hh60DecisionHTML(finalV860,hh64CaseBoard(scored,activeField)):""}
-            ${String(finalV860?.horse?.id)!==String(top.horse.id)?hh67PaceVerdictHTML(activeField,finalV860.horse,"Original model verdict horse"):""}
             <div class="decision-type-line">${raceTypeTagV799(top.horse,wagerV815.type==='BET_PICK')}</div>
 
             ${officialPickV801 ? decisionAlertsV799(activeField,top.horse,{raceNum}) : ''}
@@ -7719,7 +7709,7 @@ function computeRaceCard(){
             }
 
             <details class="hh-top4-inline" style="margin-top:12px;padding:10px 12px;border:1px solid #cfc2a0;border-radius:8px;background:#fff;">
-              <summary style="font-weight:800;cursor:pointer;">TOP 4 CONTENDERS · RACE ${safe(raceNum)} — tap to expand</summary>
+              <summary style="font-weight:800;cursor:pointer;">TOP 4 MODEL-RANKED RUNNERS · RACE ${safe(raceNum)} — tap to expand</summary>
               <div class="small-note" style="margin:8px 0;">Lower RS and CS are better.</div>
               ${hh64CaseBoard(scored,activeField) ? lowerRankFieldV822(calculateProbabilities(activeField),activeField).slice(0,4).map((x,i)=>{
                 const h=x.horse;
@@ -7727,7 +7717,7 @@ function computeRaceCard(){
                 return `<div style="padding:9px 0;border-top:1px solid #ddd;line-height:1.5;">
                   <b>${i+1}. #${safe(h.post||h.pgm||'')} ${horseNameLinkHTML(h)}</b>
                   <div>${hh64CaseLine(h,cb,false)}</div>
-                  <span class="small-note">Model share ${modelPct(x.probability)} · RS ${safe(x.lowerScore??'—')} · ML ×1 rank #${i+1}</span>
+                  <span class="small-note">Model share ${modelPct(x.probability)} · RS ${safe(x.lowerScore??'—')} · ML ×1 rank #${i+1} · Evidence: ${safe(decisionClassMap[h.id]?.label||"UNCLASSIFIED")}</span>
                 </div>`;
               }).join('') : '<span class="small-note">No ranked runners.</span>'}
             </details>
@@ -7762,8 +7752,11 @@ function computeRaceCard(){
             <div style="font-size:12px;margin-top:5px">${safe(classMap[top.horse.id]?.reason||'Evidence classification unavailable.')}</div>
             ${classMap[top.horse.id]?.label!=='CONTENDER'?'<div style="font-size:12px;margin-top:7px;color:#8B2A2A"><b>Important:</b> The top-ranked model selection does not meet the separate True Contender evidence threshold. It remains the ML ×1 rank leader, but its contender qualification is disputed; it is not silently promoted.</div>':''}
           </div>
-          <div class="note"><b>v7.74 LAST-FIGURE RESCUE + RSS AUTO COMPUTE:</b> A sharp single latest BRIS Speed figure can rescue a horse into Questionable; it needs another independent performance signal for True Contender. Avg-3 remains in the main model.</div>
-          <div class="note"><b>90% COVERAGE RESEARCH FIELD:</b> ${coverageField.map(x=>`#${safe(x.horse.post)} ${safe(x.horse.horse)}`).join(" · ") || "None"}. This is a candidate coverage set pending historical validation — not a claimed 90% probability.</div>
+          <div class="hh877-ranked" style="padding:12px;margin:10px 0;border:2px solid #315A7D;border-radius:8px;background:#fff">
+            <b>TOP 4 — ALL MODEL-RANKED RUNNERS (NOT AN ELIMINATION LIST)</b>
+            <div class="small-note">Rank is not the same as True Contender qualification. Every ranked runner remains visible, even when the evidence category is Questionable or Pretender.</div>
+            ${scored.slice(0,4).map((x,i)=>{const h=x.horse;const cl=classMap[h.id]||{};const second=longshotSecondLookForHorse(activeField,h,{activeField,race:String(raceNum),horse:h});return `<div style="padding:8px 0;border-top:1px solid #ddd"><b>${i+1}. #${safe(h.post)} ${horseNameLinkHTML(h)}</b> · ${modelPct(x.probability)} model share · <b>${safe(cl.label||'UNCLASSIFIED')}</b>${second?' · <b>SECOND LOOK</b>':''}<div class="small-note">${safe(cl.reason||'No classification reason available.')}${second?' · Second Look: '+safe((second.reasons||[]).join('; ')):''}</div></div>`;}).join('')}
+          </div>
           ${multiTrainers.length ? `<div class="warning-box"><b>TRAINER MULTIPLE ENTRY:</b> ${multiTrainers.map(k=>{const h=activeField.find(x=>normalizeName(x.trainer)===k);return safe(h?h.trainer:k);}).join(', ')}</div>` : ''}
           ${hh64CaseSummary(hh64CaseBoard(scored,activeField))}
           ${raceFactsHTMLV806(activeField,scored)}
@@ -9924,7 +9917,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.75 · October 14, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.78 · October 14, 2026 · iPhone/Safari</div>
 
 <script>
 (function(){
