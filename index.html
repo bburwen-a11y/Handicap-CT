@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.84 · October 15, 2026 — Pace Verdict Repair</title>
+<title>Horse Handicap v8.85 · October 16, 2026 — Pace Evidence Clarity</title>
 
 <style>
 :root{
@@ -1338,7 +1338,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.84 · Oct 15, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.85 · Oct 16, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -6176,14 +6176,20 @@ function paceStyleScore(h){
 /* v8.81: All pace labels share the single hh68PaceScenario evidence threshold.
    The former relativePaceV762 projection could claim lone speed while hh68
    simultaneously detected two early rivals. It is no longer a verdict source. */
+/* v8.85: one shared scenario for every pace display. Explain the evidence,
+   including the runners and measured early ratings. Display only. */
 function paceProjection(field){
   const p=hh68PaceScenario(field);
-  const names=p.rivals.map(x=>`#${x.h.post} ${x.h.horse}`);
-  const detail=p.label==='POSSIBLE LONE SPEED'
-    ? `${names[0]||'One runner'} is the measured qualifying early-speed candidate; this is not a guaranteed uncontested lead.`
-    : p.label==='EARLY PRESSURE WATCH'||p.label==='HIGH DUEL RISK'
-    ? `${names.join(' · ')} are qualifying early-speed candidates; the lead may be contested.`
-    : `Comparable early-pace figures for ${p.nPace}/${p.n} runners; no defensible sole-leader projection.`;
+  const group=p.rivals.length?p.rivals:(p.lone?[p.lone]:[]);
+  const fmt=x=>`#${x.h.post||x.h.pgm} ${x.h.horse} (${x.style||'?'}, Q${x.sp||'?'}, early ${Number.isFinite(x.ppEarly)?x.ppEarly.toFixed(0):'unavailable'})`;
+  let detail;
+  if(p.label==='POSSIBLE LONE SPEED'){
+    detail=`${fmt(p.lone)} has a measured early advantage over every other runner. Possible, not certain.`;
+  }else if(['EARLY PRESSURE WATCH','HIGH DUEL RISK','MULTIPLE EARLY CANDIDATES'].includes(p.label)){
+    detail=`Early contenders: ${group.map(fmt).join(' · ')}. Do not assume a speed collapse.`;
+  }else{
+    detail=`Usable early figures: ${p.nPace}/${p.n}. No confirmed uncontested leader; absence of evidence is not lone speed.`;
+  }
   return {label:p.label,detail};
 }
 function paceProjectionHTML(field){
@@ -6813,6 +6819,9 @@ function hh67PaceVerdict(field,horse){
     else{verdict='POSSIBLE LONE SPEED — OTHER RUNNER';level='watch';reason=`${name}, not the selected horse, is the qualifying early-speed candidate.`;}
   }else if(p.coverage<.5){reason='Fewer than half the runners have usable early-pace figures; no reliable lone-speed or duel projection.';}
   const group=p.rivals.length?p.rivals:(p.lone?[p.lone]:[]);
+  if(group.length && p.label!=='POSSIBLE LONE SPEED'){
+    reason+=` Early candidates: ${group.map(x=>`#${x.h.post||x.h.pgm} ${x.h.horse}`).join(' · ')}.`;
+  }
   return {verdict,level,reason,shape:p.label,cluster:group.map(x=>`#${x.h.post||x.h.pgm} ${x.h.horse}`),style,nPace:p.nPace,n:p.n};
 }
 /* Research triage, not a validated wagering system. Does not alter horse rankings. */
