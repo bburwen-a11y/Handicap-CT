@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.85 · October 16, 2026 — Pace Evidence Clarity</title>
+<title>Horse Handicap v8.86 · October 16, 2026 — Pace Evidence Clarity</title>
 
 <style>
 :root{
@@ -1338,7 +1338,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.85 · Oct 16, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.86 · Oct 16, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -6176,7 +6176,7 @@ function paceStyleScore(h){
 /* v8.81: All pace labels share the single hh68PaceScenario evidence threshold.
    The former relativePaceV762 projection could claim lone speed while hh68
    simultaneously detected two early rivals. It is no longer a verdict source. */
-/* v8.85: one shared scenario for every pace display. Explain the evidence,
+/* v8.86: one shared scenario for every pace display. Explain the evidence,
    including the runners and measured early ratings. Display only. */
 function paceProjection(field){
   const p=hh68PaceScenario(field);
@@ -7520,6 +7520,51 @@ function hh74Refresh(){
   if(out)out.innerHTML='<h3>AI(1) v3.75 vs AI(2) Horse Handicap · '+agree+' agree / '+disagree+' disagree / '+unknown+' pending</h3><div class="small-note">Concurrence compares each model’s top-ranked horse. Figure-favourite and betting verdicts are shown separately.</div>'+lines.join('');
 }
 
+
+/* v8.86 — RS/CS historical confidence and verified opponent history.
+   EXPLANATION ONLY: does not alter ranking, case scores, model probabilities, or wagering. */
+function hh886Confidence(scored,field,leader){
+  if(!leader || !scored?.length)return '';
+  const board=hh64CaseBoard(scored,field);
+  const v=board.get(String(leader.id));
+  if(!v)return '';
+  const both=v.rsRank===1&&v.csRank===1;
+  const positive=v.tally>0;
+  const label=both?(positive?'RS 1 + CS 1 · POSITIVE CASE':'RS 1 + CS 1'):'RS 1 / CS '+v.csRank+' · DISAGREEMENT';
+  const historical=both?(positive?'38.2% (351 historical selections)':'37.5% (363 historical selections)'):'24.0% (183 historical RS #1 selections with CS #2+)';
+  const later=both?'32%':'15%';
+  const color=both?'#2E6E45':'#A56A12';
+  const challengers=[...board.values()].filter(x=>String(x.horse.id)!==String(leader.id)&&x.csRank===1).sort((a,b)=>(a.rsRank||99)-(b.rsRank||99));
+  const groups=currentRaceH2HGroups(field);
+  const rivals=[];
+  for(const h of (field||[]).filter(h=>!h.scratched&&String(h.id)!==String(leader.id))){
+    const meetings=[];
+    for(const g of groups){
+      const a=g.runners.find(x=>String(x.horse.id)===String(leader.id));
+      const b=g.runners.find(x=>String(x.horse.id)===String(h.id));
+      if(!a||!b)continue;
+      const af=h2hFinishNumber(a.pp.fin),bf=h2hFinishNumber(b.pp.fin);
+      if(af===null||bf===null||af===bf)continue;
+      meetings.push({date:g.date,track:g.track,race:g.raceNum,af,bf,beat:bf<af});
+    }
+    const wins=meetings.filter(x=>x.beat);
+    if(!wins.length)continue;
+    const recent=(h.ppRaces||[]).slice(0,4).map(p=>h2hFinishNumber(p.fin)).filter(x=>x!==null);
+    const itm=recent.filter(x=>x<=3).length;
+    const consistency=recent.length?`${itm}/${recent.length} top-three finishes in last four recorded starts`:'recent finish record unavailable';
+    rivals.push({h,meetings,wins,consistency,rate:recent.length?itm/recent.length:null});
+  }
+  rivals.sort((a,b)=>b.wins.length-a.wins.length||(b.rate??-1)-(a.rate??-1));
+  const rivalLines=rivals.slice(0,4).map(r=>{
+    const proof=r.wins.slice(0,3).map(m=>`${safe(m.date)} ${safe(m.track||'')} R${safe(m.race)}: ${safe(r.h.horse)} ${m.bf}${hh886Suffix(m.bf)}, pick ${m.af}${hh886Suffix(m.af)}`).join(' · ');
+    return `<div style="margin-top:7px"><b>#${safe(r.h.post)} ${horseNameLinkHTML(r.h)}</b> beat the selection ${r.wins.length} of ${r.meetings.length} verified meeting${r.meetings.length===1?'':'s'} · ${safe(r.consistency)}<div style="font-size:11px;opacity:.85">${proof}</div></div>`;
+  }).join('');
+  const challenge=challengers.length&&!both?`<div style="margin-top:6px"><b>CS #1 challenger${challengers.length>1?'s':''}:</b> ${challengers.slice(0,3).map(x=>`#${safe(x.horse.post)} ${horseNameLinkHTML(x.horse)} (RS #${safe(x.rsRank??'—')}, tally ${x.tally>0?'+':''}${safe(x.tally)})`).join(' · ')}</div>`:'';
+  const threat=rivals.length?`<div style="margin-top:7px;border-top:1px solid #ddd;padding-top:7px"><b>VERIFIED PRIOR BEATERS — ${rivals.length}:</b>${rivalLines}</div>`:'<div style="margin-top:6px">No verified previous defeat by another current runner in the available matching race-date/race-number PPs. This does not establish that none occurred.</div>';
+  return `<div class="hh886-confidence" style="margin:10px 0;padding:11px 12px;background:#fff;border:1px solid #d6d2c6;border-left:5px solid ${color};border-radius:6px;font-size:12px;line-height:1.55"><b>RS / CS CONFIDENCE EVIDENCE — ${safe(label)}</b><div>RS #${safe(v.rsRank)} · CS #${safe(v.csRank)} · case tally ${v.tally>0?'+':''}${safe(v.tally)} · historical win rate <b>${historical}</b> · later cards <b>${later}</b>.</div>${challenge}${threat}<div style="font-size:11px;opacity:.75;margin-top:7px">Historical group rates, not this horse's win probability. H2H and consistency are review flags, not validated probability adjustments. Selection and wager rules unchanged.</div></div>`;
+}
+function hh886Suffix(n){return n%100>=11&&n%100<=13?'th':n%10===1?'st':n%10===2?'nd':n%10===3?'rd':'th';}
+
 function computeRaceCard(){
 
     computedRaces = {};
@@ -7676,6 +7721,7 @@ function computeRaceCard(){
           <summary><b>RACE ${safe(raceNum)} — RACE FACTS</b> <span class="small-note">Tap to open</span></summary>
           ${raceConditionsHTML(top.horse)}
           <div class="note"><b>PACE / QUIRIN — ALL RUNNERS:</b> ${hh68PaceScenario(activeField).profiles.map(p=>`#${safe(p.h.post||p.h.pgm||'?')} ${safe(p.h.horse)}: ${safe(p.style||'unknown')} / Q ${Number.isFinite(Number(p.sp))?safe(p.sp):'—'}`).join(' · ')}. <b>Race scenario:</b> ${safe(hh68PaceScenario(activeField).label)}. Quirin points reflect early-running tendency, not finishing strength; projected pace is uncertain when comparable early figures are missing.</div>
+          ${hh886Confidence(scored,activeField,top.horse)}
           ${hh64CaseSummary(hh64CaseBoard(scored,activeField))}
           ${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}
           ${raceFactsHTMLV806(activeField,scored)}
@@ -7755,6 +7801,7 @@ function computeRaceCard(){
               <div class="hh74-ai-result" style="margin-top:6px;font-weight:800">Calculating AI(1) ranking…</div>
               <div class="hh74-top" style="font-size:11px;opacity:.8;margin-top:3px"></div>
             </div>
+            ${hh886Confidence(scored,activeField,top.horse)}
             ${hh881ThreatReview(scored,activeField,top.horse)}
             ${hh64CaseLine(top.horse,hh64CaseBoard(scored,activeField),true)}
             ${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}
