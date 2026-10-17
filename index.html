@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.86 · October 16, 2026 — Pace Evidence Clarity</title>
+<title>Horse Handicap v8.87 · October 17, 2026 — Challenger Strengths</title>
 
 <style>
 :root{
@@ -1338,7 +1338,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.86 · Oct 16, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v8.87 · Oct 17, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -6330,6 +6330,50 @@ function hh64CaseSummary(board){
  return `<div class="hh64-case"><b>RS / CS — lower is better</b> · CS ranks favorable minus unfavorable race facts, not a probability or an automatic pick.<div>${arr.map(v=>`<div><b>#${safe(v.horse.post)} ${safe(v.horse.horse)}</b> · RS ${safe(v.rs)} (#${safe(v.rsRank)}) · CS ${safe(v.csRank)} · ${v.F.length} FOR / ${v.A.length} AGAINST</div>`).join('')}</div></div>`;
 }
 
+
+/* v8.87: challenger advantages, DISPLAY ONLY. Never changes rankings, scores, decisions or probabilities. */
+function hh887ChallengerStrengths(field,scored){
+  const active=(field||[]).filter(h=>!h.scratched);
+  if(!scored?.length||active.length<2)return '';
+  const top=scored.find(x=>x.horse&&!x.horse.scratched)?.horse;
+  if(!top)return '';
+  const board=hh64CaseBoard(scored,active);
+  const topCase=board.get(String(top.id));
+  const topPP=number(top.primePower||top.score);
+  const topLast=number(top.lastSpeed);
+  const topAvg=last3AverageV806(top);
+  const topML=oddsDecimal(top.odds);
+  const topQ=number(top.speedPoints);
+  const fieldLast=Math.max(...active.map(h=>number(h.lastSpeed)||0));
+  const fmt=n=>Number.isFinite(n)?Number(n).toFixed(1):'—';
+  const recentITM=h=>{
+    const races=(h.ppRaces||[]).slice(0,4);
+    const valid=races.map(r=>h2hFinishNumber(r.fin)).filter(n=>n!==null);
+    return {n:valid.length,itm:valid.filter(n=>n<=3).length};
+  };
+  const topITM=recentITM(top);
+  const lines=scored.filter(x=>x.horse&&!x.horse.scratched&&String(x.horse.id)!==String(top.id)).map((item)=>{
+    const h=item.horse, advantages=[];
+    const pp=number(h.primePower||h.score),last=number(h.lastSpeed),avg=last3AverageV806(h);
+    const ml=oddsDecimal(h.odds),q=number(h.speedPoints),b=board.get(String(h.id));
+    if(pp>0&&topPP>0&&pp>topPP)advantages.push(['PRIME POWER',`${fmt(pp)} vs ${fmt(topPP)}`]);
+    if(last>0&&last===fieldLast&&last>topLast)advantages.push(['BEST LAST FIGURE',`${last} vs ${topLast||'—'}`]);
+    if(ml!==null&&topML!==null&&ml<=topML)advantages.push(['M/L AS SHORT AS #1',`${safe(mlDisplayV804(h.odds))} vs ${safe(mlDisplayV804(top.odds))}`]);
+    if(q>0&&q>topQ)advantages.push(['MORE EARLY SPEED',`Quirin ${q} vs ${topQ}`]);
+    if(avg!==null&&topAvg!==null&&avg>topAvg)advantages.push(['BETTER 3-RACE AVG',`${fmt(avg)} vs ${fmt(topAvg)}`]);
+    const recent=(h.ppRaces||[]).slice(0,1);
+    if(recent.length&&h2hFinishNumber(recent[0].fin)===1)advantages.push(['WON LAST RACE','']);
+    const itm=recentITM(h);
+    if(itm.n>=2&&topITM.n>=2&&itm.itm/itm.n>topITM.itm/topITM.n)advantages.push(['BETTER RECENT ITM',`${itm.itm}/${itm.n} vs ${topITM.itm}/${topITM.n}`]);
+    if(b?.csRank===1&&topCase?.csRank!==1)advantages.push(['CS #1 CHALLENGER','']);
+    return {h,advantages,rs:scored.indexOf(item)+1,cs:b?.csRank};
+  });
+  const strong=lines.filter(x=>x.advantages.length).sort((a,b)=>b.advantages.length-a.advantages.length||a.rs-b.rs);
+  const detail=strong.map(x=>`<div style="padding:8px 0;border-top:1px solid #e5e7eb"><b>#${safe(x.h.post||x.h.pgm||'?')} ${horseNameLinkHTML(x.h)}</b> <span style="color:#596579">RS ${x.rs} · CS ${safe(x.cs??'—')}</span><div style="margin-top:4px">${x.advantages.map(a=>`<span style="display:inline-block;margin:2px 4px 2px 0;padding:3px 6px;border:1px solid #c7d2df;border-radius:5px;background:#f3f7fa;font-size:11px"><b>▲ ${safe(a[0])}</b>${a[1]?' · '+a[1]:''}</span>`).join('')}</div></div>`).join('');
+  const none=lines.filter(x=>!x.advantages.length);
+  return `<section class="hh887-strengths" style="margin:10px 0;padding:12px;border:1px solid #c6d3e0;border-left:5px solid #346487;border-radius:8px;background:#fff;color:#1e293b;font-size:12px;line-height:1.5"><b>CHALLENGER STRENGTHS OVER #1 · v8.87</b><div style="margin:5px 0;color:#566477">Display only — no changes to RS, CS, probabilities, selections or wagers. Advantages are correlated; counts are not probabilities.</div><div><b>RS #1:</b> #${safe(top.post||'?')} ${horseNameLinkHTML(top)} · ${strong.length} of ${lines.length} rivals have at least one listed edge.</div>${detail||'<div style="margin-top:6px">No measured challenger advantages in the available fields.</div>'}${none.length?`<div style="margin-top:6px;color:#64748b">No listed advantage: ${none.map(x=>'#'+safe(x.h.post||'?')+' '+safe(x.h.horse)).join(', ')}</div>`:''}<div style="margin-top:8px;font-size:11px;color:#64748b">Historical contender win rates for individual edges: M/L as short 24.5%; higher Prime Power 23.4%; best last figure 22.2%; more early speed 18.4%. These are pooled rates, not horse-specific forecasts.</div></section>`;
+}
+
 function raceFactsHTMLV806(field,scored){
     const active=(field||[]).filter(h=>!h.scratched);
     const hh64=hh64CaseBoard(scored,active);
@@ -7722,6 +7766,7 @@ function computeRaceCard(){
           ${raceConditionsHTML(top.horse)}
           <div class="note"><b>PACE / QUIRIN — ALL RUNNERS:</b> ${hh68PaceScenario(activeField).profiles.map(p=>`#${safe(p.h.post||p.h.pgm||'?')} ${safe(p.h.horse)}: ${safe(p.style||'unknown')} / Q ${Number.isFinite(Number(p.sp))?safe(p.sp):'—'}`).join(' · ')}. <b>Race scenario:</b> ${safe(hh68PaceScenario(activeField).label)}. Quirin points reflect early-running tendency, not finishing strength; projected pace is uncertain when comparable early figures are missing.</div>
           ${hh886Confidence(scored,activeField,top.horse)}
+          ${hh887ChallengerStrengths(activeField,scored)}
           ${hh64CaseSummary(hh64CaseBoard(scored,activeField))}
           ${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}
           ${raceFactsHTMLV806(activeField,scored)}
@@ -7802,6 +7847,7 @@ function computeRaceCard(){
               <div class="hh74-top" style="font-size:11px;opacity:.8;margin-top:3px"></div>
             </div>
             ${hh886Confidence(scored,activeField,top.horse)}
+          ${hh887ChallengerStrengths(activeField,scored)}
             ${hh881ThreatReview(scored,activeField,top.horse)}
             ${hh64CaseLine(top.horse,hh64CaseBoard(scored,activeField),true)}
             ${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}
