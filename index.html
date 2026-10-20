@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.96 · October 18, 2026 — Unified FOCUS Review</title>
+<title>Horse Handicap v8.97 · October 18, 2026 — Unified FOCUS Review</title>
 
 <style>
 :root{
@@ -8135,19 +8135,7 @@ function computeRaceCard(){
     </div>` : "";
 
 
-    const pricePlayRaces=rankedBetRaces.filter(x=>x.pricePlay);
-    const pricePlaySummary = pricePlayRaces.length ? `<div class="bestof" style="margin-bottom:16px;">
-      <h3>Price Plays — Pass/Lean Races</h3>
-      <div class="small-note" style="margin-bottom:8px;">Research-only fallback. Horse Handicap Model #1 must be a non-favorite TRUE CONTENDER with independent speed/form support. This never becomes an Official Pick.</div>
-      ${pricePlayRaces.map(x=>`
-        <div class="best-pick" style="padding:10px 12px;margin:8px 0;">
-          <b><span class="race-number-link" onclick="goToContendersRace('${safe(x.race)}')">Race ${safe(x.race)}</span> — #${safe(x.pricePlay.horse.post)} ${horseNameLinkHTML(x.pricePlay.horse)}</b>
-          <span class="badge badge-blue">PRICE PLAY · RESEARCH</span>
-          <span class="badge">M/L ${safe(x.pricePlay.odds)}</span>
-          ${figureNearTieSummaryV793(x.activeField)}
-          <div class="metric-line">${safe(x.pricePlay.text)}</div>
-        </div>`).join("")}
-    </div>` : "";
+    // v8.97: retired experimental price-play research panel.
 
     $("bestSection").innerHTML = `
 
@@ -8159,7 +8147,7 @@ function computeRaceCard(){
                 Race Decision Board
             </h3>
 
-            <div class="small-note" style="margin:4px 0 10px;">WINNER: protected original model selection. VERIFIED CONTENDERS require two independent evidence groups. M/L is price information, not a contender qualification. Research mode: no automatic wager.</div>
+            <div class="small-note" style="margin:4px 0 10px;">WINNER: protected original model selection. VERIFIED CONTENDERS require two independent evidence groups. M/L is price information, not a contender qualification. No automatic wager.</div>
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 14px">
               <label for="hh69-sort" style="font-weight:800">Decision order:</label>
               <select id="hh69-sort" style="max-width:240px" onchange="hh69SortDecisions(this.value)">
@@ -10123,7 +10111,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.96 · October 18, 2026 · iPhone/Safari</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.97 · October 18, 2026 · iPhone/Safari</div>
 
 <script>
 (function(){
