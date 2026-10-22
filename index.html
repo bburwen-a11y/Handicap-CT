@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v8.99 · October 22, 2026 — Unified FOCUS Review</title>
+<title>Horse Handicap v9.00 · October 22, 2026 — Unified FOCUS Review</title>
 
 <style>
 :root{
@@ -7550,28 +7550,52 @@ window.addEventListener('message',e=>{
 });
 function hh74Refresh(){
   const cards=[...document.querySelectorAll('#bestSection .hh74-ai')];
-  let agree=0,disagree=0,unknown=0;
-  const escapeText=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let agree=0,disagree=0,unknown=0,qualified=0;
+  const escapeText=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const lines=cards.map(card=>{
-    const race=card.getAttribute('data-race'), r=hh74Results[race];
+    const race=card.getAttribute('data-race'),r=hh74Results[race];
     const ai2name=card.getAttribute('data-ai2-name');
-    let result='';
-    if(!r){unknown++;result=hh74Error||'Waiting for AI(1) v3.91 calculation';}
-    else if(!r.top){unknown++;result='AI(1) ranking unavailable — concurrence cannot be calculated';}
+    const ai2Horse=card.getAttribute('data-ai2-horse');
+    let result='', betLine='', passReason='';
+    if(!r){unknown++;result=hh74Error||'Waiting for AI(1) v3.91 calculation';passReason='AI(1) result pending';}
+    else if(!r.top){unknown++;result='AI(1) ranking unavailable';passReason='AI(1) ranking unavailable';}
     else {
       const ai1='#'+r.top.post+' '+r.top.horse;
-      // Concurrence means both INDEPENDENT RANKING LEADERS agree.
-      // Figure-favourite / betting qualification is a separate verdict.
-      if(hh74Norm(r.top.horse)===hh74Norm(card.getAttribute('data-ai2-horse'))){agree++;result='AGREE — AI(1) and AI(2) rank '+ai1+' first';}
+      const same=hh74Norm(r.top.horse)===hh74Norm(ai2Horse);
+      if(same){agree++;result='AGREE — AI(1) and AI(2) rank '+ai1+' first';}
       else {disagree++;result='DISAGREE — AI(1) '+ai1+' / AI(2) '+ai2name;}
+      const tier=Number(r.tier?.tier),conf=String(r.confidence||'').toUpperCase();
+      // Frozen pre-race attributes only. Never inspect winner, finish or results.
+      // Audit selection is the race-plan horse when one exists, otherwise the top horse.
+      const planHorse=r.bet?.horse||r.top.horse;
+      const sameSelection=hh74Norm(planHorse)===hh74Norm(ai2Horse);
+      const tierOK=Number.isFinite(tier)&&tier>=1&&tier<=2;
+      const confOK=conf==='HIGH'||conf==='GOOD';
+      const priorityOK=tierOK&&confOK&&sameSelection;
+      if(priorityOK){
+        qualified++;
+        betLine='HIGH-CONFIDENCE CANDIDATE · TIER '+tier+' · '+conf+' · TWO-ENGINE AGREEMENT';
+      } else {
+        const why=[];
+        if(!tierOK)why.push('tier outside 1–2');
+        if(!confOK)why.push('confidence below GOOD');
+        if(!sameSelection)why.push('AI(1) selection and AI(2) differ');
+        passReason=why.join(' · ')||'missing required data';
+        betLine='NO HIGH-CONFIDENCE BET · '+passReason;
+      }
     }
     const status=card.querySelector('.hh74-ai-result');if(status)status.textContent=result;
     const verdict=card.querySelector('.hh74-top');
     if(verdict)verdict.textContent=r ? 'AI(1) v3.91 figure-favourite verdict: '+(r.status||'not available')+(r.official?' · #'+r.official.post+' '+r.official.horse:'')+' (separate from ranking concurrence)' : '';
-    return '<div style="padding:7px 0;border-top:1px solid #ddd"><b>Race '+escapeText(race)+':</b> '+escapeText(result)+'</div>';
+    let signal=card.querySelector('.hh900-bet-signal');
+    if(!signal){signal=document.createElement('div');signal.className='hh900-bet-signal';signal.style.cssText='margin:8px 0;padding:10px;border-left:5px solid #777;background:#f4f1e8;font-size:12px;line-height:1.5';card.appendChild(signal);}
+    signal.style.borderLeftColor=betLine.startsWith('HIGH-')?'#2e6e45':'#9b6b2e';
+    signal.textContent=betLine||'PENDING — No wager classification until both engines finish.';
+    const meta=r ? ' · Tier '+escapeText(r.tier?.tier??'—')+' · '+escapeText(r.confidence||'—') : '';
+    return '<div style="padding:9px 0;border-top:1px solid #ddd"><b>Race '+escapeText(race)+':</b> '+escapeText(result)+meta+'<div><b>'+escapeText(betLine||'PENDING')+'</b></div></div>';
   });
   const out=document.getElementById('hh74-ai-summary');
-  if(out)out.innerHTML='<h3>AI(1) v3.91 vs AI(2) Horse Handicap · '+agree+' agree / '+disagree+' disagree / '+unknown+' pending</h3><div class="small-note">Concurrence compares each model’s top-ranked horse. Figure-favourite and betting verdicts are shown separately.</div>'+lines.join('');
+  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.00 · HIGH-CONFIDENCE SCREEN</h3><div style="font-size:17px;font-weight:800;padding:8px 0">'+qualified+' qualified / '+cards.length+' races · '+agree+' ranking agreements · '+unknown+' pending</div><div class="small-note">Historical research rule: Overlay Board Tier 1–2 + GOOD/HIGH confidence + AI(1) race-plan selection matches AI(2). All other races remain visible as predictions, not high-confidence wagers. Uses only pre-race fields. Actual odds, scratches and conditions must be confirmed; this is not a guarantee of profit. Audit simulation: 39 races, 24 wins (61.5%), +40.5% $2 flat-bet ROI. In-sample only, unverified forward.</div>'+lines.join('');
 }
 
 
@@ -10169,7 +10193,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v8.99 · October 22, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v3.91</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.00 · October 22, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v3.91</div>
 
 <script>
 (function(){
