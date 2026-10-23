@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.01 · October 23, 2026 — Unified FOCUS Review</title>
+<title>Horse Handicap v9.02 · October 23, 2026 — Unified FOCUS Review</title>
 
 <style>
 :root{
@@ -1338,7 +1338,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.01 · Oct 23, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.02 · Oct 23, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -4322,8 +4322,17 @@ function paceRoleV762(h,raceHorses){
   const p=relativePaceV762(raceHorses), prof=p.profiles.find(x=>String(x.h.id)===String(h.id));
   if(!prof) return null;
   const support=paceSupportFactorV764(h,raceHorses);
-  if(p.loneSpeed && String(p.loneSpeed.id)===String(h.id))
-    return {contender:support.support>=1,label:'CONTENDER — LONE PACE ADVANTAGE',detail:'Field-relative pace projects this runner to control the lead; at least one independent factor supports the promotion.'};
+  // v9.02: the race-wide, evidence-first assessment is authoritative.
+  // The older relative-pressure model may suggest a lone leader, but cannot
+  // promote or label one if the race-wide assessment does not confirm it.
+  const scenario=hh68PaceScenario(raceHorses);
+  const isSuggestedLone=!!(p.loneSpeed && String(p.loneSpeed.id)===String(h.id));
+  const isRaceWideCandidate=!!(scenario.lone && String(scenario.lone.h.id)===String(h.id));
+  if(isSuggestedLone){
+    if(scenario.label==='POSSIBLE LONE SPEED' && isRaceWideCandidate)
+      return {contender:false,label:'POSSIBLE EARLY SPEED EDGE — UNCONFIRMED',detail:'Race-wide analysis identifies a possible early leader, not confirmed uncontested lone speed. No automatic contender promotion or lone-pace bonus.'};
+    return {contender:false,label:'PACE ADVANTAGE UNCONFIRMED',detail:'The field-wide pace assessment does not establish uncontested lone speed. The older relative-pressure signal is informational only; no automatic contender promotion.'};
+  }
   if((p.label==='CONTESTED / FAST'||p.label==='PRESSURED') && p.closers.some(x=>String(x.h.id)===String(h.id)) && support.support>=2)
     return {contender:true,label:'CONTENDER — PACE FIT',detail:'Projected field pressure favors this stalking/closing profile and multiple independent factors support it.'};
   if(p.credible.some(x=>String(x.h.id)===String(h.id)) && support.support>=2)
@@ -7605,7 +7614,7 @@ function hh74Refresh(){
     return '<div style="padding:9px 0;border-top:1px solid #ddd"><b>Race '+escapeText(race)+':</b> '+escapeText(result)+meta+'<div><b>'+escapeText(betLine||'PENDING')+'</b></div></div>';
   });
   const out=document.getElementById('hh74-ai-summary');
-  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.01 · BETTING OPPORTUNITIES</h3><div style="font-size:17px;font-weight:800;padding:8px 0">'+qualified+' high-confidence · '+twoHorse+' two-horse opportunities / '+cards.length+' races · '+agree+' ranking agreements · '+unknown+' pending</div><div class="small-note">Historical research rule: Overlay Board Tier 1–2 + GOOD/HIGH confidence + AI(1) race-plan selection matches AI(2). Separate TWO-HORSE research opportunity: 2–7 active non-maiden runners, AI(1) and AI(2) differ, and AI(2) is AI(1) ranked #2. Bet AI(2) only; never classify as high confidence. Other races remain predictions only. Uses only pre-race fields. Actual odds, scratches and conditions must be confirmed; this is not a guarantee of profit. Audit simulation: 39 races, 24 wins (61.5%), +40.5% $2 flat-bet ROI. In-sample only, unverified forward.</div>'+lines.join('');
+  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.02 · BETTING OPPORTUNITIES</h3><div style="font-size:17px;font-weight:800;padding:8px 0">'+qualified+' high-confidence · '+twoHorse+' two-horse opportunities / '+cards.length+' races · '+agree+' ranking agreements · '+unknown+' pending</div><div class="small-note">Historical research rule: Overlay Board Tier 1–2 + GOOD/HIGH confidence + AI(1) race-plan selection matches AI(2). Separate TWO-HORSE research opportunity: 2–7 active non-maiden runners, AI(1) and AI(2) differ, and AI(2) is AI(1) ranked #2. Bet AI(2) only; never classify as high confidence. Other races remain predictions only. Uses only pre-race fields. Actual odds, scratches and conditions must be confirmed; this is not a guarantee of profit. Audit simulation: 39 races, 24 wins (61.5%), +40.5% $2 flat-bet ROI. In-sample only, unverified forward.</div>'+lines.join('');
 }
 
 
@@ -10203,7 +10212,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.01 · October 23, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v3.91</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.02 · October 23, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v3.91</div>
 
 <script>
 (function(){
