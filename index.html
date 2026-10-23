@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.02 · October 23, 2026 — Unified FOCUS Review</title>
+<title>Horse Handicap v9.03 · October 23, 2026 — Unified FOCUS Review</title>
 
 <style>
 :root{
@@ -1338,7 +1338,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.02 · Oct 23, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.03 · Oct 23, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -4322,7 +4322,7 @@ function paceRoleV762(h,raceHorses){
   const p=relativePaceV762(raceHorses), prof=p.profiles.find(x=>String(x.h.id)===String(h.id));
   if(!prof) return null;
   const support=paceSupportFactorV764(h,raceHorses);
-  // v9.02: the race-wide, evidence-first assessment is authoritative.
+  // v9.03: the race-wide, evidence-first assessment is authoritative.
   // The older relative-pressure model may suggest a lone leader, but cannot
   // promote or label one if the race-wide assessment does not confirm it.
   const scenario=hh68PaceScenario(raceHorses);
@@ -6331,7 +6331,7 @@ function hh881ThreatReview(scored,field,leader){
     if(!notes.length)notes.push('Next highest RS ranking; no independent threat advantage confirmed');
     return `<div class="hh881-rival"><b>${i===0?'MAIN THREAT':'OTHER CONTENDER'} · #${safe(h.post||h.pgm||'?')} ${horseNameLinkHTML(h)}</b><div>RS #${safe(r.lowerRank||'?')} · CS #${safe(b?.csRank??'?')} · ${safe(notes.join(' · '))}</div></div>`;
   }).join('');
-  return `<section class="hh881-review" aria-label="Main threat and selection risks"><b>MAIN THREAT & SELECTION RISKS · v8.81</b><div class="hh881-intro">Rankings unchanged. A rival can win even when the RS leader is a defensible selection. This review is descriptive, not a new betting signal.</div>${items}${leadFlags.length?`<div class="hh881-warning"><b>SELECTION CAUTION:</b> ${safe(leadFlags.join(' · '))}</div>`:''}<div class="hh881-intro">Projected pace is uncertain; no automatic pace-duel or troubled-trip bonus is applied.</div></section>`;
+  return `<section class="hh881-review" aria-label="Main threat and selection risks"><b>MAIN THREAT & SELECTION RISKS</b><div class="hh881-intro">Rankings unchanged. A rival can win even when the RS leader is a defensible selection. This review is descriptive, not a new betting signal.</div>${items}${leadFlags.length?`<div class="hh881-warning"><b>SELECTION CAUTION:</b> ${safe(leadFlags.join(' · '))}</div>`:''}<div class="hh881-intro">Projected pace is uncertain; no automatic pace-duel or troubled-trip bonus is applied.</div></section>`;
 }
 
 function hh64CaseSummary(board){
@@ -6380,7 +6380,7 @@ function hh887ChallengerStrengths(field,scored){
   const strong=lines.filter(x=>x.advantages.length).sort((a,b)=>b.advantages.length-a.advantages.length||a.rs-b.rs);
   const detail=strong.map(x=>`<div style="padding:8px 0;border-top:1px solid #e5e7eb"><b>#${safe(x.h.post||x.h.pgm||'?')} ${horseNameLinkHTML(x.h)}</b> <span style="color:#596579">RS ${x.rs} · CS ${safe(x.cs??'—')}</span><div style="margin-top:4px">${x.advantages.map(a=>`<span style="display:inline-block;margin:2px 4px 2px 0;padding:3px 6px;border:1px solid #c7d2df;border-radius:5px;background:#f3f7fa;font-size:11px"><b>▲ ${safe(a[0])}</b>${a[1]?' · '+a[1]:''}</span>`).join('')}</div></div>`).join('');
   const none=lines.filter(x=>!x.advantages.length);
-  return `<section class="hh887-strengths" style="margin:10px 0;padding:12px;border:1px solid #c6d3e0;border-left:5px solid #346487;border-radius:8px;background:#fff;color:#1e293b;font-size:12px;line-height:1.5"><b>CHALLENGER STRENGTHS OVER #1 · v8.87</b><div style="margin:5px 0;color:#566477">Display only — no changes to RS, CS, probabilities, selections or wagers. Advantages are correlated; counts are not probabilities.</div><div><b>RS #1:</b> #${safe(top.post||'?')} ${horseNameLinkHTML(top)} · ${strong.length} of ${lines.length} rivals have at least one listed edge.</div>${detail||'<div style="margin-top:6px">No measured challenger advantages in the available fields.</div>'}${none.length?`<div style="margin-top:6px;color:#64748b">No listed advantage: ${none.map(x=>'#'+safe(x.h.post||'?')+' '+safe(x.h.horse)).join(', ')}</div>`:''}<div style="margin-top:8px;font-size:11px;color:#64748b">Historical contender win rates for individual edges: M/L as short 24.5%; higher Prime Power 23.4%; best last figure 22.2%; more early speed 18.4%. These are pooled rates, not horse-specific forecasts.</div></section>`;
+  return `<section class="hh887-strengths" style="margin:10px 0;padding:12px;border:1px solid #c6d3e0;border-left:5px solid #346487;border-radius:8px;background:#fff;color:#1e293b;font-size:12px;line-height:1.5"><b>CHALLENGER STRENGTHS OVER RS #1</b><div style="margin:5px 0;color:#566477">Display only — no changes to RS, CS, probabilities, selections or wagers. Advantages are correlated; counts are not probabilities.</div><div><b>RS #1:</b> #${safe(top.post||'?')} ${horseNameLinkHTML(top)} · ${strong.length} of ${lines.length} rivals have at least one listed edge.</div>${detail||'<div style="margin-top:6px">No measured challenger advantages in the available fields.</div>'}${none.length?`<div style="margin-top:6px;color:#64748b">No listed advantage: ${none.map(x=>'#'+safe(x.h.post||'?')+' '+safe(x.h.horse)).join(', ')}</div>`:''}<div style="margin-top:8px;font-size:11px;color:#64748b">Historical contender win rates for individual edges: M/L as short 24.5%; higher Prime Power 23.4%; best last figure 22.2%; more early speed 18.4%. These are pooled rates, not horse-specific forecasts.</div></section>`;
 }
 
 function raceFactsHTMLV806(field,scored){
@@ -6413,7 +6413,7 @@ function raceFactsHTMLV806(field,scored){
        <td>${safe(h.weight||'—')}${h.apprenticeAllowance?` (-${safe(h.apprenticeAllowance)})`:''}</td>
        <td>${safe(medicationLabelV806(h.todayMedication))}</td><td>${safe(equipmentLabelV806(h.equipmentChange))}</td>
        <td>${tr}</td><td>${flags.length?`<b>${safe(flags.join(' · '))}</b><br>`:''}<b>TRAINER ANGLES:</b><br>${trainerAnglesHTMLV806(h)}</td><td>${jk}</td><td>${js||'—'}</td></tr>${firstTimerEvidenceRowV808(h)}`;
-    }).join('')}</tbody></table></div><div class="note" style="padding:7px 9px;font-size:10px;">Green = field best on ranked numeric facts. Red = never on today's surface. For first-time starters, the highlighted line replaces unavailable race-history evidence with M/L, trainer FTS angle, workouts, pedigree, jockey, weight, medication and equipment. These facts are display evidence only; v8.08 does not change Pick or ranking math.</div></details>`;
+    }).join('')}</tbody></table></div><div class="note" style="padding:7px 9px;font-size:10px;">Green = field best on ranked numeric facts. Red = never on today's surface. For first-time starters, the highlighted line replaces unavailable race-history evidence with M/L, trainer FTS angle, workouts, pedigree, jockey, weight, medication and equipment. These facts are display evidence only; This display does not change picks or ranking math.</div></details>`;
 }
 
 function fieldTableHTML(raceNum,field,scored,classMap,liveOnly=false){
@@ -7565,7 +7565,7 @@ function hh74Refresh(){
     const race=card.getAttribute('data-race'),r=hh74Results[race];
     const ai2name=card.getAttribute('data-ai2-name');
     const ai2Horse=card.getAttribute('data-ai2-horse');
-    let result='', betLine='', passReason='';
+    let result='', betLine='', passReason='', detail='';
     if(!r){unknown++;result=hh74Error||'Waiting for AI(1) v3.91 calculation';passReason='AI(1) result pending';}
     else if(!r.top){unknown++;result='AI(1) ranking unavailable';passReason='AI(1) ranking unavailable';}
     else {
@@ -7581,6 +7581,11 @@ function hh74Refresh(){
       const tierOK=Number.isFinite(tier)&&tier>=1&&tier<=2;
       const confOK=conf==='HIGH'||conf==='GOOD';
       const priorityOK=tierOK&&confOK&&sameSelection;
+      const tierLabel=Number.isFinite(tier)?'Tier '+tier+' of 7':'Tier unavailable';
+      const confLabel=conf||'UNAVAILABLE';
+      const tierHorse=r.tier?.horse?('#'+(r.tier.post||'?')+' '+r.tier.horse):'unavailable';
+      const selectionLabel=r.bet?.horse?('#'+(r.bet.post||'?')+' '+r.bet.horse):ai1+' (rank leader fallback)';
+      detail='AI(1) '+tierLabel+' · confidence '+confLabel+' · tier horse '+tierHorse+' · race-plan selection '+selectionLabel+' · '+(sameSelection?'race-plan selection matches AI(2)':'race-plan selection differs from AI(2)')+' · '+(tierOK?'tier passes':'tier fails (requires 1–2)')+' · '+(confOK?'confidence passes':'confidence fails (requires GOOD/HIGH)');
       // Distinct opportunity, never confused with the high-confidence agreement screen.
       // Use the *actual* outer AI(2) pick, not Overlay Board's internal AI(2) approximation.
       // Reproduce v3.91's pre-race TWO-HORSE definition: <=7 live, not maiden,
@@ -7596,9 +7601,9 @@ function hh74Refresh(){
         betLine='BET — TWO-HORSE OPPORTUNITY · AI(2) ONLY: '+ai2name+' · AI(1) alternative: #'+r.top.post+' '+r.top.horse+' · RESEARCH CATEGORY, NOT HIGH CONFIDENCE';
       } else {
         const why=[];
-        if(!tierOK)why.push('tier outside 1–2');
-        if(!confOK)why.push('confidence below GOOD');
-        if(!sameSelection)why.push('AI(1) selection and AI(2) differ');
+        if(!tierOK)why.push(tierLabel+'; requires Tier 1–2');
+        if(!confOK)why.push('confidence '+confLabel+'; requires GOOD or HIGH');
+        if(!sameSelection)why.push('AI(1) race-plan selection differs from AI(2)');
         passReason=why.join(' · ')||'missing required data';
         betLine='NO HIGH-CONFIDENCE BET · '+passReason;
       }
@@ -7609,12 +7614,12 @@ function hh74Refresh(){
     let signal=card.querySelector('.hh900-bet-signal');
     if(!signal){signal=document.createElement('div');signal.className='hh900-bet-signal';signal.style.cssText='margin:8px 0;padding:10px;border-left:5px solid #777;background:#f4f1e8;font-size:12px;line-height:1.5';card.appendChild(signal);}
     signal.style.borderLeftColor=betLine.startsWith('HIGH-')?'#2e6e45':betLine.startsWith('BET — TWO-HORSE')?'#315a7d':'#9b6b2e';
-    signal.textContent=betLine||'PENDING — No wager classification until both engines finish.';
-    const meta=r ? ' · Tier '+escapeText(r.tier?.tier??'—')+' · '+escapeText(r.confidence||'—') : '';
+    signal.textContent=(betLine||'PENDING — No wager classification until both engines finish.')+(detail?'\n'+detail:'');signal.style.whiteSpace='pre-line';
+    const meta=r ? ' · Tier '+escapeText(r.tier?.tier??'unavailable')+' of 7 · confidence '+escapeText(r.confidence||'unavailable') : '';
     return '<div style="padding:9px 0;border-top:1px solid #ddd"><b>Race '+escapeText(race)+':</b> '+escapeText(result)+meta+'<div><b>'+escapeText(betLine||'PENDING')+'</b></div></div>';
   });
   const out=document.getElementById('hh74-ai-summary');
-  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.02 · BETTING OPPORTUNITIES</h3><div style="font-size:17px;font-weight:800;padding:8px 0">'+qualified+' high-confidence · '+twoHorse+' two-horse opportunities / '+cards.length+' races · '+agree+' ranking agreements · '+unknown+' pending</div><div class="small-note">Historical research rule: Overlay Board Tier 1–2 + GOOD/HIGH confidence + AI(1) race-plan selection matches AI(2). Separate TWO-HORSE research opportunity: 2–7 active non-maiden runners, AI(1) and AI(2) differ, and AI(2) is AI(1) ranked #2. Bet AI(2) only; never classify as high confidence. Other races remain predictions only. Uses only pre-race fields. Actual odds, scratches and conditions must be confirmed; this is not a guarantee of profit. Audit simulation: 39 races, 24 wins (61.5%), +40.5% $2 flat-bet ROI. In-sample only, unverified forward.</div>'+lines.join('');
+  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.03 · BETTING OPPORTUNITIES</h3><div style="font-size:17px;font-weight:800;padding:8px 0">'+qualified+' high-confidence · '+twoHorse+' two-horse opportunities / '+cards.length+' races · '+agree+' ranking agreements · '+unknown+' pending</div><div class="small-note">Historical research rule (FOCUS race screen alone is NOT a bet): Overlay Board Tier 1–2 + GOOD/HIGH confidence + AI(1) race-plan selection matches AI(2). Separate TWO-HORSE research opportunity: 2–7 active non-maiden runners, AI(1) and AI(2) differ, and AI(2) is AI(1) ranked #2. Bet AI(2) only; never classify as high confidence. Other races remain predictions only. Uses only pre-race fields. Actual odds, scratches and conditions must be confirmed; this is not a guarantee of profit. Audit simulation: 39 races, 24 wins (61.5%), +40.5% $2 flat-bet ROI. In-sample only, unverified forward.</div>'+lines.join('');
 }
 
 
@@ -7702,7 +7707,7 @@ function hh98Render(){
  const counts=(filter)=>done.filter(r=>filter(r.horses.find(h=>h.post===r.winnerPost),r)).length;
  const rs3=counts(w=>w.rsRank<=3),cs2=counts(w=>w.csRank<=2),both=counts(w=>w.rsRank<=3&&w.csRank<=2),either=counts(w=>w.rsRank<=3||w.csRank<=2);
  root.innerHTML=`<div style="padding:14px;border:2px solid #244b38;background:#fff;border-radius:9px;margin:16px 0">
- <h3 style="margin:0 0 7px">Bad Call Audit · v8.99 (research only)</h3>
+ <h3 style="margin:0 0 7px">Bad Call Audit · research only</h3>
  <p style="font-size:13px">After computing, enter the <b>race date and track</b>, then tap <b>Freeze pre-race card</b> BEFORE entering winners. Existing snapshots are never overwritten by recomputing. The model and wagering remain unchanged.</p>
  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end"><label>Race date <input id="hh98-date" type="date" style="width:160px" value="${hh98Esc(root.dataset.date||'')}"></label><label>Track <input id="hh98-track" type="text" maxlength="12" placeholder="GP" style="width:90px" value="${hh98Esc(root.dataset.track||'')}"></label><button type="button" onclick="hh98Capture()">Freeze pre-race card</button><button type="button" onclick="hh98Export()">Export JSON backup</button><button type="button" onclick="hh98ExportCSV()">Export CSV</button><label style="font-size:12px">Import JSON <input type="file" accept=".json,application/json" onchange="hh98Import(this.files[0])" style="max-width:180px"></label></div>
  <div style="margin:12px 0;font-size:13px"><b>${arr.length} saved races · ${done.length} with winners · ${picked} correct selections</b><div>Winner RS top 3: ${rs3}/${done.length} · CS top 2: ${cs2}/${done.length} · BOTH: ${both}/${done.length} · EITHER: ${either}/${done.length}</div><small>Coverage counts include multiple qualifying horses per race. They are not single-pick win rates. A comparison requires enough future races.</small></div>
@@ -7965,7 +7970,7 @@ function computeRaceCard(){
                 </div>
                 <div class="model-prob"><button class="prob-button" onclick="openProbability('${safe(raceNum)}')" aria-label="Open probability details">${(top.probability*100).toFixed(1)}%</button><div class="confidence">THIS HORSE'S MODEL SHARE · ${safe(confidenceLabelV815(wagerV815))}</div></div>
             </div>
-            <div class="hh-review" style="border-left:5px solid ${hh889FocusEligible?'#2E6E45':'#9a6c13'}"><b>RACE REVIEW: ${hh889FocusStatus}</b> · ${hh889FocusEligible?'Qualified for FOCUS ordering':safe(hh889FocusReason)} · ${activeField.length} active runners.</div>
+            <div class="hh-review" style="border-left:5px solid ${hh889FocusEligible?'#2E6E45':'#9a6c13'}"><b>RACE SCREEN: ${hh889FocusStatus} (not a bet rating)</b> · ${hh889FocusEligible?'Eligible for FOCUS race ordering; wager rules evaluated separately':safe(hh889FocusReason)} · ${activeField.length} active runners.</div>
             <div class="hh74-ai" data-race="${safe(raceNum)}" data-ai2-name="${safe('#'+modelLeader.horse.post+' '+modelLeader.horse.horse)}" data-ai2-horse="${safe(modelLeader.horse.horse)}" style="margin:9px 0;padding:10px;border:1px solid #cfc2a0;border-radius:7px;background:#fff">
               <b>AI(1) / AI(2) COMPARISON</b>
               <div class="hh74-ai-result" style="margin-top:6px;font-weight:800">Calculating AI(1) ranking…</div>
@@ -8127,7 +8132,7 @@ function computeRaceCard(){
         x.timePriority?.status==='PRIORITY REVIEW' && !(x.primeChallengers?.length)
     );
     const wagerSummaryV815=`<div class="bestof" style="margin-bottom:16px;">
-      <h3>Qualified Picks — Clearer Race Picture · v8.72</h3>
+      <h3>LEGACY RESEARCH — Clearer Race Picture</h3>
       <div class="small-note" style="margin-bottom:8px;">Only existing model PICK signals that also pass the conservative race-clarity screen appear here. Other races retain a TOP RANKED horse but are not Qualified Picks. This is a time-priority screen, not a validated betting edge.</div>
       ${qualifiedRacesV869.length?qualifiedRacesV869.map(x=>`<div class="best-pick" style="padding:10px 12px;margin:8px 0;">
         <b><span class="race-number-link" onclick="goToContendersRace('${safe(x.race)}')">Race ${safe(x.race)}</span> — #${safe(x.wager.horse.post)} ${horseNameLinkHTML(x.wager.horse)}</b>
@@ -8608,7 +8613,7 @@ function hhVerdictBoardV840(races){
     const contenders=v.ranked.slice(0,3).map((y,i)=>`<span style="display:inline-block;margin:3px 10px 2px 0">${i+1}. #${safe(y.horse.post||y.horse.pgm||'')} ${horseNameLinkHTML(y.horse)} <span class="small-note">M/L ${safe(y.horse.ml||y.horse.odds||'N/A')}${y.ftsThin?' · FTS OPPORTUNITY':''}</span></span>`).join('');
     return `<div style="padding:12px 2px;border-bottom:1px solid var(--paper-line);line-height:1.55"><b>RACE ${safe(x.race)}</b> <span class="badge" style="background:${color};color:#fff">${safe(v.tier)}</span><div>${name}</div>${selection}${v.horse?hhReliabilityHTMLV851(v.horse):""}<div class="small-note"><b>VERDICT REASON:</b> ${safe(v.reason)}</div>${contenders?`<div class="small-note" style="margin-top:5px"><b>Top 3 by the same model ranking:</b><br>${contenders}</div>`:''}</div>`;
   }).join('');
-  return `<div class="bestof" style="margin:0 0 16px"><h3>HORSE HANDICAP VERDICTS · v8.60</h3><div class="small-note">Experimental forward-test screen: model ranking and wager qualification are separate. CONDITIONAL BET requires 3/3 concurrence, no RED readability, at least two independent confirmations (Prime Power, last speed, recent ITM), and morning line of at least 2-1. Bet only if post-time odds remain at least 2-1. FTS OPPORTUNITY is not a wager. Every race retains a top pick. This rule has not demonstrated positive ROI. The official top pick and the top-three below now use the same model-score order. Other panels may show an alternative lower-rank analysis; those are not separate official picks or wagering instructions.</div>${lines}</div>`;
+  return `<div class="bestof" style="margin:0 0 16px"><h3>LEGACY RESEARCH VERDICTS — NOT CURRENT BET SIGNALS</h3><div class="small-note">Experimental forward-test screen: model ranking and wager qualification are separate. CONDITIONAL BET requires 3/3 concurrence, no RED readability, at least two independent confirmations (Prime Power, last speed, recent ITM), and morning line of at least 2-1. Bet only if post-time odds remain at least 2-1. FTS OPPORTUNITY is not a wager. Every race retains a top pick. This rule has not demonstrated positive ROI. The official top pick and the top-three below now use the same model-score order. Other panels may show an alternative lower-rank analysis; those are not separate official picks or wagering instructions.</div>${lines}</div>`;
 }
 
 function renderTop4Board(){
@@ -10212,7 +10217,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.02 · October 23, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v3.91</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.03 · October 23, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v3.91</div>
 
 <script>
 (function(){
