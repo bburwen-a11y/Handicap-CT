@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.04 · October 24, 2026 — Unified FOCUS Review</title>
+<title>Horse Handicap v9.05 · October 24, 2026 — Unified FOCUS Review</title>
 
 <style>
 :root{
@@ -1338,7 +1338,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.04 · Oct 24, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.05 · Oct 25, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -7217,6 +7217,21 @@ function fieldRankV815(field,horse,selector){
     const tied=vals.filter(v=>Math.abs(v-mine)<1e-9).length>1;
     return {rank,value:mine,tied,count:vals.length};
 }
+/* v9.05 READINESS SAFETY GATE — conservative veto, not a new ranking.
+   Uses only current pre-race past performances, independent evidence groups,
+   and explicit contradictory form. No historical ROI is claimed for this gate. */
+function readinessGateV905(h,field){
+  if(!h)return {ok:false,reasons:['No horse selected'],groups:0};
+  const live=(field||[]).filter(x=>!x.scratched);
+  const e=hh59Evidence(h,live);
+  const v=hh61ContenderEvidence(h,live,1);
+  const starts=(h.ppRaces||[]).filter(x=>number(x.fin)>0&&number(x.fin)<90).length;
+  const reasons=[];
+  if(starts<2)reasons.push('Fewer than two completed past performances');
+  if(v.groups<2)reasons.push('Only '+v.groups+'/3 independent readiness groups');
+  if(e.bad.length>=2)reasons.push(e.bad.length+' independent contrary-form findings');
+  return {ok:reasons.length===0,reasons,groups:v.groups,starts,bad:e.bad,good:v.evidence};
+}
 function wagerDecisionV815(top,field,classMap,officialPick){
     if(!top?.horse) return {type:'NO_PICK',horse:null};
     const h=top.horse;
@@ -7232,9 +7247,10 @@ function wagerDecisionV815(top,field,classMap,officialPick){
     // it does not alter Model #1, Official Pick, C/Q/P, Main Threat, H2H, or scoring.
     const quirin=horseSpeedPoints(h);
     const paceSupport=quirin>=2;
-    const betPick=!!officialPick && last.rank===1 && !last.tied && confirm.formYes && paceSupport;
-    if(betPick) return {type:'BET_PICK',horse:h,confirm,last,pp,modelShare,ml,mlImplied,edge,bucket,quirin,paceSupport};
-    return {type:'PASS',horse:h,confirm,last,pp,modelShare,ml,mlImplied,edge,bucket,quirin,paceSupport};
+    const readiness=readinessGateV905(h,field);
+    const betPick=!!officialPick && last.rank===1 && !last.tied && confirm.formYes && paceSupport && readiness.ok;
+    if(betPick) return {type:'BET_PICK',horse:h,confirm,last,pp,modelShare,ml,mlImplied,edge,bucket,quirin,paceSupport,readiness};
+    return {type:'PASS',horse:h,confirm,last,pp,modelShare,ml,mlImplied,edge,bucket,quirin,paceSupport,readiness};
 }
 function wagerDecisionHTMLV815(w){
     if(!w?.horse) return '';
@@ -7242,7 +7258,8 @@ function wagerDecisionHTMLV815(w){
       return `<div class="decision-play-v801"><b>BET PICK:</b> WIN #${safe(w.horse.post)} · SOLE #1 Last Speed · Recent Form ${safe(w.confirm.itm)}/${safe(w.confirm.starts)} ITM · Quirin ${safe(w.quirin)}</div>`;
     }
     const qNote=(w.quirin<2)?` · Quirin ${safe(w.quirin)} below wager minimum 2`:'';
-    return `<div class="decision-alert"><b>NO BET.</b>${qNote} Rank #1 remains the Top Choice; Rank #2 remains the Main Threat.</div>`;
+    const readinessNote=w.readiness&&!w.readiness.ok?` · READINESS VETO: ${safe(w.readiness.reasons.join("; "))}`:'';
+    return `<div class="decision-alert"><b>NO BET.</b>${qNote}${readinessNote} Rank #1 remains the Top Choice; Rank #2 remains the Main Threat.</div>`;
 }
 function confidenceLabelV815(w){
     if(!w) return 'UNRATED';
@@ -7524,15 +7541,17 @@ function hh60Decision(scored,field){
   return {horse:original,original,switched:false,bet:false,
     verdict:challenged?'ORIGINAL CHALLENGED — REVIEW':'ORIGINAL RETAINED',
     reason:leader.good.slice(0,3).join('; ')||'Original model ranking retained; independent support is limited',
-    concerns:leader.bad.slice(0,3),reviews,challenger,challenged,ml,evidenceQualified};
+    concerns:leader.bad.slice(0,3),reviews,field,challenger,challenged,ml,evidenceQualified};
 }
 function hh60DecisionHTML(d,caseBoard=null){
   if(!d?.horse)return '';
   const review=d.reviews||[];
   const challengers=review.filter(r=>r.verify.groups>=2&&r.rank>1);
+  const readiness=readinessGateV905(d.horse,d.field||review.map(r=>r.horse));
+  const readinessText=`<div class="${readiness.ok?'hh-pos':'hh-neg'}"><b>v9.05 READINESS ${readiness.ok?'CHECK PASSED':'VETO / NO WIN BET'}:</b> ${safe(readiness.groups)}/3 evidence groups · ${safe(readiness.starts)} completed PPs${readiness.reasons.length?' · '+safe(readiness.reasons.join('; ')):' · no major readiness veto'}. A pass is not proof of a profitable wager.</div>`;
   const challengerText=d.challenged&&d.challenger
     ? `<div class="hh-neg"><b>CHALLENGE REQUIRES REVIEW:</b> #${safe(d.challenger.horse.post)} ${horseNameLinkHTML(d.challenger.horse)} has ${d.challenger.verify.groups} independent evidence groups. This does not overturn the model without validated switch rules.</div>`:'';
-  return `<div class="hh-review" style="border-left:5px solid #2E6E45"><h4>ORIGINAL PROBABILITY MODEL</h4><div style="font-size:20px;font-weight:900">#${safe(d.horse.post)} ${horseNameLinkHTML(d.horse)}</div>${caseBoard?hh64CaseLine(d.horse,caseBoard,true):''}<b>${safe(d.verdict)}</b><div class="hh-pos"><b>For:</b> ${safe(d.reason)}</div>${d.concerns.length?`<div class="hh-neg"><b>Against:</b> ${safe(d.concerns.join('; '))}</div>`:''}${challengerText}<div class="hh-note"><b>Verified alternatives:</b> ${challengers.length?challengers.map(r=>'#'+safe(r.horse.post)+' '+safe(r.horse.horse)).join(' · '):'None verified by two independent evidence groups'}. Morning line is not used to qualify contenders.</div><details><summary>Inspect all contenders and contrary facts (${review.length})</summary>${review.map(r=>`<div class="hh-compare"><b>#${safe(r.horse.post)} ${safe(r.horse.horse)}</b> · model rank ${r.rank} · <b>${safe(r.verify.label)}</b> (${r.verify.groups}/3 independent groups)<div class="hh-pos">Supporting facts: ${safe(r.verify.evidence.join('; ')||'No qualifying independent evidence')}</div><div class="hh-pos">Other positive facts: ${safe(r.good.join('; ')||'None')}</div><div class="hh-neg">Contrary facts: ${safe(r.bad.join('; ')||'None')}</div></div>`).join('')}</details></div>`;
+  return `<div class="hh-review" style="border-left:5px solid #2E6E45"><h4>ORIGINAL PROBABILITY MODEL</h4><div style="font-size:20px;font-weight:900">#${safe(d.horse.post)} ${horseNameLinkHTML(d.horse)}</div>${caseBoard?hh64CaseLine(d.horse,caseBoard,true):''}<b>${safe(d.verdict)}</b><div class="hh-pos"><b>For:</b> ${safe(d.reason)}</div>${d.concerns.length?`<div class="hh-neg"><b>Against:</b> ${safe(d.concerns.join('; '))}</div>`:''}${challengerText}${readinessText}<div class="hh-note"><b>Verified alternatives:</b> ${challengers.length?challengers.map(r=>'#'+safe(r.horse.post)+' '+safe(r.horse.horse)).join(' · '):'None verified by two independent evidence groups'}. Morning line is not used to qualify contenders.</div><details><summary>Inspect all contenders and contrary facts (${review.length})</summary>${review.map(r=>`<div class="hh-compare"><b>#${safe(r.horse.post)} ${safe(r.horse.horse)}</b> · model rank ${r.rank} · <b>${safe(r.verify.label)}</b> (${r.verify.groups}/3 independent groups)<div class="hh-pos">Supporting facts: ${safe(r.verify.evidence.join('; ')||'No qualifying independent evidence')}</div><div class="hh-pos">Other positive facts: ${safe(r.good.join('; ')||'None')}</div><div class="hh-neg">Contrary facts: ${safe(r.bad.join('; ')||'None')}</div></div>`).join('')}</details></div>`;
 }
 
 // v8.74: exact Claude v3.75 engine runs inside an isolated hidden document.
@@ -7620,7 +7639,7 @@ function hh74Refresh(){
     return '<div style="padding:9px 0;border-top:1px solid #ddd"><b>Race '+escapeText(race)+':</b> '+escapeText(result)+meta+'<div><b>'+escapeText(betLine||'PENDING')+'</b></div></div>';
   });
   const out=document.getElementById('hh74-ai-summary');
-  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.04 · BETTING OPPORTUNITIES</h3><div style="font-size:17px;font-weight:800;padding:8px 0">'+qualified+' high-confidence · '+twoHorse+' two-horse opportunities / '+cards.length+' races · '+agree+' ranking agreements · '+unknown+' pending</div><div class="small-note">Historical research rule (FOCUS race screen alone is NOT a bet): Overlay Board Tier 1–2 + GOOD/HIGH confidence + AI(1) race-plan selection matches AI(2). Separate TWO-HORSE research opportunity: 2–7 active non-maiden runners, AI(1) and AI(2) differ, and AI(2) is AI(1) ranked #2. Bet AI(2) only; never classify as high confidence. Other races remain predictions only. Uses only pre-race fields. Actual odds, scratches and conditions must be confirmed; this is not a guarantee of profit. Audit simulation: 39 races, 24 wins (61.5%), +40.5% $2 flat-bet ROI. In-sample only, unverified forward.</div>'+lines.join('');
+  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.05 · BETTING OPPORTUNITIES</h3><div style="font-size:17px;font-weight:800;padding:8px 0">'+qualified+' high-confidence · '+twoHorse+' two-horse opportunities / '+cards.length+' races · '+agree+' ranking agreements · '+unknown+' pending</div><div class="small-note">Historical research rule (FOCUS race screen alone is NOT a bet): Overlay Board Tier 1–2 + GOOD/HIGH confidence + AI(1) race-plan selection matches AI(2). Separate TWO-HORSE research opportunity: 2–7 active non-maiden runners, AI(1) and AI(2) differ, and AI(2) is AI(1) ranked #2. Bet AI(2) only; never classify as high confidence. Other races remain predictions only. Uses only pre-race fields. Actual odds, scratches and conditions must be confirmed; this is not a guarantee of profit. Audit simulation: 39 races, 24 wins (61.5%), +40.5% $2 flat-bet ROI. In-sample only, unverified forward.</div>'+lines.join('');
 }
 
 
@@ -10218,7 +10237,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.04 · October 24, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.05</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.05 · October 24, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.05</div>
 
 <script>
 (function(){
