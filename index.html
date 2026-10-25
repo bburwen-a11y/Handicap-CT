@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.09 · October 25, 2026 — Unified FOCUS Review</title>
+<title>Horse Handicap v9.10 · October 25, 2026 — Unified FOCUS Review</title>
 
 <style>
 :root{
@@ -1338,7 +1338,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.09 · Oct 25, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.10 · Oct 25, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -7609,6 +7609,43 @@ function hh906ValueRadar(d){
   return '<div class="hh-note" style="border-left:4px solid #8A6A26;padding:9px 12px;margin-top:10px"><b>v9.09 VALUE RADAR — RESEARCH ONLY / NO AUTOMATIC BET</b><div style="font-size:12px">Adapted from Overlay Board v4.09. These are AI(2) proxy signals, not identical CS or calibrated fair-odds rules. Morning line is not live price. Existing ranking and wager decisions are unchanged.</div>'+
     flags.map(z=>'<div style="margin-top:8px"><b>'+safe(z.type)+': #'+safe(z.x.h.post)+' '+safe(z.x.h.horse)+'</b> · '+safe(z.why)+' · '+safe(z.x.good.length)+' positives / '+safe(z.x.bad.length)+' negatives'+(z.x.avg!==null?' · avg speed '+safe(z.x.avg.toFixed(1)):'')+'</div>').join('')+'</div>';
 }
+
+/* v9.10: historical winner RS×CS bracket allocation from audit records.
+   IMPORTANT: Audit has WINNER ranks but not every losing starter's RS×CS ranks.
+   Thus frequencies here are P(winner bracket), NOT P(win | starter bracket).
+   Never represent this as calibrated empirical horse probability. */
+const HH910_WINNER_BRACKETS = {"1,1":139,"3,5":8,"2,2":40,"1,2":33,"5,2":4,"5,7":5,"3,3":25,"3,6":4,"2,5":7,"4,3":13,"4,1":6,"3,1":9,"2,1":37,"3,4":13,"4,5":12,"2,7":5,"2,4":8,"7,6":3,"4,2":13,"3,2":15,"5,3":5,"1,3":8,"4,11":2,"4,6":7,"4,4":12,"6,3":5,"9,6":1,"6,6":6,"5,6":11,"2,6":3,"5,4":6,"3,7":5,"5,8":3,"6,5":5,"1,5":1,"3,8":2,"2,3":11,"6,2":4,"1,4":4,"4,8":4,"8,1":1,"2,8":4,"7,3":2,"5,5":3,"4,9":2,"8,6":1,"6,1":1,"7,2":1,"8,12":1,"6,8":2,"7,8":2,"8,5":1,"3,12":1,"7,9":3,"7,4":2,"2,9":1,"9,5":1,"5,1":1,"6,4":3,"4,7":2,"7,7":1,"7,5":1,"7,1":1,"6,11":1,"8,8":1,"10,9":1,"10,10":1,"5,11":1};
+const HH910_N_RACES = 547;
+function hh910HistoricalComparison(scored,field,leader){
+  const board=hh64CaseBoard(scored,field);
+  const items=[...board.values()].filter(v=>Number.isFinite(Number(v.rsRank))&&Number.isFinite(Number(v.csRank)));
+  if(!items.length)return '';
+  const n=HH910_N_RACES;
+  // Exact cell counts are descriptive. No percentage conversion without all starter denominators.
+  const ranked=items.map(v=>({...v, wins:HH910_WINNER_BRACKETS[String(v.rsRank)+','+String(v.csRank)]||0}));
+  const first=ranked.find(v=>String(v.horse.id)===String(leader?.id));
+  const others=ranked.filter(v=>String(v.horse.id)!==String(leader?.id))
+    .sort((a,b)=>a.rsRank-b.rsRank||a.csRank-b.csRank).slice(0,3);
+  const show=[...(first?[first]:[]),...others];
+  const render=v=>{
+    const key='RS #'+v.rsRank+' / CS #'+v.csRank;
+    const positives=v.F.slice(0,2).join('; ')||'No clear positive facts';
+    const negatives=v.A.slice(0,2).join('; ')||'No recorded negatives';
+    return '<div style="padding:9px 0;border-bottom:1px solid #ddd">'+
+      '<b>#'+safe(v.horse.post)+' '+horseNameLinkHTML(v.horse)+'</b>'+
+      (first===v?' <b>— PRIMARY</b>':' <b>— THREAT</b>')+
+      '<div>RS '+safe(v.rs??'—')+' (rank #'+safe(v.rsRank)+') · CS '+safe(v.tally>=0?'+':'')+safe(v.tally)+' (rank #'+safe(v.csRank)+') · '+safe(v.F.length)+' FOR / '+safe(v.A.length)+' AGAINST</div>'+
+      '<div><b>Historical winning bracket:</b> '+safe(key)+' · '+safe(v.wins)+' winning horses among '+n+' historical races ('+(100*v.wins/n).toFixed(1)+'% of race winners).</div>'+
+      '<div><b>For:</b> '+safe(positives)+'</div><div><b>Against:</b> '+safe(negatives)+'</div></div>';
+  };
+  const warning=first&&first.A.length>=2?'<div class="hh-neg"><b>PRIMARY REEVALUATION:</b> '+first.A.length+' negative case findings. Compare the named threats before wagering.</div>':'';
+  return '<section class="hh-review" style="border-left:5px solid #315A7D"><h4>RS + CS HISTORICAL WINNER BRACKETS · v9.10</h4>'+
+    '<div><b>Selection criterion:</b> Primary is the existing RS/model leader, not a newly invented probability leader. Threats are the next RS-ranked runners. CS facts expose supporting and contrary evidence.</div>'+
+    '<div class="hh-note"><b>Historical basis:</b> '+n+' races with known winner RS and CS ranks from the Overlay Board audit. Counts below are the share of <i>all race winners</i> in that bracket, <b>not</b> each horse’s chance of winning. Losing runners’ paired ranks are missing; calibrated per-horse probabilities cannot yet be computed. Existing Model Share remains a separate uncalibrated score.</div>'+
+    warning+show.map(render).join('')+
+    '<div class="hh-note">Probability status: <b>NOT CALIBRATED</b>. Historical winner counts are displayed rather than fabricating a per-horse percentage. Exact RS/CS scoring differs between AI(1) audit and AI(2); bracket comparisons are provisional until both are recomputed on the same historical cards.</div></section>';
+}
+
 function hh60DecisionHTML(d,caseBoard=null){
   if(!d?.horse)return '';
   const review=d.reviews||[];
@@ -7707,7 +7744,7 @@ function hh74Refresh(){
     return '<div style="padding:9px 0;border-top:1px solid #ddd"><b>Race '+escapeText(race)+':</b> '+escapeText(result)+meta+'<div><b>'+escapeText(betLine||'PENDING')+'</b></div></div>';
   });
   const out=document.getElementById('hh74-ai-summary');
-  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.09 · BETTING OPPORTUNITIES</h3><div style="font-size:17px;font-weight:800;padding:8px 0">'+qualified+' high-confidence · '+twoHorse+' two-horse opportunities / '+cards.length+' races · '+agree+' ranking agreements · '+unknown+' pending</div><div class="small-note">Historical research rule (FOCUS race screen alone is NOT a bet): Overlay Board Tier 1–2 + GOOD/HIGH confidence + AI(1) race-plan selection matches AI(2). Separate TWO-HORSE research opportunity: 2–7 active non-maiden runners, AI(1) and AI(2) differ, and AI(2) is AI(1) ranked #2. Bet AI(2) only; never classify as high confidence. Other races remain predictions only. Uses only pre-race fields. Actual odds, scratches and conditions must be confirmed; this is not a guarantee of profit. Audit simulation: 39 races, 24 wins (61.5%), +40.5% $2 flat-bet ROI. In-sample only, unverified forward.</div>'+lines.join('');
+  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.10 · BETTING OPPORTUNITIES</h3><div style="font-size:17px;font-weight:800;padding:8px 0">'+qualified+' high-confidence · '+twoHorse+' two-horse opportunities / '+cards.length+' races · '+agree+' ranking agreements · '+unknown+' pending</div><div class="small-note">Historical research rule (FOCUS race screen alone is NOT a bet): Overlay Board Tier 1–2 + GOOD/HIGH confidence + AI(1) race-plan selection matches AI(2). Separate TWO-HORSE research opportunity: 2–7 active non-maiden runners, AI(1) and AI(2) differ, and AI(2) is AI(1) ranked #2. Bet AI(2) only; never classify as high confidence. Other races remain predictions only. Uses only pre-race fields. Actual odds, scratches and conditions must be confirmed; this is not a guarantee of profit. Audit simulation: 39 races, 24 wins (61.5%), +40.5% $2 flat-bet ROI. In-sample only, unverified forward.</div>'+lines.join('');
 }
 
 
@@ -8066,6 +8103,7 @@ function computeRaceCard(){
             </div>
           ${hh887ChallengerStrengths(activeField,scored)}
             ${hh881ThreatReview(scored,activeField,top.horse)}
+            ${hh910HistoricalComparison(scored,activeField,top.horse)}
             ${hh64CaseLine(top.horse,hh64CaseBoard(scored,activeField),true)}
             ${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}
             ${hh877Caution?`<div style="border-left:5px solid #9a6c13;padding:10px;background:#fff6e7;margin:8px 0"><b>FOCUS CAUTION — competing evidence:</b> ${safe(hh877Pace.label)}${hh877Outside.length>=2?' · '+hh877Outside.length+' of top four fail strict True Contender evidence':''}. This race is not promoted to first focus solely because of high model share.</div>`:''}
@@ -10305,7 +10343,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.09 · October 25, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.11</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.10 · October 25, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.11</div>
 
 <script>
 (function(){
