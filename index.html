@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.05 · October 24, 2026 — Unified FOCUS Review</title>
+<title>Horse Handicap v9.06 · October 24, 2026 — Unified FOCUS Review</title>
 
 <style>
 :root{
@@ -7217,7 +7217,7 @@ function fieldRankV815(field,horse,selector){
     const tied=vals.filter(v=>Math.abs(v-mine)<1e-9).length>1;
     return {rank,value:mine,tied,count:vals.length};
 }
-/* v9.05 READINESS SAFETY GATE — conservative veto, not a new ranking.
+/* v9.06 READINESS SAFETY GATE — conservative veto, not a new ranking.
    Uses only current pre-race past performances, independent evidence groups,
    and explicit contradictory form. No historical ROI is claimed for this gate. */
 function readinessGateV905(h,field){
@@ -7543,6 +7543,37 @@ function hh60Decision(scored,field){
     reason:leader.good.slice(0,3).join('; ')||'Original model ranking retained; independent support is limited',
     concerns:leader.bad.slice(0,3),reviews,field,challenger,challenged,ml,evidenceQualified};
 }
+/* v9.06 SHADOW VALUE RADAR — independently testable, no new bets.
+   Inspired by Overlay Board v4.09. The AI(2) evidence system differs from
+   Overlay Board's CS and fair-odds model, so these are analogous signals,
+   not claims to reproduce the external model's backtest. */
+function hh906ValueRadar(d){
+  const field=(d.field||[]).filter(h=>!h.scratched);
+  if(!field.length)return '';
+  const rows=field.map(h=>{
+    const recent=(h.ppRaces||[]).slice(0,3).map(p=>number(p.speed)).filter(n=>n>0);
+    const avg=recent.length>=2?recent.reduce((a,b)=>a+b,0)/recent.length:null;
+    const e=hh59Evidence(h,field);
+    const ml=oddsDecimal(h.odds??h.ml);
+    const drop=classMoveRead(h).label==='DOWN';
+    const surf=String(h.currentSurface||'').toUpperCase();
+    const nonTurf=surf==='D'||surf==='AW'||surf==='A'||surf==='DIRT'||surf==='ALL WEATHER';
+    return {h,avg,starts:recent.length,good:e.good||[],bad:e.bad||[],ml,drop,nonTurf};
+  });
+  const maxAvg=Math.max(0,...rows.map(x=>x.avg??0));
+  const flags=[];
+  for(const x of rows){
+    if(x.h===d.horse)continue;
+    const ready=readinessGateV905(x.h,field);
+    if(field.length<=8&&x.avg!==null&&x.avg===maxAvg&&x.good.length>=3&&ready.ok)
+      flags.push({x,type:'FIGURE LEADER WATCH',why:'Best available recent-three speed average; at least three positive evidence findings; small field'});
+    if(x.nonTurf&&x.drop&&x.ml!==null&&x.ml>=3&&ready.ok)
+      flags.push({x,type:'CLASS-DROP VALUE WATCH',why:'Dirt/all-weather class drop; morning line '+x.ml.toFixed(1)+'-1; independent readiness gate passed'});
+  }
+  if(!flags.length)return '<div class="hh-note"><b>v9.06 Value radar:</b> No additional figure-leader or class-drop candidate met the preliminary screening criteria. This does not validate a bet.</div>';
+  return '<div class="hh-note" style="border-left:4px solid #8A6A26;padding:9px 12px;margin-top:10px"><b>v9.06 VALUE RADAR — RESEARCH ONLY / NO AUTOMATIC BET</b><div style="font-size:12px">Adapted from Overlay Board v4.09. These are AI(2) proxy signals, not identical CS or calibrated fair-odds rules. Morning line is not live price. Existing ranking and wager decisions are unchanged.</div>'+
+    flags.map(z=>'<div style="margin-top:8px"><b>'+safe(z.type)+': #'+safe(z.x.h.post)+' '+safe(z.x.h.horse)+'</b> · '+safe(z.why)+' · '+safe(z.x.good.length)+' positives / '+safe(z.x.bad.length)+' negatives'+(z.x.avg!==null?' · avg speed '+safe(z.x.avg.toFixed(1)):'')+'</div>').join('')+'</div>';
+}
 function hh60DecisionHTML(d,caseBoard=null){
   if(!d?.horse)return '';
   const review=d.reviews||[];
@@ -7551,7 +7582,7 @@ function hh60DecisionHTML(d,caseBoard=null){
   const readinessText=`<div class="${readiness.ok?'hh-pos':'hh-neg'}"><b>v9.05 READINESS ${readiness.ok?'CHECK PASSED':'VETO / NO WIN BET'}:</b> ${safe(readiness.groups)}/3 evidence groups · ${safe(readiness.starts)} completed PPs${readiness.reasons.length?' · '+safe(readiness.reasons.join('; ')):' · no major readiness veto'}. A pass is not proof of a profitable wager.</div>`;
   const challengerText=d.challenged&&d.challenger
     ? `<div class="hh-neg"><b>CHALLENGE REQUIRES REVIEW:</b> #${safe(d.challenger.horse.post)} ${horseNameLinkHTML(d.challenger.horse)} has ${d.challenger.verify.groups} independent evidence groups. This does not overturn the model without validated switch rules.</div>`:'';
-  return `<div class="hh-review" style="border-left:5px solid #2E6E45"><h4>ORIGINAL PROBABILITY MODEL</h4><div style="font-size:20px;font-weight:900">#${safe(d.horse.post)} ${horseNameLinkHTML(d.horse)}</div>${caseBoard?hh64CaseLine(d.horse,caseBoard,true):''}<b>${safe(d.verdict)}</b><div class="hh-pos"><b>For:</b> ${safe(d.reason)}</div>${d.concerns.length?`<div class="hh-neg"><b>Against:</b> ${safe(d.concerns.join('; '))}</div>`:''}${challengerText}${readinessText}<div class="hh-note"><b>Verified alternatives:</b> ${challengers.length?challengers.map(r=>'#'+safe(r.horse.post)+' '+safe(r.horse.horse)).join(' · '):'None verified by two independent evidence groups'}. Morning line is not used to qualify contenders.</div><details><summary>Inspect all contenders and contrary facts (${review.length})</summary>${review.map(r=>`<div class="hh-compare"><b>#${safe(r.horse.post)} ${safe(r.horse.horse)}</b> · model rank ${r.rank} · <b>${safe(r.verify.label)}</b> (${r.verify.groups}/3 independent groups)<div class="hh-pos">Supporting facts: ${safe(r.verify.evidence.join('; ')||'No qualifying independent evidence')}</div><div class="hh-pos">Other positive facts: ${safe(r.good.join('; ')||'None')}</div><div class="hh-neg">Contrary facts: ${safe(r.bad.join('; ')||'None')}</div></div>`).join('')}</details></div>`;
+  return `<div class="hh-review" style="border-left:5px solid #2E6E45"><h4>ORIGINAL PROBABILITY MODEL</h4><div style="font-size:20px;font-weight:900">#${safe(d.horse.post)} ${horseNameLinkHTML(d.horse)}</div>${caseBoard?hh64CaseLine(d.horse,caseBoard,true):''}<b>${safe(d.verdict)}</b><div class="hh-pos"><b>For:</b> ${safe(d.reason)}</div>${d.concerns.length?`<div class="hh-neg"><b>Against:</b> ${safe(d.concerns.join('; '))}</div>`:''}${challengerText}${readinessText}${hh906ValueRadar(d)}<div class="hh-note"><b>Verified alternatives:</b> ${challengers.length?challengers.map(r=>'#'+safe(r.horse.post)+' '+safe(r.horse.horse)).join(' · '):'None verified by two independent evidence groups'}. Morning line is not used to qualify contenders.</div><details><summary>Inspect all contenders and contrary facts (${review.length})</summary>${review.map(r=>`<div class="hh-compare"><b>#${safe(r.horse.post)} ${safe(r.horse.horse)}</b> · model rank ${r.rank} · <b>${safe(r.verify.label)}</b> (${r.verify.groups}/3 independent groups)<div class="hh-pos">Supporting facts: ${safe(r.verify.evidence.join('; ')||'No qualifying independent evidence')}</div><div class="hh-pos">Other positive facts: ${safe(r.good.join('; ')||'None')}</div><div class="hh-neg">Contrary facts: ${safe(r.bad.join('; ')||'None')}</div></div>`).join('')}</details></div>`;
 }
 
 // v8.74: exact Claude v3.75 engine runs inside an isolated hidden document.
