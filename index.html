@@ -7617,8 +7617,10 @@ function hh906ValueRadar(d){
 const HH910_WINNER_BRACKETS = {"1,1":139,"3,5":8,"2,2":40,"1,2":33,"5,2":4,"5,7":5,"3,3":25,"3,6":4,"2,5":7,"4,3":13,"4,1":6,"3,1":9,"2,1":37,"3,4":13,"4,5":12,"2,7":5,"2,4":8,"7,6":3,"4,2":13,"3,2":15,"5,3":5,"1,3":8,"4,11":2,"4,6":7,"4,4":12,"6,3":5,"9,6":1,"6,6":6,"5,6":11,"2,6":3,"5,4":6,"3,7":5,"5,8":3,"6,5":5,"1,5":1,"3,8":2,"2,3":11,"6,2":4,"1,4":4,"4,8":4,"8,1":1,"2,8":4,"7,3":2,"5,5":3,"4,9":2,"8,6":1,"6,1":1,"7,2":1,"8,12":1,"6,8":2,"7,8":2,"8,5":1,"3,12":1,"7,9":3,"7,4":2,"2,9":1,"9,5":1,"5,1":1,"6,4":3,"4,7":2,"7,7":1,"7,5":1,"7,1":1,"6,11":1,"8,8":1,"10,9":1,"10,10":1,"5,11":1};
 const HH910_N_RACES = 547;
 const HH911_BRACKETS={"1|1":{"n":382,"w":141},"1|2":{"n":135,"w":34},"1|3":{"n":45,"w":8},"1|4+":{"n":21,"w":4},"2|1":{"n":133,"w":38},"2|2":{"n":187,"w":39},"2|3":{"n":106,"w":13},"2|4+":{"n":157,"w":26},"3|1":{"n":48,"w":10},"3|2":{"n":110,"w":15},"3|3":{"n":143,"w":25},"3|4+":{"n":282,"w":33},"4+|1":{"n":72,"w":11},"4+|2":{"n":232,"w":21},"4+|3":{"n":274,"w":28},"4+|4+":{"n":1255,"w":109}};
+const hh913ReviewInputs = Object.create(null);
 function hh910HistoricalComparison(scored,field,leader){
  const race=String(field?.[0]?.race??leader?.race??'');
+ hh913ReviewInputs[race]={scored,field,leader};
  const e=(typeof hh74Results!=='undefined'&&hh74Results)?hh74Results[race]:null;
  const sm=e?.summary;
  const bucket=n=>Number(n)<=3?String(Math.max(1,Math.round(Number(n)))):'4+';
@@ -7634,11 +7636,11 @@ function hh910HistoricalComparison(scored,field,leader){
    '<div><b>FOR:</b> '+safe((row.forFacts||[]).slice(0,3).join('; ')||'None')+'</div><div><b>AGAINST:</b> '+safe((row.againstFacts||[]).slice(0,3).join('; ')||'None')+'</div>'+
    (row.doubtful?'<div style="color:#8B2A2A"><b>DOUBTFUL:</b> '+safe(typeof row.doubtful==='string'?row.doubtful:JSON.stringify(row.doubtful))+'</div>':'')+'</div>';
  };
- if(!sm||sm.error){return '<section class="hh-review"><h4>AI(1) ENGINE FACTS + HISTORICAL BRACKETS</h4><div>Waiting for Overlay Board v4.16 to calculate. Load the card and allow AI(1) to finish; no substitute facts are generated.</div></section>';}
+ if(!sm||sm.error){return '<section class="hh-review hh913-live" data-race="'+safe(race)+'"><h4>AI(1) ENGINE FACTS + HISTORICAL BRACKETS</h4><div>Waiting for Overlay Board v4.16 to calculate. Load the card and allow AI(1) to finish; no substitute facts are generated.</div></section>';}
  const w=sm.warnings||{};
  const warnings=[w.unreadable?'Unreadable: '+String(w.unreadable):'',w.fragileFavourite?'Fragile favourite: '+String(w.fragileFavourite):'',w.speedFavourite?'Speed favourite: #'+w.speedFavourite.post+' '+w.speedFavourite.horse:'',w.reversal?'Selection reversal: '+JSON.stringify(w.reversal):''].filter(Boolean);
  const ai2=leader?'#'+safe(leader.post)+' '+safe(leader.name||leader.horse||''):'Unavailable';
- return '<section class="hh-review" style="border-left:5px solid #315A7D"><h4>AI(1) v4.16 — REVIEWED CHANCES & SELECTION · v9.12</h4>'+
+ return '<section class="hh-review hh913-live" data-race="'+safe(race)+'" style="border-left:5px solid #315A7D"><h4>AI(1) v4.16 — REVIEWED CHANCES & SELECTION · v9.12</h4>'+
  '<div><b>AI(1) reviewed selection:</b> '+safe(sm.selection?.post)+' '+safe(sm.selection?.horse)+' · '+safe(sm.planHeading||'')+' · '+safe(sm.planWhy||'')+'</div>'+
  '<div><b>AI(2) independent selection:</b> '+ai2+' (not overridden by AI(1))</div>'+
  '<div class="hh-note">AI(1) reviewed fitted chances and empirical RS × CS bracket win rates are different statistics. Historical brackets use all 3,582 ranked starters in 583 races; 28 races have no ranked winner. These are in-sample rates, not out-of-sample validated forecasts. Unranked horses are excluded.</div>'+
@@ -7671,7 +7673,7 @@ function hh74Run(){
   const frame=document.getElementById('hh74ClaudeFrame');
   if(!frame||!frame.contentWindow){hh74Error='AI(1) engine unavailable';hh74Refresh();return;}
   const scratched=rows.filter(h=>h.scratched).map(h=>({race:h.race,post:h.post,horse:h.horse}));
-  hh74Error='Calculating AI(1) v4.09 rankings…';hh74Refresh();
+  hh74Error='Calculating AI(1) v4.16 reviewed chances…';hh74Refresh();
   const token=++hh74Token;
   frame.contentWindow.postMessage({type:'HH74_LOAD',token,text:hh74Text,scratched,feed:(window.__hhFeedRaw||'')},'*');
   setTimeout(()=>{if(token===hh74Token && !Object.keys(hh74Results).length && hh74Error.startsWith('Calculating')){hh74Error='AI(1) did not respond. Recompute Race Card to retry; AI(2) remains available.';hh74Refresh();}},12000);
@@ -7680,10 +7682,21 @@ window.addEventListener('message',e=>{
   if(e.source!==document.getElementById('hh74ClaudeFrame')?.contentWindow)return;
   if(e.data?.type==='HH74_READY'){hh74Ready=true;if(hh74Text)hh74Run();}
   if(e.data?.type==='HH74_RESULT'&&e.data.token===hh74Token){
-    hh74Results=Object.fromEntries(e.data.data.map(x=>[String(x.race),x]));hh74Error='';hh74Refresh();
+    hh74Results=Object.fromEntries(e.data.data.map(x=>[String(x.race),x]));hh74Error='';hh74Refresh();hh913RefreshDecisionFacts();
   }
   if(e.data?.type==='HH74_ERROR'&&e.data.token===hh74Token){hh74Error='AI(1) engine error: '+e.data.error;hh74Refresh();}
 });
+// The decision cards were rendered BEFORE the asynchronous embedded engine replied.
+// Refresh ONLY its factual section on the response; never rerun AI(2) or reload files.
+function hh913RefreshDecisionFacts(){
+  document.querySelectorAll('.hh913-live[data-race]').forEach(node=>{
+    const race=node.getAttribute('data-race'),input=hh913ReviewInputs[race];
+    if(!input)return;
+    const holder=document.createElement('div');
+    holder.innerHTML=hh910HistoricalComparison(input.scored,input.field,input.leader);
+    if(holder.firstElementChild)node.replaceWith(holder.firstElementChild);
+  });
+}
 function hh74Refresh(){
   const cards=[...document.querySelectorAll('#bestSection .hh74-ai')];
   let agree=0,disagree=0,unknown=0,qualified=0,twoHorse=0;
@@ -7737,7 +7750,7 @@ function hh74Refresh(){
     }
     const status=card.querySelector('.hh74-ai-result');if(status)status.textContent=result;
     const verdict=card.querySelector('.hh74-top');
-    if(verdict)verdict.textContent=r ? 'AI(1) v4.09 figure-favourite verdict: '+(r.status||'not available')+(r.official?' · #'+r.official.post+' '+r.official.horse:'')+' (separate from ranking concurrence)' : '';
+    if(verdict)verdict.textContent=r ? 'AI(1) v4.16 figure-favourite verdict: '+(r.status||'not available')+(r.official?' · #'+r.official.post+' '+r.official.horse:'')+' (separate from ranking concurrence)' : '';
     let signal=card.querySelector('.hh900-bet-signal');
     if(!signal){signal=document.createElement('div');signal.className='hh900-bet-signal';signal.style.cssText='margin:8px 0;padding:10px;border-left:5px solid #777;background:#f4f1e8;font-size:12px;line-height:1.5';card.appendChild(signal);}
     signal.style.borderLeftColor=betLine.startsWith('HIGH-')?'#2e6e45':betLine.startsWith('BET — TWO-HORSE')?'#315a7d':'#9b6b2e';
