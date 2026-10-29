@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.16 · October 28, 2026 — Unified FOCUS Review</title>
+<title>Horse Handicap v9.17 · October 28, 2026 — Unified FOCUS Review</title>
 
 <style>
 :root{
@@ -7680,7 +7680,7 @@ function hh914Reliability(r,ai2Horse){
  '<b>RACE RELIABILITY · '+status+'</b><div>'+why.map(x=>safe(x)).join(' · ')+'</div>'+
  '<div><b>Historical research group:</b> '+(high?'193/583 races · 46.1% wins · +8.5% $2 flat-stake ROI':mid?'Agreement + CS #1, below 35% · no independent forward validation':'No qualified historical high-reliability signal')+'</div>'+
  '<div style="font-size:11px"><b>Comparison basis:</b> original RS #1 #'+safe(r.top.post)+' '+safe(r.top.horse)+' · CS #'+safe(leader.csRank??'—')+' · AI(1) chance '+safe(valid?chance.toFixed(1)+'%':'unavailable')+'. AI(1) revised selection: #'+safe(sel.post??'?')+' '+safe(sel.horse??'unavailable')+'.</div>'+
- '<div style="font-size:11px"><b>RESEARCH ONLY:</b> Historical and live concurrence both use the original RS leader; reviewed final selection is display-only. No betting rule changed. Historical figures overlap model development and do not validate the revised v4.16 selection. Existing AI(1) wager verdict and AI(2) readiness veto still control their own displays.</div></div>';
+ '<div style="font-size:11px"><b>RESEARCH ONLY:</b> Historical reliability uses the original RS leader; LIVE concurrence uses AI(1) final selection. Historical filter pending re-check on final selections. No betting rule changed. Historical figures overlap model development and do not validate the revised v4.16 selection. Existing AI(1) wager verdict and AI(2) readiness veto still control their own displays.</div></div>';
 }
 
 function hh60DecisionHTML(d,caseBoard=null){
@@ -7742,16 +7742,18 @@ function hh74Refresh(){
     if(!r){unknown++;result=hh74Error||'Waiting for AI(1) v4.09 calculation';passReason='AI(1) result pending';}
     else if(!r.top){unknown++;result='AI(1) ranking unavailable';passReason='AI(1) ranking unavailable';}
     else {
-      const ai1='#'+r.top.post+' '+r.top.horse;
-      const ai1Final=r.final||r.summary?.selection||r.top;
-      // v9.16: concurrence is ALWAYS the original RS #1 versus independent AI(2).
-      // Claude's reviewed final pick is an additional note, never a replacement.
-      const same=hh74Norm(r.top.horse)===hh74Norm(ai2Horse);
-      if(same){agree++;result='CONCURRENT — AI(1) RS #1 '+ai1+' matches AI(2)';}
-      else {disagree++;result='DIFFERENT — AI(1) RS #1 '+ai1+' / AI(2) '+ai2name;}
-      const reviewedSame=hh74Norm(ai1Final.horse)===hh74Norm(ai2Horse);
-      const reviewedNote='After warnings, AI(1) final selection #'+ai1Final.post+' '+ai1Final.horse+
-        (reviewedSame?' matches AI(2).':' differs from AI(2).')+' Display only; concurrence remains RS #1 based.';
+      const ai1RS='#'+r.top.post+' '+r.top.horse;
+      // Live concurrence compares each engine's ACTUAL final selection.
+      // Historical race-reliability and its tested RS #1 agreement remain separate.
+      const ai1Final=r.final||r.summary?.selection||null;
+      const finalValid=!!(ai1Final&&ai1Final.horse);
+      const ai1=finalValid?'#'+ai1Final.post+' '+ai1Final.horse:'unavailable';
+      const same=finalValid&&hh74Norm(ai1Final.horse)===hh74Norm(ai2Horse);
+      if(!finalValid){unknown++;result='AI(1) final selection unavailable — concurrence pending';}
+      else if(same){agree++;result='CONCURRENT — AI(1) final pick '+ai1+' matches AI(2)';}
+      else {disagree++;result='DIFFERENT — AI(1) final pick '+ai1+' / AI(2) '+ai2name;}
+      const rsNote='Rank score alone puts '+ai1RS+' first.';
+      const reviewedNote=rsNote+' Live concurrence uses AI(1) final selection, not RS #1.';
       const tier=Number(r.tier?.tier),conf=String(r.confidence||'').toUpperCase();
       // Frozen pre-race attributes only. Never inspect winner, finish or results.
       // Audit selection is the race-plan horse when one exists, otherwise the top horse.
@@ -7759,18 +7761,18 @@ function hh74Refresh(){
       const sameSelection=hh74Norm(planHorse)===hh74Norm(ai2Horse);
       const tierOK=Number.isFinite(tier)&&tier>=1&&tier<=2;
       const confOK=conf==='HIGH'||conf==='GOOD';
-      const priorityOK=tierOK&&confOK&&sameSelection;
+      const priorityOK=tierOK&&confOK&&sameSelection; // unchanged RS-based historical high-confidence screen
       const tierLabel=Number.isFinite(tier)?'Tier '+tier+' of 7':'Tier unavailable';
       const confLabel=conf||'UNAVAILABLE';
       const tierHorse=r.tier?.horse?('#'+(r.tier.post||'?')+' '+r.tier.horse):'unavailable';
-      const selectionLabel='#'+r.top.post+' '+r.top.horse+' (AI1 RS #1 for concurrence)';
-      detail=reviewedNote+'\nAI(1) '+tierLabel+' · confidence '+confLabel+' · tier horse '+tierHorse+' · race-plan selection '+selectionLabel+' · '+(sameSelection?'RS #1 matches AI(2)':'RS #1 differs from AI(2)')+' · '+(tierOK?'tier passes':'tier fails (requires 1–2)')+' · '+(confOK?'confidence passes':'confidence fails (requires GOOD/HIGH)');
+      const selectionLabel='#'+r.top.post+' '+r.top.horse+' (RS #1; historical research basis)';
+      detail=reviewedNote+'\nAI(1) '+tierLabel+' · confidence '+confLabel+' · tier horse '+tierHorse+' · race-plan selection '+selectionLabel+' · '+(sameSelection?'Historical RS #1 matches AI(2)':'Historical RS #1 differs from AI(2)')+' · '+(tierOK?'tier passes':'tier fails (requires 1–2)')+' · '+(confOK?'confidence passes':'confidence fails (requires GOOD/HIGH)');
       // Distinct opportunity, never confused with the high-confidence agreement screen.
       // Use the *actual* outer AI(2) pick, not Overlay Board's internal AI(2) approximation.
       // Reproduce v3.91's pre-race TWO-HORSE definition: <=7 live, not maiden,
       // and AI(2)'s selection is exactly AI(1)'s second-ranked runner.
       const isMaiden=['S','M','MO'].includes(String(r.raceType||'').toUpperCase());
-      const isTwoHorse=!same && !isMaiden && Number(r.liveCount)<=7 && Number(r.liveCount)>=2 &&
+      const isTwoHorse=finalValid && !same && !isMaiden && Number(r.liveCount)<=7 && Number(r.liveCount)>=2 &&
         !!r.second && hh74Norm(r.second.horse)===hh74Norm(ai2Horse);
       if(priorityOK){
         qualified++;
@@ -7801,7 +7803,7 @@ function hh74Refresh(){
     return '<div style="padding:9px 0;border-top:1px solid #ddd"><b>Race '+escapeText(race)+':</b> '+escapeText(result)+meta+'<div><b>'+escapeText(betLine||'PENDING')+'</b></div></div>';
   });
   const out=document.getElementById('hh74-ai-summary');
-  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.16 · BETTING OPPORTUNITIES</h3><div style="font-size:17px;font-weight:800;padding:8px 0">'+qualified+' high-confidence · '+twoHorse+' two-horse opportunities / '+cards.length+' races · '+agree+' ranking agreements · '+unknown+' pending</div><div class="small-note">Historical research rule (FOCUS race screen alone is NOT a bet): Overlay Board Tier 1–2 + GOOD/HIGH confidence + AI(1) race-plan selection matches AI(2). Separate TWO-HORSE research opportunity: 2–7 active non-maiden runners, AI(1) and AI(2) differ, and AI(2) is AI(1) ranked #2. Bet AI(2) only; never classify as high confidence. Other races remain predictions only. Uses only pre-race fields. Actual odds, scratches and conditions must be confirmed; this is not a guarantee of profit. Audit simulation: 39 races, 24 wins (61.5%), +40.5% $2 flat-bet ROI. In-sample only, unverified forward.</div>'+lines.join('');
+  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.17 · BETTING OPPORTUNITIES</h3><div style="font-size:17px;font-weight:800;padding:8px 0">'+qualified+' high-confidence · '+twoHorse+' two-horse opportunities / '+cards.length+' races · '+agree+' ranking agreements · '+unknown+' pending</div><div class="small-note">Historical research rule (FOCUS race screen alone is NOT a bet): Overlay Board Tier 1–2 + GOOD/HIGH confidence + AI(1) race-plan selection matches AI(2). Separate TWO-HORSE research opportunity (historical definition pending re-check against final-pick concurrence): 2–7 active non-maiden runners, AI(1) and AI(2) differ, and AI(2) is AI(1) ranked #2. Bet AI(2) only; never classify as high confidence. Other races remain predictions only. Uses only pre-race fields. Actual odds, scratches and conditions must be confirmed; this is not a guarantee of profit. Audit simulation: 39 races, 24 wins (61.5%), +40.5% $2 flat-bet ROI. In-sample only, unverified forward.</div>'+lines.join('');
 }
 
 
@@ -10400,7 +10402,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.16 · October 28, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.33</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.17 · October 29, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.33</div>
 
 <script>
 (function(){
