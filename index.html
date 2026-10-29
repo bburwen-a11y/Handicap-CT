@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.17 · October 29, 2026 — Unified FOCUS Review</title>
+<title>Horse Handicap v9.19 · October 29, 2026 — Unified FOCUS Review</title>
 
 <style>
 :root{
@@ -884,6 +884,12 @@ details.facts-race-fold>summary .small-note{margin-left:auto;font-weight:700}
 .hh-review{margin:11px 0;padding:12px;border:1px solid var(--paper-line);border-left:5px solid var(--board-900);background:#fff;border-radius:6px;font-size:12.5px;line-height:1.55}
 .hh-review h4{margin:0 0 6px;font-size:14px}.hh-review .hh-compare{border-top:1px solid var(--paper-line);padding:8px 0}.hh-review .hh-pos{color:#1f6b3a}.hh-review .hh-neg{color:#8B2A2A}.hh-review .hh-note{color:var(--ink-soft);font-size:11.5px}
  .hh64-case{margin:7px 0;padding:7px 9px;border:1px solid #aebeb3;border-radius:5px;background:#f2f7f3;font-size:12px;line-height:1.6;color:#173c29}.hh64-case b{font-weight:800}.hh64-muted{opacity:.75}.hh64-evidence{margin-top:4px}.hh64-evidence summary{cursor:pointer;font-weight:700}.hh64-evidence div{margin-top:4px;overflow-wrap:anywhere}
+
+/* v9.18: clean decisions; do not change horse data, predictions, or other tabs. */
+#bestSection .hh-simple-pace > div{border:none!important;background:transparent!important;padding:5px 0!important;margin:5px 0!important;}
+#bestSection .hh74-ai{border:0!important;border-top:1px solid #cfc2a0!important;border-radius:0!important;background:transparent!important;padding:8px 0!important;margin:8px 0!important;}
+#bestSection .hh-review,#bestSection .hh-top4-inline,#bestSection .hh64-evidence{display:none!important;}
+.hh914-reliability,.hh887-strengths,.hh900-bet-signal{display:none!important;}
 </style>
 
 <style id="v79-updates">
@@ -1338,7 +1344,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.17 · Oct 29, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.19 · Oct 29, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -7739,7 +7745,7 @@ function hh74Refresh(){
     const ai2name=card.getAttribute('data-ai2-name');
     const ai2Horse=card.getAttribute('data-ai2-horse');
     let result='', betLine='', passReason='', detail='';
-    if(!r){unknown++;result=hh74Error||'Waiting for AI(1) v4.09 calculation';passReason='AI(1) result pending';}
+    if(!r){unknown++;result=hh74Error||'Calculating AI(1) v4.33…';passReason='AI(1) result pending';}
     else if(!r.top){unknown++;result='AI(1) ranking unavailable';passReason='AI(1) ranking unavailable';}
     else {
       const ai1RS='#'+r.top.post+' '+r.top.horse;
@@ -7753,7 +7759,7 @@ function hh74Refresh(){
       else if(same){agree++;result='CONCURRENT — AI(1) final pick '+ai1+' matches AI(2)';}
       else {disagree++;result='DIFFERENT — AI(1) final pick '+ai1+' / AI(2) '+ai2name;}
       const rsNote='Rank score alone puts '+ai1RS+' first.';
-      const reviewedNote=rsNote+' Live concurrence uses AI(1) final selection, not RS #1.';
+      const reviewedNote=rsNote;
       const tier=Number(r.tier?.tier),conf=String(r.confidence||'').toUpperCase();
       // Frozen pre-race attributes only. Never inspect winner, finish or results.
       // Audit selection is the race-plan horse when one exists, otherwise the top horse.
@@ -7766,7 +7772,7 @@ function hh74Refresh(){
       const confLabel=conf||'UNAVAILABLE';
       const tierHorse=r.tier?.horse?('#'+(r.tier.post||'?')+' '+r.tier.horse):'unavailable';
       const selectionLabel='#'+r.top.post+' '+r.top.horse+' (RS #1; historical research basis)';
-      detail=reviewedNote+'\nAI(1) '+tierLabel+' · confidence '+confLabel+' · tier horse '+tierHorse+' · race-plan selection '+selectionLabel+' · '+(sameSelection?'Historical RS #1 matches AI(2)':'Historical RS #1 differs from AI(2)')+' · '+(tierOK?'tier passes':'tier fails (requires 1–2)')+' · '+(confOK?'confidence passes':'confidence fails (requires GOOD/HIGH)');
+      detail='';
       // Distinct opportunity, never confused with the high-confidence agreement screen.
       // Use the *actual* outer AI(2) pick, not Overlay Board's internal AI(2) approximation.
       // Reproduce v3.91's pre-race TWO-HORSE definition: <=7 live, not maiden,
@@ -7792,18 +7798,18 @@ function hh74Refresh(){
     const status=card.querySelector('.hh74-ai-result');if(status)status.textContent=result;
     const verdict=card.querySelector('.hh74-top');
     if(verdict)verdict.textContent=r ? 'AI(1) v4.33 figure-favourite verdict: '+(r.status||'not available')+(r.official?' · #'+r.official.post+' '+r.official.horse:'')+' (separate from ranking concurrence)' : '';
-    let signal=card.querySelector('.hh900-bet-signal');
-    if(!signal){signal=document.createElement('div');signal.className='hh900-bet-signal';signal.style.cssText='margin:8px 0;padding:10px;border-left:5px solid #777;background:#f4f1e8;font-size:12px;line-height:1.5';card.appendChild(signal);}
-    signal.style.borderLeftColor=betLine.startsWith('HIGH-')?'#2e6e45':betLine.startsWith('BET — TWO-HORSE')?'#315a7d':'#9b6b2e';
-    signal.textContent=(betLine||'PENDING — No wager classification until both engines finish.')+(detail?'\n'+detail:'');signal.style.whiteSpace='pre-line';
-    let reliability=card.querySelector('.hh914-reliability');
-    const reliabilityHTML=hh914Reliability(r,ai2Horse);
-    if(reliability){reliability.outerHTML=reliabilityHTML;}else{card.insertAdjacentHTML('beforeend',reliabilityHTML);}
+    const oldSignal=card.querySelector('.hh900-bet-signal');if(oldSignal)oldSignal.remove();
+    card.querySelectorAll('.hh914-reliability,.hh887-strengths,.hh900-bet-signal').forEach(el=>el.remove());
+    const rsLine=card.querySelector('.hh74-rs-note');
+    if(rsLine)rsLine.remove();
+    if(r?.top){const note=document.createElement('div');note.className='hh74-rs-note';note.style.cssText='font-size:12px;opacity:.75;margin-top:4px';note.textContent='Rank score alone: #'+r.top.post+' '+r.top.horse+'.';card.appendChild(note);}
+    if(verdict)verdict.remove();
     const meta=r ? ' · Tier '+escapeText(r.tier?.tier??'unavailable')+' of 7 · confidence '+escapeText(r.confidence||'unavailable') : '';
     return '<div style="padding:9px 0;border-top:1px solid #ddd"><b>Race '+escapeText(race)+':</b> '+escapeText(result)+meta+'<div><b>'+escapeText(betLine||'PENDING')+'</b></div></div>';
   });
   const out=document.getElementById('hh74-ai-summary');
-  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.17 · BETTING OPPORTUNITIES</h3><div style="font-size:17px;font-weight:800;padding:8px 0">'+qualified+' high-confidence · '+twoHorse+' two-horse opportunities / '+cards.length+' races · '+agree+' ranking agreements · '+unknown+' pending</div><div class="small-note">Historical research rule (FOCUS race screen alone is NOT a bet): Overlay Board Tier 1–2 + GOOD/HIGH confidence + AI(1) race-plan selection matches AI(2). Separate TWO-HORSE research opportunity (historical definition pending re-check against final-pick concurrence): 2–7 active non-maiden runners, AI(1) and AI(2) differ, and AI(2) is AI(1) ranked #2. Bet AI(2) only; never classify as high confidence. Other races remain predictions only. Uses only pre-race fields. Actual odds, scratches and conditions must be confirmed; this is not a guarantee of profit. Audit simulation: 39 races, 24 wins (61.5%), +40.5% $2 flat-bet ROI. In-sample only, unverified forward.</div>'+lines.join('');
+  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.19 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>';
+
 }
 
 
@@ -8063,7 +8069,7 @@ function computeRaceCard(){
           ${raceConditionsHTML(top.horse)}
           <div class="note"><b>PACE / QUIRIN — ALL RUNNERS:</b> ${hh68PaceScenario(activeField).profiles.map(p=>`#${safe(p.h.post||p.h.pgm||'?')} ${safe(p.h.horse)}: ${safe(p.style||'unknown')} / Q ${Number.isFinite(Number(p.sp))?safe(p.sp):'—'}`).join(' · ')}. <b>Race scenario:</b> ${safe(hh68PaceScenario(activeField).label)}. Quirin points reflect early-running tendency, not finishing strength; projected pace is uncertain when comparable early figures are missing.</div>
           ${hh886Confidence(scored,activeField,top.horse)}
-          ${hh887ChallengerStrengths(activeField,scored)}
+
           ${hh64CaseSummary(hh64CaseBoard(scored,activeField))}
           ${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}
           ${raceFactsHTMLV806(activeField,scored)}
@@ -8156,57 +8162,12 @@ function computeRaceCard(){
             </div>
             <div class="hh-review" style="border-left:5px solid ${hh889FocusEligible?'#2E6E45':'#9a6c13'}"><b>RACE SCREEN: ${hh889FocusStatus} (not a bet rating)</b> · ${hh889FocusEligible?'Eligible for FOCUS race ordering; wager rules evaluated separately':safe(hh889FocusReason)} · ${activeField.length} active runners.</div>
             <div class="hh74-ai" data-race="${safe(raceNum)}" data-ai2-name="${safe('#'+modelLeader.horse.post+' '+modelLeader.horse.horse)}" data-ai2-horse="${safe(modelLeader.horse.horse)}" style="margin:9px 0;padding:10px;border:1px solid #cfc2a0;border-radius:7px;background:#fff">
-              <b>AI(1) / AI(2) COMPARISON</b>
+              <b>AI(1) / AI(2) PICKS</b>
               <div class="hh74-ai-result" style="margin-top:6px;font-weight:800">Calculating AI(1) ranking…</div>
               <div class="hh74-top" style="font-size:11px;opacity:.8;margin-top:3px"></div>
             </div>
-          ${hh887ChallengerStrengths(activeField,scored)}
-            ${hh881ThreatReview(scored,activeField,top.horse)}
-            ${hh910HistoricalComparison(scored,activeField,top.horse)}
-            ${hh64CaseLine(top.horse,hh64CaseBoard(scored,activeField),true)}
-            ${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}
-            ${hh877Caution?`<div style="border-left:5px solid #9a6c13;padding:10px;background:#fff6e7;margin:8px 0"><b>FOCUS CAUTION — competing evidence:</b> ${safe(hh877Pace.label)}${hh877Outside.length>=2?' · '+hh877Outside.length+' of top four fail strict True Contender evidence':''}. This race is not promoted to first focus solely because of high model share.</div>`:''}
-            ${String(finalV860?.horse?.id)!==String(top.horse.id)?hh60DecisionHTML(finalV860,hh64CaseBoard(scored,activeField)):""}
-            <div class="decision-type-line">${raceTypeTagV799(top.horse,wagerV815.type==='BET_PICK')}</div>
-
-            ${officialPickV801 ? decisionAlertsV799(activeField,top.horse,{raceNum}) : ''}
-            ${hh70PrimeHTML(activeField,top.horse)}
-            ${hiddenSupportHTMLV803(activeField,top.horse)}
-            
-
-
-            ${''/* v8.14: no separate closeness verdict; Main Threat is descriptive only */}
-
-
-            ${
-                priceCheck
-                ?
-                `
-                <div class="metric-line">
-
-                    <b>Price candidate:</b>
-                    model rank #1 versus morning-line rank #${marketRank}.
-                    This is a review flag, not a proven wagering edge.
-
-                </div>
-                `
-                :
-                ""
-            }
-
-            <details class="hh-top4-inline" style="margin-top:12px;padding:10px 12px;border:1px solid #cfc2a0;border-radius:8px;background:#fff;">
-              <summary style="font-weight:800;cursor:pointer;">TOP 4 MODEL-RANKED RUNNERS · RACE ${safe(raceNum)} — tap to expand</summary>
-              <div class="small-note" style="margin:8px 0;">Lower RS and CS are better.</div>
-              ${hh64CaseBoard(scored,activeField) ? lowerRankFieldV822(calculateProbabilities(activeField),activeField).slice(0,4).map((x,i)=>{
-                const h=x.horse;
-                const cb=hh64CaseBoard(scored,activeField);
-                return `<div style="padding:9px 0;border-top:1px solid #ddd;line-height:1.5;">
-                  <b>${i+1}. #${safe(h.post||h.pgm||'')} ${horseNameLinkHTML(h)}</b>
-                  <div>${hh64CaseLine(h,cb,false)}</div>
-                  <span class="small-note">Model share ${modelPct(x.probability)} · RS ${safe(x.lowerScore??'—')} · ML ×1 rank #${i+1} · Evidence: ${safe(decisionClassMap[h.id]?.label||"UNCLASSIFIED")}</span>
-                </div>`;
-              }).join('') : '<span class="small-note">No ranked runners.</span>'}
-            </details>
+          <div class="hh-simple-pace">${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}</div>
+          <div class="decision-type-line">${raceTypeTagV799(top.horse,wagerV815.type==='BET_PICK')}</div>
         </div>
 
         `;
@@ -10402,7 +10363,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.17 · October 29, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.33</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.19 · October 29, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.33</div>
 
 <script>
 (function(){
