@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.20 · October 29, 2026 — Unified FOCUS Review</title>
+<title>Horse Handicap v9.21 · October 29, 2026 — Unified FOCUS Review</title>
 
 <style>
 :root{
@@ -1453,7 +1453,7 @@ Apply Feed Updates
 
 <div id="rssStatus" class="status"></div>
 <div class="final-odds-note">
-<b>Price discipline:</b> MODEL SHARE is a relative field score, not a calibrated win probability.
+<b>Price discipline:</b> MODEL SHARE measures relative score strength within the field; it is not a win probability or a betting recommendation.
 v7.74 does not convert it into fair odds or VALUE/UNDERLAY. Final odds remain visible.
 RSS changes still trigger a full-card recompute and surface reevaluation.
 </div>
@@ -5229,18 +5229,18 @@ function openProbability(raceNum){
     const d=probabilityDetails[String(raceNum)];
     if(!d) return;
     $("probContent").innerHTML=`
-      <h2 id="probTitle" style="font-size:18px;margin-right:30px;">Race ${safe(raceNum)} — Model Probability</h2>
-      <div class="model-prob" style="margin:8px 0;">${(d.probability*100).toFixed(1)}%</div>
+      <h2 id="probTitle" style="font-size:18px;margin-right:30px;">Race ${safe(raceNum)} — Relative Model Share</h2>
+      <div class="model-prob" style="margin:8px 0;">${(d.probability*100).toFixed(1)}%</div><div class="metric-line">Relative score share among this race’s runners; <b>not</b> an estimated win probability or a betting instruction.</div>
       <div class="metric-line"><b>${safe(d.horse)}</b> · Rank ${d.rank} of ${d.fieldSize}</div>
       <div class="metric-line">Data quality: <b>${safe(d.quality.label)}</b> (${d.quality.present}/${d.quality.total} core inputs)</div>
-      <div class="metric-line">Decision: <b>${safe(d.decision.label || (d.pass ? "PASS" : "REVIEW"))}</b> · Morning-line rank ${d.marketRank || "N/A"}</div>
+      <div class="metric-line">Separate betting assessment: <b>${safe(d.decision.label || (d.pass ? "PASS" : "REVIEW"))}</b> · Morning-line rank ${d.marketRank || "N/A"}</div>
       ${d.bestProfile?.qualifies ? `<div class="metric-line"><b>MODEL BEST BET:</b> complete-data non-maiden leader with ${(d.probability*100).toFixed(1)}% model share and ${(d.bestProfile.separation*100).toFixed(1)}-point separation.</div>` : ""}
       ${d.recentSpeedConfirmed?.confirmed ? `<div class="metric-line"><b>Recent Speed Confirmed:</b> ${safe(d.recentSpeedConfirmed.text)}</div>` : ""}
       ${d.performanceSupport ? `<div class="metric-line"><b>Performance + earnings:</b> ${safe(d.performanceSupport.label)} — ${safe(d.performanceSupport.text)}</div>` : ""}
       ${d.raceQuality ? `<div class="metric-line"><b>Race Bet Quality:</b> ${safe(d.raceQuality.label)} — ${safe(d.raceQuality.text)}</div>` : ""}
       ${d.pass ? `<div class="warning-box"><b>PASS:</b> ${safe(d.decision.reasons.join("; "))}</div>` : ""}
       ${(!d.pass && d.decision.warnings && d.decision.warnings.length) ? `<div class="warning-box"><b>Condition note:</b> ${safe(d.decision.warnings.join("; "))}. Warning only; it does not override the final bet-quality decision.</div>` : ""}
-      <div class="warning-box"><b>Not a calibrated win probability.</b> This is a relative model share produced from this field's scores. Use it for ranking, not as a betting edge or fair odds.</div>
+      <div class="warning-box"><b>Model share is a relative ranking measure, not a calibrated winning chance. A PASS or NO BET verdict, if shown separately, comes from betting rules—not this percentage.</div>
     `;
     $("probOverlay").classList.add("show");
     document.body.style.overflow="hidden";
@@ -7816,7 +7816,7 @@ function hh74Refresh(){
     return '<div id="concurrence-race-'+escapeText(race)+'" class="hh-concurrence-race" style="padding:14px 0;border-top:1px solid #ddd;scroll-margin-top:110px"><b>Race '+escapeText(race)+'</b><div>'+escapeText(result)+'</div>'+(r?.top?'<div style="font-size:12px;opacity:.75">RS #1: #'+escapeText(r.top.post)+' '+escapeText(r.top.horse)+'</div>':'')+'</div>';
   });
   const out=document.getElementById('hh74-ai-summary');
-  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.20 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>'+lines.join('');
+  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.21 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>'+lines.join('');
 
 }
 
@@ -8166,7 +8166,7 @@ function computeRaceCard(){
                       <span data-strongest-race="${safe(raceNum)}"></span>
                     </div>
                 </div>
-                <div class="model-prob"><button class="prob-button" onclick="openProbability('${safe(raceNum)}')" aria-label="Open probability details">${(top.probability*100).toFixed(1)}%</button><div class="confidence">THIS HORSE'S MODEL SHARE · ${safe(confidenceLabelV815(wagerV815))}</div></div>
+                <div class="model-prob"><button class="prob-button" onclick="openProbability('${safe(raceNum)}')" aria-label="Open probability details">${(top.probability*100).toFixed(1)}%</button><div class="confidence">RELATIVE MODEL SHARE (NOT WIN PROBABILITY)</div></div>
             </div>
             <div class="hh-review" style="border-left:5px solid ${hh889FocusEligible?'#2E6E45':'#9a6c13'}"><b>RACE SCREEN: ${hh889FocusStatus} (not a bet rating)</b> · ${hh889FocusEligible?'Eligible for FOCUS race ordering; wager rules evaluated separately':safe(hh889FocusReason)} · ${activeField.length} active runners.</div>
             <div class="hh74-ai" data-race="${safe(raceNum)}" data-ai2-name="${safe('#'+modelLeader.horse.post+' '+modelLeader.horse.horse)}" data-ai2-horse="${safe(modelLeader.horse.horse)}" style="margin:9px 0;padding:10px;border:1px solid #cfc2a0;border-radius:7px;background:#fff">
@@ -10371,7 +10371,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.20 · October 29, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.33</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.21 · October 29, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.33</div>
 
 <script>
 (function(){
