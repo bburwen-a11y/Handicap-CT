@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.19 · October 29, 2026 — Unified FOCUS Review</title>
+<title>Horse Handicap v9.20 · October 29, 2026 — Unified FOCUS Review</title>
 
 <style>
 :root{
@@ -6497,6 +6497,14 @@ function bindRaceJumpBars(){
                 showTab('analysis');
                 const target=document.getElementById('contenders-race-'+raceNum);
                 if(target) target.scrollIntoView({behavior:'smooth',block:'start'});
+            }else if(section==='concurrence'){
+                showTab('concurrence');
+                const target=document.getElementById('concurrence-race-'+raceNum);
+                if(target) target.scrollIntoView({behavior:'smooth',block:'start'});
+            }else if(section==='facts'){
+                showTab('facts');
+                const target=document.getElementById('facts-race-'+raceNum);
+                if(target) target.scrollIntoView({behavior:'smooth',block:'start'});
             }
         });
     });
@@ -7805,10 +7813,10 @@ function hh74Refresh(){
     if(r?.top){const note=document.createElement('div');note.className='hh74-rs-note';note.style.cssText='font-size:12px;opacity:.75;margin-top:4px';note.textContent='Rank score alone: #'+r.top.post+' '+r.top.horse+'.';card.appendChild(note);}
     if(verdict)verdict.remove();
     const meta=r ? ' · Tier '+escapeText(r.tier?.tier??'unavailable')+' of 7 · confidence '+escapeText(r.confidence||'unavailable') : '';
-    return '<div style="padding:9px 0;border-top:1px solid #ddd"><b>Race '+escapeText(race)+':</b> '+escapeText(result)+meta+'<div><b>'+escapeText(betLine||'PENDING')+'</b></div></div>';
+    return '<div id="concurrence-race-'+escapeText(race)+'" class="hh-concurrence-race" style="padding:14px 0;border-top:1px solid #ddd;scroll-margin-top:110px"><b>Race '+escapeText(race)+'</b><div>'+escapeText(result)+'</div>'+(r?.top?'<div style="font-size:12px;opacity:.75">RS #1: #'+escapeText(r.top.post)+' '+escapeText(r.top.horse)+'</div>':'')+'</div>';
   });
   const out=document.getElementById('hh74-ai-summary');
-  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.19 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>';
+  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.20 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>'+lines.join('');
 
 }
 
@@ -8455,9 +8463,9 @@ function computeRaceCard(){
     // AI(2) is Horse Handicap's independent original probability model.
     $("concurrenceSection").innerHTML = `
       ${raceJumpBarHTML(raceKeys,"concurrence")}
-      <h2>AI(1) v4.09 / AI(2 Horse Handicap — Concurrence</h2>
-      <div class="small-note">AI(1) v4.09 and AI(2 rank the same uploaded BRIS field independently. Concurrence compares the top-ranked runners, not the figure-favourite betting gate. This comparison does not change either model.</div>
-      <div id="hh74-ai-summary" class="bestof">Waiting for AI(1) v4.09 engine…</div>
+      <h2>AI(1) v4.33 / AI(2) — Concurrence</h2>
+      <div class="small-note">Compares AI(1) final selection with AI(2) pick. Tap a race number for its result.</div>
+      <div id="hh74-ai-summary" class="bestof">Waiting for AI(1) v4.33 engine…</div>
     `;
     hh74Run();
 
@@ -10363,7 +10371,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.19 · October 29, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.33</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.20 · October 29, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.33</div>
 
 <script>
 (function(){
