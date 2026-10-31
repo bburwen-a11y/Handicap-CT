@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.26 · October 30, 2026 — Unified FOCUS Review</title>
+<title>Horse Handicap v9.27 · October 30, 2026 — Unified FOCUS Review</title>
 
 <style>
 :root{
@@ -7753,6 +7753,9 @@ function hh60DecisionHTML(d,caseBoard=null){
 let hh74Text='',hh74Ready=false,hh74Token=0,hh74Results={},hh74Error='';
 function hh74SetCard(text){if(hh74Text===text)return;hh74Text=text;hh74Results={};hh74Error='';hh74Token++;}
 function hh74Norm(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
+function hh27SamePick(a,b){if(!a||!b)return false;const aPost=String(a.post??'').trim(), bPost=String(b.post??'').trim();if(aPost&&bPost)return aPost===bPost;return hh74Norm(a.horse)===hh74Norm(b.horse);}
+function hh27AI2Pick(card){const name=card?.getAttribute('data-ai2-horse')||'';const label=card?.getAttribute('data-ai2-name')||'';const m=label.match(/^\s*#(\d+[A-Z]?)\s+/i);return {post:m?m[1]:'',horse:name||label.replace(/^\s*#\d+[A-Z]?\s*/i,'')};}
+function hh27MaidenSafety(summary){return !!(summary&&/maiden/i.test(String(summary.planWhy||'')+' '+String(summary.warnings?.unreadable||'')+' '+JSON.stringify(summary.warnings||{}))&&/\b(?:[2-9]|[1-9]\d+)\s+first.time starters?/i.test(String(summary.planWhy||'')+' '+JSON.stringify(summary.warnings||{})));}
 function hh74Run(){
   if(!hh74Text){hh74Error='Load a BRIS race file to calculate AI(1).';hh74Refresh();return;}
   if(!hh74Ready){hh74Error='AI(1) engine starting — waiting for embedded engine';hh74Refresh();return;}
@@ -7802,12 +7805,13 @@ function hh74Refresh(){
       const ai1Final=r.final||r.summary?.selection||null;
       const finalValid=!!(ai1Final&&ai1Final.horse);
       const ai1=finalValid?'#'+ai1Final.post+' '+ai1Final.horse:'unavailable';
-      const same=finalValid&&hh74Norm(ai1Final.horse)===hh74Norm(ai2Horse);
+      const same=finalValid&&hh27SamePick(ai1Final,hh27AI2Pick(card));
       if(!finalValid){unknown++;result='AI(1) final selection unavailable — concurrence pending';}
       else if(same){agree++;result='CONCURRENT — AI(1) final pick '+ai1+' matches AI(2)';}
       else {disagree++;result='DIFFERENT — AI(1) final pick '+ai1+' / AI(2) '+ai2name;}
       const rsNote='Rank score alone puts '+ai1RS+' first.';
       const reviewedNote=rsNote;
+      const maidenCaution=hh27MaidenSafety(r.summary)&&/PLAY - WIN BET/i.test(r.summary?.planHeading||'')?'PROVISIONAL PASS: maiden with 2+ first-time starters; original engine win-bet proposal withheld pending historical validation.':'';
       const tier=Number(r.tier?.tier),conf=String(r.confidence||'').toUpperCase();
       // Frozen pre-race attributes only. Never inspect winner, finish or results.
       // Audit selection is the race-plan horse when one exists, otherwise the top horse.
@@ -7816,6 +7820,7 @@ function hh74Refresh(){
       const tierOK=Number.isFinite(tier)&&tier>=1&&tier<=2;
       const confOK=conf==='HIGH'||conf==='GOOD';
       const priorityOK=tierOK&&confOK&&sameSelection; // unchanged RS-based historical high-confidence screen
+      if(maidenCaution)betLine=maidenCaution;
       const tierLabel=Number.isFinite(tier)?'Tier '+tier+' of 7':'Tier unavailable';
       const confLabel=conf||'UNAVAILABLE';
       const tierHorse=r.tier?.horse?('#'+(r.tier.post||'?')+' '+r.tier.horse):'unavailable';
@@ -10402,7 +10407,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.26 · October 30, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.40</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.27 · October 30, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.40</div>
 
 <script>
 (function(){
@@ -10468,9 +10473,9 @@ document.addEventListener("click",e=>{
    const conditions=card.querySelector('.race-conditions,.best-race-meta,.race-meta,.hh-race-meta');
    if(conditions)line(section,'Conditions:',conditions.textContent.trim().replace(/\s+/g,' '));
    line(section,'AI(1) final pick:','#'+post+' '+ai1name+' · ML '+(chosen.ml||'—')+' · chance '+formatPct(chosen.chance));
-   line(section,'Decision:',sm.planHeading+(sm.planWhy?' — '+sm.planWhy:''));
+   line(section,'Decision:',hh27MaidenSafety(sm)&&/PLAY - WIN BET/i.test(sm.planHeading||'')?'PASS — provisional safety rule: maiden with 2+ first-time starters (engine proposed a win bet)':sm.planHeading+(sm.planWhy?' — '+sm.planWhy:''));
    if(data.tier)line(section,'Tier:',data.tier.tier+' · '+(data.confidence||'')+(data.tier.reason?' · '+data.tier.reason:''));
-   if(ai2)line(section,'Concurrence:',hh74Norm(ai1name)===hh74Norm(ai2)?'CONCURRENT — AI(2) also picks '+ai2:'DIFFERENT — AI(2) picks '+ai2);
+   if(ai2){const ai2Pick=hh27AI2Pick(document.querySelector('#bestSection .hh74-ai[data-race="'+race+'"]')||card.querySelector('.hh74-ai'));line(section,'Concurrence:',hh27SamePick({post,horse:ai1name},ai2Pick)?'CONCURRENT — AI(2) also picks '+ai2:'DIFFERENT — AI(2) picks '+ai2);}
    const rankLeader=sm.field?.[0];if(rankLeader&&String(rankLeader.post)!==post)line(section,'RS alone:','#'+rankLeader.post+' '+rankLeader.horse+' first');
    const warnings=sm.warnings||{};
    const warn=[warnings.unreadable,warnings.fragileFavourite,warnings.speedFavourite&&('Speed favourite #'+warnings.speedFavourite.post),warnings.reversal&&'Selection reversal'].filter(Boolean);
@@ -10492,7 +10497,7 @@ document.addEventListener("click",e=>{
    // Do not block iPhone printing if the embedded AI(1) bridge is slow or fails.
    // Print all available facts, and label missing engine scores as Pending.
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.26 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.27 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.40 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    document.body.classList.add('hh922-print-pdf');window.print();
