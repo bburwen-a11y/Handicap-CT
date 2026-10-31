@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.29 · October 31, 2026 — Unified FOCUS Review</title>
+<title>Horse Handicap v9.30 · October 31, 2026 — Unified FOCUS Review</title>
 
 <style>
 :root{
@@ -7444,11 +7444,11 @@ function lowerRankFieldV822(scored,field){
       // Use its market rank for both missing historical slots, but do not
       // create a fictitious speed figure or a 3/3 concurrence.
       const ftsThin=thin && starts===0;
-      const usedFigureRank=ftsThin?mr:fr;
-      const pr=ftsThin?mr:(starts<3?fr:pp);
+      const usedFigureRank=fr;
+      const pr=starts<3?fr:pp;
       const lowerScore=usedFigureRank+pr+mr;
       const lowerWhy=ftsThin
-        ? `${lowerScore} = ${mr} + ${mr} + ${mr}×1 · first-time starter in a lightly raced field, ranked by morning line #${mr} · lower is better`
+        ? `${lowerScore} = ${fr} (no race figure) + ${pr} (no Prime Power substitute) + ${mr}×1 (morning line) · FTS UNPROVEN; missing performance evidence is not replaced by market rank`
         : `${lowerScore} = ${fr} + ${starts<3?fr+'*':pr} + ${mr}×1`;
       return Object.assign({},item,{lowerScore,lowerWhy,ftsThin,
         lowerParts:{avg3Rank:ftsThin?null:fr,ppRank:pp,usedPPRank:pr,mlRank:mr,starts,thinField:thin,ftsThin}});
@@ -10433,7 +10433,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.29 · October 31, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.41</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.30 · October 31, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.41</div>
 
 <script>
 (function(){
@@ -10525,7 +10525,7 @@ document.addEventListener("click",e=>{
    // Do not block iPhone printing if the embedded AI(1) bridge is slow or fails.
    // Print all available facts, and label missing engine scores as Pending.
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.29 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.30 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.41 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    document.body.classList.add('hh922-print-pdf');window.print();
