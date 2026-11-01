@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.33 · October 31, 2026 — Unified FOCUS Review</title>
+<title>Horse Handicap v9.34 · October 31, 2026 — Unified FOCUS Review</title>
 
 <style>
 :root{
@@ -7904,6 +7904,30 @@ function hh74Refresh(){
         betLine='NO HIGH-CONFIDENCE BET · '+passReason;
       }
     }
+    // v9.34: show the four-horse disagreement review, using actual live AI(1) and AI(2)
+    // final picks plus the next two distinct RS-ranked runners. No result data or wager overrides.
+    let four=card.querySelector('.hh934-four');
+    if(!four){four=document.createElement('div');four.className='hh934-four';four.style.cssText='margin-top:10px;padding:10px 12px;border:1px solid #c9b987;border-left:4px solid #8a6a26;background:#fffaf0;font-size:12px;line-height:1.55';card.appendChild(four);}
+    if(r?.top && r?.final?.horse && !hh27SamePick(r.final,hh27AI2Pick(card))){
+      const all=r.summary?.allRunners?.length?r.summary.allRunners:(r.summary?.field||[]);
+      const sorted=[...all].filter(h=>h&&h.horse).sort((a,b)=>(Number(a.rsRank)||999)-(Number(b.rsRank)||999));
+      const chosen=[];
+      function add(h,source){if(!h?.horse)return; if(chosen.some(x=>hh27SamePick(x.h,h)))return;chosen.push({h,source});}
+      add(all.find(h=>hh27SamePick(h,r.final))||r.final,'AI(1)');
+      const second=hh27AI2Pick(card);
+      add(all.find(h=>hh27SamePick(h,second))||second,'AI(2)');
+      sorted.forEach(h=>{if(chosen.length<4)add(h,'RS challenger');});
+      four.style.display='block';
+      four.replaceChildren();
+      const head=document.createElement('b');head.textContent='FOUR-HORSE DISAGREEMENT REVIEW · NO AUTOMATIC BET';four.append(head);
+      chosen.forEach((x,i)=>{const h=x.h;const line=document.createElement('div');line.style.cssText='padding-top:6px;border-top:1px solid #e5dac0;margin-top:6px';
+        const facts=[h.rsRank!=null?'RS #'+h.rsRank:null,h.csRank!=null?'CS #'+h.csRank:null,h.ml?'ML '+h.ml:null,h.chance!=null?'AI(1) chance '+Number(h.chance).toFixed(1)+'%':null].filter(Boolean);
+        line.textContent=(i+1)+'. #'+(h.post??'?')+' '+h.horse+' — '+x.source+(facts.length?' · '+facts.join(' · '):'');
+        four.append(line);
+      });
+      const foot=document.createElement('div');foot.style.cssText='margin-top:7px;opacity:.8';foot.textContent='Historical four-horse coverage is not single-pick accuracy. Compare past performances before any bet. No ranking or bet rule changed.';four.append(foot);
+    }else if(r?.final?.horse){four.style.display='none';}
+    else{four.style.display='block';four.textContent='FOUR-HORSE REVIEW · Waiting for AI(1) final selection';}
     const review=hh929Review(r,card);
     const condition=hh932ConditionReview(card,r);
     if(condition.pass){betLine='NO WIN BET — CONDITION/READINESS VETO · '+condition.concerns.join('; ');}
@@ -7926,7 +7950,7 @@ function hh74Refresh(){
     return '<div id="concurrence-race-'+escapeText(race)+'" class="hh-concurrence-race" style="padding:14px 0;border-top:1px solid #ddd;scroll-margin-top:110px"><b>Race '+escapeText(race)+'</b><div>'+escapeText(result)+'</div>'+(r?.top?'<div style="font-size:12px;opacity:.75">RS #1: #'+escapeText(r.top.post)+' '+escapeText(r.top.horse)+'</div>':'')+'</div>';
   });
   const out=document.getElementById('hh74-ai-summary');
-  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.33 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>'+lines.join('');
+  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.34 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>'+lines.join('');
 
 }
 
