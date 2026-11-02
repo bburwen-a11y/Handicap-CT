@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.39 · November 2, 2026 — Tier 7 & FOCUS Gate</title>
+<title>Horse Handicap v9.40 · November 2, 2026 — Tier 7 & FOCUS Gate</title>
 
 <style>
 :root{
@@ -1365,7 +1365,15 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
  body.hh922-print-pdf #hh922PdfReport thead{display:table-header-group}
  body.hh922-print-pdf #hh922PdfReport tr{break-inside:avoid;page-break-inside:avoid}
 }
-</style></head>
+<style id="hh940-pdf-blank-page-fix">
+@media print{
+  html,body,body.hh922-print-pdf{height:auto!important;min-height:0!important;overflow:visible!important;margin:0!important;padding:0!important;background:white!important}
+  body.hh922-print-pdf > :not(#hh922PdfReport){display:none!important}
+  body.hh922-print-pdf #hh922PdfReport{display:block!important;position:static!important;inset:auto!important;width:auto!important;max-width:none!important;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;overflow:visible!important;visibility:visible!important}
+  body.hh922-print-pdf #hh922PdfReport *{visibility:visible!important}
+  body.hh922-print-pdf #hh922PdfReport .hh923-race{break-inside:auto!important;page-break-inside:auto!important}
+}
+</style></style></head>
 
 <body>
 
@@ -10544,7 +10552,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.39 · November 2, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.47</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.40 · November 2, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.47</div>
 
 <script>
 (function(){
@@ -10642,12 +10650,20 @@ document.addEventListener("click",e=>{
    // Do not block iPhone printing if the embedded AI(1) bridge is slow or fails.
    // Print all available facts, and label missing engine scores as Pending.
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.33 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.40 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.47 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
-   document.body.classList.add('hh922-print-pdf');window.print();
+   // Detach the report from the application layout so hidden screens cannot
+   // reserve hundreds of blank printed pages in Safari.
+   if(report.parentNode!==document.body)document.body.appendChild(report);
+   document.body.classList.add('hh922-print-pdf');
+   window.print();
  });
- window.addEventListener('afterprint',()=>document.body.classList.remove('hh922-print-pdf'));
+ window.addEventListener('afterprint',()=>{
+   document.body.classList.remove('hh922-print-pdf');
+   const host=byId('hh922PdfControls');
+   if(host&&host.parentNode)host.parentNode.appendChild(report);
+ });
 })();
 </script>
 </body>
