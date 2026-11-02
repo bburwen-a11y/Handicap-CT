@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.38 · November 2, 2026 — Tier 7 & FOCUS Gate</title>
+<title>Horse Handicap v9.39 · November 2, 2026 — Tier 7 & FOCUS Gate</title>
 
 <style>
 :root{
@@ -7849,6 +7849,7 @@ function hh74Refresh(){
   const escapeText=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const lines=cards.map(card=>{
     const race=card.getAttribute('data-race'),r=hh74Results[race];
+    const panel=card.closest('.best-pick')||card.parentElement;
     const ai2name=card.getAttribute('data-ai2-name');
     const ai2Horse=card.getAttribute('data-ai2-horse');
     let result='', betLine='', passReason='', detail='';
@@ -7944,9 +7945,9 @@ function hh74Refresh(){
       && !/\b(?:NO|PASS|WITHHOLD|CANCEL)\b/i.test(plan);
     const qualified=!!(r?.final?.horse && r?.summary?.selection && !tier7 && !condition.pass
       && review.verdict==='STRONG PROFILE — RESEARCH' && ai1Wager
-      && card.dataset.focusPrecheck==='FOCUS');
-    card.dataset.focusStatus=qualified?'FOCUS':'PASS';
-    const oldScreen=card.querySelector('.hh-review');
+      && panel.dataset.focusPrecheck==='FOCUS');
+    panel.dataset.focusStatus=qualified?'FOCUS':'PASS';
+    const oldScreen=panel.querySelector('.hh-review');
     if(oldScreen && /RACE SCREEN:/.test(oldScreen.textContent||'')){
       oldScreen.textContent=qualified
         ? 'FOCUS · Passed readiness, confidence tier and win-bet review. Check actual odds.'
@@ -7960,17 +7961,17 @@ function hh74Refresh(){
     const sort=document.getElementById('hh69-sort');
     if(sort)hh69SortDecisions(sort.value);
     // v9.38: final selections are primary; independent rank leader is only context.
-    const decisionHead=card.querySelector('[data-final-decision]');
+    const decisionHead=panel.querySelector('[data-final-decision]');
     if(decisionHead){
       decisionHead.textContent=qualified?'FOCUS · REVIEW ODDS':(r?'PASS · NO WIN BET':'PENDING');
       decisionHead.style.color=qualified?'#205a35':'#8b2a2a';
     }
-    let clear=card.querySelector('.hh938-clear-decision');
-    if(!clear){clear=document.createElement('div');clear.className='hh938-clear-decision';clear.style.cssText='margin:10px 0;padding:12px;border:2px solid #cfc2a0;border-radius:7px;background:#fff;line-height:1.6;font-size:14px';const ai=card.querySelector('.hh74-ai');ai?.parentNode.insertBefore(clear,ai);}
+    let clear=panel.querySelector('.hh938-clear-decision');
+    if(!clear){clear=document.createElement('div');clear.className='hh938-clear-decision';clear.style.cssText='margin:10px 0;padding:12px;border:2px solid #cfc2a0;border-radius:7px;background:#fff;line-height:1.6;font-size:14px';const ai=panel.querySelector('.hh74-ai');ai?.parentNode.insertBefore(clear,ai);}
     const ai2=hh27AI2Pick(card), ai1=r?.final||r?.summary?.selection;
     const ai2Text=ai2?.horse?'#'+(ai2.post??'?')+' '+ai2.horse:'unavailable';
     const ai1Text=ai1?.horse?'#'+(ai1.post??'?')+' '+ai1.horse:'pending';
-    const rankText=card.querySelector('.decision-rank-sub')?.textContent||'';
+    const rankText=panel.querySelector('.decision-rank-sub')?.textContent||'';
     clear.replaceChildren();
     const put=(txt,bold=false)=>{const d=document.createElement('div');d.textContent=txt;if(bold)d.style.fontWeight='900';clear.appendChild(d);};
     put('FINAL DECISION: '+(qualified?'FOCUS — CHECK ODDS':r?'PASS — NO WIN BET':'PENDING AI(1) REVIEW'),true);
@@ -10543,7 +10544,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.38 · November 2, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.47</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.39 · November 2, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.47</div>
 
 <script>
 (function(){
