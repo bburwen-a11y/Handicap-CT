@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.37 · November 2, 2026 — Tier 7 & FOCUS Gate</title>
+<title>Horse Handicap v9.38 · November 2, 2026 — Tier 7 & FOCUS Gate</title>
 
 <style>
 :root{
@@ -1373,7 +1373,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.37 · Nov 2, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.38 · Nov 2, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -7959,6 +7959,26 @@ function hh74Refresh(){
     }
     const sort=document.getElementById('hh69-sort');
     if(sort)hh69SortDecisions(sort.value);
+    // v9.38: final selections are primary; independent rank leader is only context.
+    const decisionHead=card.querySelector('[data-final-decision]');
+    if(decisionHead){
+      decisionHead.textContent=qualified?'FOCUS · REVIEW ODDS':(r?'PASS · NO WIN BET':'PENDING');
+      decisionHead.style.color=qualified?'#205a35':'#8b2a2a';
+    }
+    let clear=card.querySelector('.hh938-clear-decision');
+    if(!clear){clear=document.createElement('div');clear.className='hh938-clear-decision';clear.style.cssText='margin:10px 0;padding:12px;border:2px solid #cfc2a0;border-radius:7px;background:#fff;line-height:1.6;font-size:14px';const ai=card.querySelector('.hh74-ai');ai?.parentNode.insertBefore(clear,ai);}
+    const ai2=hh27AI2Pick(card), ai1=r?.final||r?.summary?.selection;
+    const ai2Text=ai2?.horse?'#'+(ai2.post??'?')+' '+ai2.horse:'unavailable';
+    const ai1Text=ai1?.horse?'#'+(ai1.post??'?')+' '+ai1.horse:'pending';
+    const rankText=card.querySelector('.decision-rank-sub')?.textContent||'';
+    clear.replaceChildren();
+    const put=(txt,bold=false)=>{const d=document.createElement('div');d.textContent=txt;if(bold)d.style.fontWeight='900';clear.appendChild(d);};
+    put('FINAL DECISION: '+(qualified?'FOCUS — CHECK ODDS':r?'PASS — NO WIN BET':'PENDING AI(1) REVIEW'),true);
+    put('AI(2) selection: '+ai2Text,true);
+    put('AI(1) final selection: '+ai1Text,true);
+    put(ai1?.horse&&ai2?.horse?(hh27SamePick(ai1,ai2)?'ENGINE AGREEMENT: YES':'ENGINE AGREEMENT: NO'):'ENGINE AGREEMENT: PENDING');
+    put('Why: '+(tier7?'Tier 7 low confidence':condition.pass?condition.concerns.join('; '):qualified?'Passed the current FOCUS gate':'Not qualified by final bet review'));
+    put(rankText);
     const status=card.querySelector('.hh74-ai-result');if(status)status.textContent=result;
     let veto=card.querySelector('.hh932-veto');
     if(!veto){veto=document.createElement('div');veto.className='hh932-veto';veto.style.cssText='margin-top:7px;font-weight:700;font-size:13px';card.appendChild(veto);}
@@ -7975,7 +7995,7 @@ function hh74Refresh(){
     return '<div id="concurrence-race-'+escapeText(race)+'" class="hh-concurrence-race" style="padding:14px 0;border-top:1px solid #ddd;scroll-margin-top:110px"><b>Race '+escapeText(race)+'</b><div>'+escapeText(result)+'</div>'+(r?.top?'<div style="font-size:12px;opacity:.75">RS #1: #'+escapeText(r.top.post)+' '+escapeText(r.top.horse)+'</div>':'')+'</div>';
   });
   const out=document.getElementById('hh74-ai-summary');
-  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.37 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>'+lines.join('');
+  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.38 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>'+lines.join('');
 
 }
 
@@ -8321,11 +8341,13 @@ function computeRaceCard(){
                     <div class="best-horse">
                       
                       
-                      <div class="decision-model-horse"><span class="post">#${safe(top.horse.post)}</span>${horseNameLinkHTML(top.horse)} <span style="font-size:11px;font-weight:800;opacity:.72;">RANK LEADER</span></div>
+                      <div class="decision-final-head" style="font-size:11px;font-weight:900;letter-spacing:.08em;color:#205a35;margin-bottom:5px">AI(2) FINAL SELECTION</div>
+                      <div class="decision-model-horse"><span class="post">#${safe(modelLeader.horse.post)}</span>${horseNameLinkHTML(modelLeader.horse)}</div>
+                      <div class="decision-rank-sub" style="font-size:12px;color:#5b574d;margin-top:7px">Separate rank leader: #${safe(top.horse.post)} ${safe(top.horse.horse)} · ${modelPct(top.probability)} relative model share (not win probability)</div>
                       <span data-strongest-race="${safe(raceNum)}"></span>
                     </div>
                 </div>
-                <div class="model-prob"><button class="prob-button" onclick="openProbability('${safe(raceNum)}')" aria-label="Open probability details">${(top.probability*100).toFixed(1)}%</button><div class="confidence">RELATIVE MODEL SHARE (NOT WIN PROBABILITY)</div></div>
+                <div class="model-prob" style="max-width:150px"><div style="font-size:14px;font-weight:900;color:#8a6a26" data-final-decision="${safe(raceNum)}">DECISION PENDING</div><div class="confidence">FINAL BET REVIEW BELOW</div></div>
             </div>
             <div class="hh-review" style="border-left:5px solid ${hh889FocusEligible?'#2E6E45':'#9a6c13'}"><b>PRELIMINARY RACE SCREEN: ${hh889FocusStatus} (pending final bet review)</b> · ${hh889FocusEligible?'Preliminary eligibility only; final review may remove FOCUS':safe(hh889FocusReason)} · ${activeField.length} active runners.</div>
             <div class="hh74-ai" data-race="${safe(raceNum)}" data-ai2-name="${safe('#'+modelLeader.horse.post+' '+modelLeader.horse.horse)}" data-ai2-horse="${safe(modelLeader.horse.horse)}" style="margin:9px 0;padding:10px;border:1px solid #cfc2a0;border-radius:7px;background:#fff">
@@ -10521,7 +10543,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.37 · November 2, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.47</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.38 · November 2, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.47</div>
 
 <script>
 (function(){
