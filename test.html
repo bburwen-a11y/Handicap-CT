@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.43 · November 3, 2026 — Tier 7 & FOCUS Gate</title>
+<title>Horse Handicap v9.44 · November 3, 2026 — FULL-PP EXPERIMENTAL · Tier 7 & FOCUS Gate</title>
 
 <style>
 :root{
@@ -8110,49 +8110,88 @@ function hh98ExportCSV(){const rows=[['date','track','race','selection','selecti
 function hh98Import(file){if(!file)return;const fr=new FileReader();fr.onload=()=>{try{const obj=JSON.parse(fr.result);if(!obj||Array.isArray(obj)||typeof obj!=='object')throw Error('Not a valid audit object');const db=hh98Load();let n=0;Object.entries(obj).forEach(([k,r])=>{if(r&&Array.isArray(r.horses)&&r.key===k&&!db[k]){db[k]=r;n++}});hh98Save(db);hh98Render();alert(n+' new snapshots imported; existing snapshots preserved.')}catch(e){alert('Import failed: '+e.message)}};fr.readAsText(file)}
 
 
-/* v9.43 — PP-FIRST SHADOW SELECTION. The historical ranking and wagering
+/* v9.44 — FULL-PP SHADOW SELECTION. The historical ranking and wagering
    engine remains unchanged pending forward validation. Every active runner is
    evaluated from actual PP records; no RS or morning-line input enters this
    independent ranking. Missing PP evidence cannot be treated as a loss. */
 function hh942PPFirst(field){
+  // v9.44 full-PP shadow review: all available PP lines, no use of race outcomes.
+  // Separate ability, conditions, class, pace, and reliability; do not double count finishes.
   const live=(field||[]).filter(h=>!h.scratched);
   const h2h=hh59H2H(live);
+  const n=p=>Number(p);
+  const good=p=>Number.isFinite(n(p))&&n(p)>0;
+  const valid=p=>n(p.fin)>0&&n(p.fin)<90;
   const entries=live.map(h=>{
-    const pps=(h.ppRaces||[]).filter(p=>number(p.fin)>0&&number(p.fin)<90).slice(0,5);
-    const recent=pps.slice(0,4);
-    const speeds=recent.map(p=>number(p.speed)).filter(v=>v>0);
-    const comparable=pps.filter(p=>surfaceMatchesToday(p,h)&&number(h.currentDistance)>0&&number(p.dist)>0&&Math.abs(number(p.dist)-number(h.currentDistance))<=330);
-    const finish=recent.filter(p=>number(p.fin)<=3).length;
-    const goodTrips=comparable.filter(p=>number(p.fin)<=3).length;
-    const fade=hh909LateFade(h);
-    const e=hh59Evidence(h,live);
+    const all=(h.ppRaces||[]).filter(valid);
+    const recent=all.slice(0,4);
+    const comparable=all.filter(p=>surfaceMatchesToday(p,h)&&good(h.currentDistance)&&good(p.dist)&&Math.abs(n(p.dist)-n(h.currentDistance))<=330);
+    const sameSurf=all.filter(p=>surfaceMatchesToday(p,h));
+    const speeds=recent.map(p=>n(p.speed)).filter(x=>x>0);
+    const matchSpeeds=comparable.map(p=>n(p.speed)).filter(x=>x>0);
+    const bestSpeed=all.map(p=>n(p.speed)).filter(x=>x>0).sort((a,b)=>b-a)[0]||0;
+    const avg=xs=>xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:0;
+    const last4=avg(speeds),matched=avg(matchSpeeds.slice(0,5));
+    const finish=recent.filter(p=>n(p.fin)<=3).length;
+    const compGood=comparable.filter(p=>n(p.fin)<=3).length;
+    const exact=all.filter(p=>typeof exactClassMatchV769==='function'&&exactClassMatchV769(p,h));
+    const exactGood=exact.filter(p=>n(p.fin)<=3).length;
+    const priorWin=all.filter(p=>n(p.fin)===1).length;
+    const raceClass=String(h.currentRaceClass||'').toUpperCase();
+    const maidenToday=/\b(MDN|MSW|MCL|MAIDEN)\b/.test(raceClass)||/^M/.test(String(h.raceType||'').toUpperCase());
+    const nonMaidenWin=all.filter(p=>n(p.fin)===1&&!/\b(MDN|MSW|MCL|MAIDEN)\b/i.test(String(p.raceClass||''))&&!/^M/.test(String(p.raceType||'').toUpperCase())).length;
+    const shapes=recent.map(p=>typeof runningLineShapeV795==='function'?runningLineShapeV795(p):null).filter(Boolean);
+    const fades=shapes.filter(x=>x.gain<=-2).length, closes=shapes.filter(x=>x.gain>=2).length;
+    const early=recent.map(p=>n(p.earlyPace)).filter(x=>x>0);
+    const late=recent.map(p=>n(p.latePace)).filter(x=>x>0);
+    const e=typeof hh59Evidence==='function'?hh59Evidence(h,live):{delta:null};
     const wins=h2h.filter(x=>String(x.winner.id)===String(h.id)).length;
     const losses=h2h.filter(x=>String(x.loser.id)===String(h.id)).length;
-    const reasons=[],risks=[];
-    let score=0;
-    if(recent.length){score+=Math.min(3,finish)*1.5;reasons.push(finish+'/'+recent.length+' recent top-three finishes');}
-    if(comparable.length){score+=Math.min(3,goodTrips)*1.3;reasons.push(goodTrips+'/'+comparable.length+' comparable surface/distance top-three finishes');}
-    if(speeds.length>=2){
-      const avg=speeds.reduce((a,b)=>a+b,0)/speeds.length;
-      score+=avg*.055;
-      reasons.push('recent BRIS speed avg '+avg.toFixed(1));
-      if(speeds[0]>speeds[1]+4){score+=.7;reasons.push('latest speed improving');}
-      if(speeds[0]+7<speeds[1]){score-=.7;risks.push('latest speed decline');}
-    }else if(speeds.length===1){score+=speeds[0]*.035;risks.push('only one usable speed figure');}
-    if(e.delta!==null){if(e.delta>.75){score+=.8;reasons.push('class relief');}else if(e.delta<-.75){score-=.8;risks.push('class rise');}}
-    if(fade.flag){score-=1.0;risks.push('repeated late fade ('+fade.fades+'/'+fade.usable+')');}
-    if(recent.length>=3&&finish===0){score-=1.4;risks.push('no recent top-three finish');}
-    if(comparable.length>=3&&goodTrips===0){score-=1;risks.push('no comparable top-three finish');}
-    if(wins||losses){score+=Math.max(-1,Math.min(1,wins-losses))*.6;reasons.push('direct H2H '+wins+' ahead / '+losses+' behind');}
-    const usable=recent.length;
-    if(usable<2)risks.push('insufficient racing PP evidence');
-    return {horse:h,score,usable,comparable:comparable.length,reasons,risks};
+    const reasons=[],risks=[],parts={};
+    // Ability uses speed on comparable conditions when available; historical peak is capped.
+    parts.ability=(matched||last4)*.105+Math.min(1.0,Math.max(0,bestSpeed-(matched||last4))*.025);
+    if(matchSpeeds.length)reasons.push('Comparable speed '+matched.toFixed(1)+' ('+matchSpeeds.length+' races)');
+    else if(speeds.length)reasons.push('Recent speed '+last4.toFixed(1)+'; no comparable speed available');
+    else risks.push('No usable BRIS speed: ability unmeasured, not assumed poor');
+    if(bestSpeed)reasons.push('Career peak BRIS speed '+bestSpeed);
+    // Form is scored ONCE, and given less influence than speed/conditions.
+    parts.form=recent.length?Math.min(1.2,finish/recent.length*1.2):0;
+    if(recent.length)reasons.push('Recent top-three '+finish+'/'+recent.length);
+    // Proven today's conditions, with a cap on sample size.
+    parts.conditions=comparable.length?Math.min(1.6,compGood/comparable.length*1.6):0;
+    if(comparable.length)reasons.push("Today's surface/distance "+compGood+'/'+comparable.length+' top-three ('+comparable.length+' historical races)');
+    else risks.push('No proven comparable surface/distance race');
+    // Class evidence is separate from mere placing; evidence is not proof of class superiority.
+    parts.class=exact.length?Math.min(1.5,exactGood/exact.length*1.5):0;
+    if(exact.length)reasons.push('Same class '+exactGood+'/'+exact.length+' top-three');
+    else risks.push('No exact class match in available PPs');
+    if(!maidenToday&&nonMaidenWin){parts.class+=.55;reasons.push(nonMaidenWin+' non-maiden win(s) in record');}
+    if(e.delta!==null&&Number.isFinite(n(e.delta))){
+      if(n(e.delta)>.75){parts.class+=.35;reasons.push('Class relief');}
+      if(n(e.delta)<-.75){parts.class-=.35;risks.push('Class rise');}
+    }
+    // Pace is an explicit profile, not a guessed pace-collapse outcome.
+    parts.pace=Math.max(-.7,Math.min(.7,(closes-fades)*.22));
+    if(shapes.length)reasons.push('Running-line shape: '+closes+' late gains / '+fades+' fades in '+shapes.length+' recent races');
+    if(early.length&&late.length)reasons.push('BRIS early/late pace '+avg(early).toFixed(1)+'/'+avg(late).toFixed(1));
+    if(fades>=2)risks.push('Repeated measurable late fade');
+    if(speeds.length>=2){if(speeds[0]>speeds[1]+4){parts.form+=.35;reasons.push('Latest speed improved');}
+      if(speeds[0]+7<speeds[1]){parts.form-=.35;risks.push('Latest speed declined');}}
+    parts.h2h=Math.max(-.35,Math.min(.35,(wins-losses)*.12));
+    if(wins||losses)reasons.push('Direct H2H '+wins+' ahead / '+losses+' behind');
+    const trainerKeys=Object.keys(h).filter(k=>/trainer.*(first|maiden|turf|claim|win|percent|pct)/i.test(k));
+    if(trainerKeys.length)reasons.push('Trainer situational fields present: review trainer stats in full card');
+    if(!all.length)risks.push('First-time starter: race-form comparison unavailable; review trainer, workouts and market separately');
+    if(all.length===1)risks.push('Only one career race: highly uncertain');
+    if(sameSurf.length===0&&all.length)risks.push('Unproven on today\'s surface');
+    const score=Object.values(parts).reduce((a,b)=>a+b,0);
+    return {horse:h,score,usable:all.length,comparable:comparable.length,reasons,risks,parts,historyCount:all.length,paceProfile:{closes,fades,early:avg(early),late:avg(late)}};
   });
   entries.sort((a,b)=>b.score-a.score||b.usable-a.usable);
   const best=entries[0],second=entries[1];
-  const thin=!best||best.usable<2;
+  const thin=!best||best.usable<2||!best.parts.ability;
   const close=!!(best&&second&&best.score-second.score<1.25);
-  const label=thin?'INSUFFICIENT PP EVIDENCE':close?'CLOSE PP COMPARISON':'PP LEADER';
+  const label=thin?'INSUFFICIENT PP EVIDENCE':close?'CLOSE FULL-PP COMPARISON':'FULL-PP LEADER';
   return {entries,best,second,label,thin,close};
 }
 function hh942PPFirstHTML(result,legacy){
@@ -8161,7 +8200,7 @@ function hh942PPFirstHTML(result,legacy){
   const same=String(b.horse.id)===String(legacy?.id);
   const line=x=>`#${safe(x.horse.post||'?')} ${safe(x.horse.horse)} · PP score ${x.score.toFixed(2)} · ${x.usable} usable races`;
   return `<div class="hh-review" style="border-left:5px solid #315A7D;margin-top:8px">
-    <b>PP-FIRST INDEPENDENT REVIEW — ${safe(r.label)}</b><br>
+    <b>FULL-PP EXPERIMENTAL REVIEW — ${safe(r.label)}</b><br>
     <b>PP leader:</b> ${line(b)}<br>
     <b>Current AI(2) pick:</b> #${safe(legacy?.post||'?')} ${safe(legacy?.horse||'unknown')} · ${same?'AGREES':'DISAGREES'}<br>
     <b>PP evidence:</b> ${safe(b.reasons.join('; ')||'No demonstrated racing evidence')}<br>
@@ -10624,7 +10663,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.43 · November 3, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.47</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.44 · November 3, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.47</div>
 
 <script>
 (function(){
@@ -10675,11 +10714,11 @@ document.addEventListener("click",e=>{
    const review=saved?.review;
    const ai2=saved?.ai2;
    if(!review){
-     line(section,'PP-first review:','Not available — recompute this race in v9.43 before printing.');
+     line(section,'Full-PP review:','Not available — recompute this race in v9.44 before printing.');
      return;
    }
    const horseLabel=(entry)=>entry?'#'+(entry.horse?.post||'?')+' '+(entry.horse?.horse||'Unknown')+' · score '+Number(entry.score).toFixed(2)+' · '+entry.usable+' usable races':'Unavailable';
-   line(section,'PP-first assessment:',review.label||'PP comparison');
+   line(section,'Full-PP assessment:',review.label||'PP comparison');
    line(section,'PP leader:',horseLabel(review.best));
    line(section,'AI(2) selection:','#'+(ai2?.post||'?')+' '+(ai2?.horse||'Unknown'));
    const same=review.best&&ai2&&String(review.best.horse?.id)===String(ai2.id);
@@ -10742,7 +10781,7 @@ document.addEventListener("click",e=>{
    // Do not block iPhone printing if the embedded AI(1) bridge is slow or fails.
    // Print all available facts, and label missing engine scores as Pending.
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.43 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.44  — FULL-PP EXPERIMENTAL — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.47 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    // Isolate report at body root; valid print CSS hides application screens so they cannot
