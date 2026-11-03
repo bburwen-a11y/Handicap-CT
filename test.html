@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.42 · November 3, 2026 — Tier 7 & FOCUS Gate</title>
+<title>Horse Handicap v9.43 · November 3, 2026 — Tier 7 & FOCUS Gate</title>
 
 <style>
 :root{
@@ -8110,7 +8110,7 @@ function hh98ExportCSV(){const rows=[['date','track','race','selection','selecti
 function hh98Import(file){if(!file)return;const fr=new FileReader();fr.onload=()=>{try{const obj=JSON.parse(fr.result);if(!obj||Array.isArray(obj)||typeof obj!=='object')throw Error('Not a valid audit object');const db=hh98Load();let n=0;Object.entries(obj).forEach(([k,r])=>{if(r&&Array.isArray(r.horses)&&r.key===k&&!db[k]){db[k]=r;n++}});hh98Save(db);hh98Render();alert(n+' new snapshots imported; existing snapshots preserved.')}catch(e){alert('Import failed: '+e.message)}};fr.readAsText(file)}
 
 
-/* v9.42 — PP-FIRST SHADOW SELECTION. The historical ranking and wagering
+/* v9.43 — PP-FIRST SHADOW SELECTION. The historical ranking and wagering
    engine remains unchanged pending forward validation. Every active runner is
    evaluated from actual PP records; no RS or morning-line input enters this
    independent ranking. Missing PP evidence cannot be treated as a loss. */
@@ -8171,7 +8171,10 @@ function hh942PPFirstHTML(result,legacy){
   </div>`;
 }
 
+const hh943PPByRace = Object.create(null);
+
 function computeRaceCard(){
+    Object.keys(hh943PPByRace).forEach(k=>delete hh943PPByRace[k]);
 
     computedRaces = {};
     probabilityDetails = {};
@@ -8252,6 +8255,7 @@ function computeRaceCard(){
 
 
         const ppFirst942=hh942PPFirst(activeField);
+        hh943PPByRace[String(raceNum)] = {review:ppFirst942, ai2:modelLeader.horse};
 
         const top =
             scored[0];
@@ -10620,7 +10624,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.42 · November 3, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.47</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.43 · November 3, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.47</div>
 
 <script>
 (function(){
@@ -10666,9 +10670,29 @@ document.addEventListener("click",e=>{
  function line(parent,label,value){if(value===null||value===undefined||value==='')return;const p=node('p',null,'hh923-line');p.append(node('strong',label+' '),document.createTextNode(String(value)));parent.append(p);}
  function formatPct(x){return Number.isFinite(Number(x))?Number(x).toFixed(1).replace(/\.0$/,'')+'%':'—';}
  function getAI2(card,race){const cmp=document.querySelector('#bestSection .hh74-ai[data-race="'+race+'"]');return cmp?.getAttribute('data-ai2-name')||card.querySelector('.hh74-ai')?.getAttribute('data-ai2-name')||'';}
+ function renderPPFirst(section,card,race){
+   const saved=(typeof hh943PPByRace!=='undefined')?hh943PPByRace[String(race)]:null;
+   const review=saved?.review;
+   const ai2=saved?.ai2;
+   if(!review){
+     line(section,'PP-first review:','Not available — recompute this race in v9.43 before printing.');
+     return;
+   }
+   const horseLabel=(entry)=>entry?'#'+(entry.horse?.post||'?')+' '+(entry.horse?.horse||'Unknown')+' · score '+Number(entry.score).toFixed(2)+' · '+entry.usable+' usable races':'Unavailable';
+   line(section,'PP-first assessment:',review.label||'PP comparison');
+   line(section,'PP leader:',horseLabel(review.best));
+   line(section,'AI(2) selection:','#'+(ai2?.post||'?')+' '+(ai2?.horse||'Unknown'));
+   const same=review.best&&ai2&&String(review.best.horse?.id)===String(ai2.id);
+   line(section,'PP vs AI(2):',review.best&&ai2?(same?'AGREE':'DISAGREE'):'UNAVAILABLE');
+   line(section,'PP evidence:',review.best?.reasons?.join('; ')||'No demonstrated racing evidence');
+   line(section,'PP concerns:',review.best?.risks?.join('; ')||'None flagged');
+   if(review.second)line(section,'Next PP contender:',horseLabel(review.second));
+   line(section,'PP note:','Research-only relative scores, not calibrated win probabilities. No change to existing selections or betting rules.');
+ }
  function renderRace(card){
    const race=raceOf(card),data=typeof hh74Results!=='undefined'?hh74Results[race]:null,sm=data?.summary;
    const section=node('section',null,'hh923-race');section.append(node('h2','RACE '+race));
+   renderPPFirst(section,card,race);
    if(!sm||sm.error){
      line(section,'AI(1) status:',sm?.error||((typeof hh74Error!=='undefined'&&hh74Error)?hh74Error:'Embedded engine has not returned this race'));
      const pick=card.querySelector('.best-horse,.best-header .best-horse');
@@ -10718,7 +10742,7 @@ document.addEventListener("click",e=>{
    // Do not block iPhone printing if the embedded AI(1) bridge is slow or fails.
    // Print all available facts, and label missing engine scores as Pending.
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.42 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.43 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.47 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    // Isolate report at body root; valid print CSS hides application screens so they cannot
