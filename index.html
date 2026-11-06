@@ -7900,7 +7900,7 @@ function hh74Refresh(){
         betLine='HIGH-CONFIDENCE CANDIDATE · TIER '+tier+' · '+conf+' · TWO-ENGINE AGREEMENT';
       } else if(isTwoHorse){
         twoHorse++;
-        betLine='BET — TWO-HORSE OPPORTUNITY · AI(2) ONLY: '+ai2name+' · AI(1) alternative: #'+r.top.post+' '+r.top.horse+' · RESEARCH CATEGORY, NOT HIGH CONFIDENCE';
+        betLine='REVIEW — TWO-HORSE OPPORTUNITY · AI(2) ONLY: '+ai2name+' · AI(1) alternative: #'+r.top.post+' '+r.top.horse+' · RESEARCH CATEGORY, NOT HIGH CONFIDENCE';
       } else {
         const why=[];
         if(!tierOK)why.push(tierLabel+'; requires Tier 1–2');
@@ -7938,20 +7938,16 @@ function hh74Refresh(){
       const ai2Name='#'+(ai2?.post??'?')+' '+(ai2?.horse||'AI(2) selection');
       const name=d?d[0]:(/^(ST|G1|G2|G3)$/.test(raceClass)?'STAKES':'CLASS UNVERIFIED');
       const pieces=[];
-      if(d&&d[1]==='AI(1)'){
-        pieces.push('HISTORY FAVORS AI(1) · '+name+' · '+d[2]+'% vs '+d[3]+'% ('+d[4]+' disagreements)');
-        pieces.push('AI(1) '+ai1Name+' over AI(2) '+ai2Name+' — class evidence only');
+      if(condition.pass){
+        pieces.push('LOOK ELSEWHERE / PASS · '+condition.concerns.join('; '));
+      }else if(d&&d[1]==='AI(1)'){
+        pieces.push('LEAN AI(1) · '+name+' · historical disagreement wins '+d[2]+'% vs '+d[3]+'% (n='+d[4]+')');
       }else if(d){
-        pieces.push('NO CLASS EDGE · CLAIMING · 21.9% each ('+d[4]+' disagreements)');
-        pieces.push('AI(1) '+ai1Name+' / AI(2) '+ai2Name+' — neither supported by class');
+        pieces.push('NO CLASS EDGE · CLAIMING · 21.9% each (n='+d[4]+') · PASS unless existing bet rules qualify');
       }else{
-        pieces.push('NO RELIABLE CLASS EDGE · '+name);
-        pieces.push('AI(1) '+ai1Name+' / AI(2) '+ai2Name);
+        pieces.push('NO CLASS EDGE · '+name+' · PASS unless existing bet rules qualify');
       }
-      if(ai2Short)pieces.push('WATCH AI(2) '+ai2Name+' · ML '+ai2.ml+' (under 3-1); not a validated override');
-      if(condition.pass){pieces.push('LOOK ELSEWHERE / PASS · readiness veto: '+condition.concerns.join('; '));}
-      else if(!d||d[1]==='NEITHER'){pieces.push('DECISION: NO HISTORICAL PREFERENCE · PASS unless existing bet rules qualify');}
-      else{pieces.push('DECISION: LEAN AI(1) · class tendency, not a bet endorsement');}
+      if(ai2Short)pieces.push('AI(2) '+ai2Name+' ML '+ai2.ml+' (<3-1) · watch, not a proven override');
       decision.style.display='block';decision.replaceChildren();
       pieces.forEach((line,i)=>{const el=document.createElement('div');el.style.cssText=i===0?'font-weight:900':i===pieces.length-1?'font-weight:850;margin-top:4px':'';el.textContent=line;decision.append(el);});
     }else{decision.style.display='none';}
