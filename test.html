@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.48 · November 5, 2026 — Unified FOCUS Review</title>
+<title>Horse Handicap v9.49 · November 6, 2026 — Unified FOCUS Review</title>
 
 <style>
 :root{
@@ -1373,7 +1373,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.48 · Nov 5, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.49 · Nov 6, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -7843,6 +7843,45 @@ function hh929Review(r,card){
     ' · '+(agreement?'engines agree':'engines differ');
   return {verdict,why,performance,agreement};
 }
+
+// v9.49: historical class opportunities. Decision-layer advisory ONLY.
+// Tested on older v4.39 scores; not a validated v4.53 wagering strategy.
+function hh949ClassOpportunity(card,result,condition){
+  const race=String(card.getAttribute('data-race')||'');
+  const field=(typeof rows!=='undefined'&&Array.isArray(rows)?rows:[]).filter(h=>String(h.race)===race&&!h.scratched);
+  const sample=field[0];
+  const rt=String(sample?.raceType||'').trim().toUpperCase();
+  const allowance=['A','AO','R'].includes(rt);
+  const maidenClaim=['M','MO'].includes(rt);
+  const rsHorse=result?.top;
+  const finalHorse=result?.final||result?.summary?.selection;
+  const same=rsHorse&&finalHorse&&hh27SamePick(rsHorse,finalHorse);
+  const candidates=result?.summary?.allRunners||result?.summary?.field||[];
+  const match=candidates.find(h=>rsHorse&&hh27SamePick(h,rsHorse));
+  // Chance is expressed as a percentage in the engine output, never model share.
+  const chance=Number(match?.chance??rsHorse?.chance);
+  const chanceOK=Number.isFinite(chance)&&chance>=30;
+  let heading='',reason='';
+  if(allowance && same){
+    heading='ALLOWANCE · ADDITIONAL BET CANDIDATE';
+    reason='AI(1) final selection is RS #1'+(chanceOK?' · historical chance ≥30%':'')+'. Older v4.39 allowance RS #1: 55/107 wins, +42.6% historical ROI.';
+  }else if(allowance && chanceOK){
+    heading='ALLOWANCE · CHANCE REVIEW';
+    reason='RS #1 chance ≥30%, but final selection differs; verify which horse qualifies before betting. Older v4.39 allowance chance ≥30%: 44/76 wins, +38.9% ROI.';
+  }else if(maidenClaim && field.length>=6 && field.length<=7){
+    heading='MAIDEN CLAIMING · CONDITIONAL BET CANDIDATE';
+    reason='6–7 active runners. Historical subgroup showed positive returns, but the later sample was only 10 bets.';
+  }else if(allowance){
+    heading='ALLOWANCE · REVIEW';
+    reason='Class has shown positive historical returns; the current RS/chance condition is not confirmed.';
+  }else{return;}
+  const el=document.createElement('div');el.className='hh949-class-opportunity';
+  el.style.cssText='margin-top:9px;padding:9px 11px;border:1px solid #c9b987;border-left:4px solid #2e6e45;background:#f4f8f2;font-size:12px;line-height:1.5';
+  const veto=condition?.pass;
+  el.textContent=heading+' · '+reason+(veto?' · NO BET: existing condition/readiness veto remains in force.':' · REVIEW ONLY: existing bet rules, concurrence, price and warnings still apply.')+' Historical research, not a guaranteed return.';
+  card.appendChild(el);
+}
+
 function hh74Refresh(){
   const cards=[...document.querySelectorAll('#bestSection .hh74-ai')];
   let agree=0,disagree=0,unknown=0,qualified=0,twoHorse=0;
@@ -7930,6 +7969,8 @@ function hh74Refresh(){
     else{four.style.display='block';four.textContent='FOUR-HORSE REVIEW · Waiting for AI(1) final selection';}
     const review=hh929Review(r,card);
     const condition=hh932ConditionReview(card,r);
+    card.querySelectorAll('.hh949-class-opportunity').forEach(el=>el.remove());
+    hh949ClassOpportunity(card,r,condition);
     if(condition.pass){betLine='NO WIN BET — CONDITION/READINESS VETO · '+condition.concerns.join('; ');}
     let reviewEl=card.querySelector('.hh929-review');
     if(!reviewEl){reviewEl=document.createElement('div');reviewEl.className='hh929-review';reviewEl.style.cssText='margin-top:9px;padding:8px 10px;border-left:3px solid #8a6a26;background:#f7f3e9;font-size:12px;line-height:1.5';card.appendChild(reviewEl);}
@@ -7950,7 +7991,7 @@ function hh74Refresh(){
     return '<div id="concurrence-race-'+escapeText(race)+'" class="hh-concurrence-race" style="padding:14px 0;border-top:1px solid #ddd;scroll-margin-top:110px"><b>Race '+escapeText(race)+'</b><div>'+escapeText(result)+'</div>'+(r?.top?'<div style="font-size:12px;opacity:.75">RS #1: #'+escapeText(r.top.post)+' '+escapeText(r.top.horse)+'</div>':'')+'</div>';
   });
   const out=document.getElementById('hh74-ai-summary');
-  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.48 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>'+lines.join('');
+  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.49 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>'+lines.join('');
 
 }
 
@@ -8605,7 +8646,7 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v9.48</h2>
+      <h2>Help — Horse Handicap v9.49</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.53's actual final selection, after its review of race evidence and warnings. Its selection is the win-bet horse, otherwise a qualifying figure-leader bet, otherwise the horse with the highest reviewed chance.</p>
         <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; it is <b>not</b> a calibrated win probability.</p>
@@ -10496,7 +10537,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.48 · November 5, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.53</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.49 · November 6, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.53</div>
 
 <script>
 (function(){
@@ -10594,7 +10635,7 @@ document.addEventListener("click",e=>{
    // Do not block iPhone printing if the embedded AI(1) bridge is slow or fails.
    // Print all available facts, and label missing engine scores as Pending.
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.48 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.49 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.53 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    document.body.classList.add('hh922-print-pdf');window.print();
