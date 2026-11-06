@@ -7932,7 +7932,29 @@ function hh74Refresh(){
         four.append(line);
       });
       const foot=document.createElement('div');foot.style.cssText='margin-top:7px;opacity:.8';foot.textContent='Historical four-horse coverage is not single-pick accuracy. Compare past performances before any bet. No ranking or bet rule changed.';four.append(foot);
-    }else if(r?.final?.horse){four.style.display='none';}
+      // Evidence-first disagreement checklist; presentation only, never adjusts picks or chance.
+      let checklist=card.querySelector('.hh936-checklist');
+      if(!checklist){checklist=document.createElement('div');checklist.className='hh936-checklist';checklist.style.cssText='margin-top:10px;padding:11px;border:2px solid #315a7d;border-radius:8px;background:#f2f7fb;font-size:12px;line-height:1.5';card.appendChild(checklist);}
+      checklist.style.display='block';checklist.replaceChildren();
+      const label=(title,value)=>{const el=document.createElement('div');el.style.cssText='padding:5px 0;border-top:1px solid #cbd8e3';const b=document.createElement('b');b.textContent=title+' · ';el.append(b,document.createTextNode(value));checklist.append(el);};
+      const title=document.createElement('b');title.textContent='DISAGREEMENT — EVIDENCE TO CHECK (PRIORITY ORDER)';checklist.append(title);
+      const a=all.find(h=>hh27SamePick(h,r.final))||r.final;
+      const b=all.find(h=>hh27SamePick(h,second))||second;
+      const raceClass=String(r.raceType||'').toUpperCase();
+      const className=({A:'Allowance',S:'Maiden special weight',M:'Maiden claiming',MO:'Maiden claiming',C:'Claiming',ST:'Stakes'})[raceClass]||raceClass||'Unknown';
+      const classHint=/^(A|S|M|MO)$/.test(raceClass)?'Historical disagreements favored AI(1) in this class; not a validated override.':raceClass==='C'?'Historical disagreements slightly favored AI(2) in claiming; October results varied.':'Too little class-specific evidence for an engine preference.';
+      label('1 · RACE CLASS — strongest historical context',className+'. '+classHint);
+      const fmt=(h,k)=>h?.[k]===null||h?.[k]===undefined||h?.[k]===''?'not recorded':String(h[k]);
+      label('2 · RS / CS — strong joint evidence','AI(1) '+fmt(a,'rsRank')+'/'+fmt(a,'csRank')+'; AI(2) '+fmt(b,'rsRank')+'/'+fmt(b,'csRank')+'. Joint RS #1 + CS #1 is worth reviewing, not an automatic switch.');
+      label('3 · RECENT SPEED — important, not validated override','Compare last three figures and surface/distance directly in Race Facts; this panel does not infer unavailable figures.');
+      label('4 · MORNING LINE — moderate/high relevance','AI(1) '+fmt(a,'ml')+'; AI(2) '+fmt(b,'ml')+'. A shorter price is evidence of market expectation, not proof of a winner.');
+      const negatives=h=>{const v=h?.againstFacts||h?.against||[];return Array.isArray(v)?v.slice(0,2).map(String).join('; '):String(v||'');};
+      label('5 · FORM / FADING — moderate relevance','Review recent finishes and repeated late fading in the past performances; check both horses.');
+      label('6 · AGAINST FACTS — moderate relevance','AI(1): '+(negatives(a)||'none recorded')+' | AI(2): '+(negatives(b)||'none recorded')+'. Counts alone have not validated a reversal.');
+      label('7 · PACE / SURFACE / WORKOUTS — unproven override','Use as context or a specific safety warning, not automatic points.');
+      const tail=document.createElement('div');tail.style.cssText='font-weight:800;margin-top:7px';tail.textContent='DECISION: REVIEW / PASS unless evidence and odds justify a bet. These priorities are not numeric weights or calibrated win probabilities.';checklist.append(tail);
+
+    }else if(r?.final?.horse){four.style.display='none';const checklist=card.querySelector('.hh936-checklist');if(checklist)checklist.style.display='none';}
     else{four.style.display='block';four.textContent='FOUR-HORSE REVIEW · Waiting for AI(1) final selection';}
     const review=hh929Review(r,card);
     const condition=hh932ConditionReview(card,r);
@@ -10502,7 +10524,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.35 · November 6, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.56</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.36 · November 6, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.56</div>
 
 <script>
 (function(){
