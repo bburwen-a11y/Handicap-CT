@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.42 · November 6, 2026 — Focused Decision Edition</title>
+<title>Horse Handicap v9.44 · November 9, 2026 — Maiden Challenger Review Flag</title>
 
 <style>
 :root{
@@ -1373,7 +1373,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.42 · Nov 6, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.44 · Nov 9, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -1381,10 +1381,10 @@ BRIS Single File parser + field-relative win-ranking engine using Prime Power, B
 
 <main>
 <details id="hh935ReleaseNotes" style="margin:0 0 14px;border:1px solid #CFC2A0;border-radius:8px;background:#fff;overflow:hidden">
-<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.42 · AI(1) v4.63 + Focused Decisions</summary>
+<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.44 · AI(1) v4.63 + Maiden Challenger Review Flag</summary>
 <div style="padding:0 12px 12px;font-size:12px;line-height:1.6">
 <b>Pick:</b> compare AI(1) and AI(2), the strongest challenger, and the recorded For/Against facts. <b>Confidence:</b> treat a low tier or a disagreement as a reason to review, not as proof of another winner. <b>Bet:</b> obey explicit NO BET and readiness warnings; do not infer a wager from a percentage alone. <b>Historical results:</b> experimental RS/CS reversal rules have not shown a reliable forward advantage and are not activated in this release.
-<br><b>Engine:</b> embedded Overlay Board v4.63 preserved exactly; original AI(2) logic and all race-data imports retained. This release integrates AI(1) v4.63 and retains the concise, class-based disagreement display. No claim of improved prediction accuracy.
+<br><b>Engine:</b> embedded Overlay Board v4.63 preserved exactly; original AI(2) logic and all race-data imports retained. This release separates race uncertainty from horse-specific condition flags, clarifies numerical-leader disagreements, and makes class disagreement statistics descriptive only. No claim of improved prediction accuracy.
 </div></details>
 
 <!-- =========================================================
@@ -7802,11 +7802,11 @@ function hh932ConditionReview(card, result, selectionName){
   const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
   const horse=live.find(h=>norm(h.horse)===norm(name));
   const concerns=[],facts=[];
-  if(!horse)return {pass:true,concerns:['Selected horse past performances unavailable for condition review'],facts,horse:null};
+  if(!horse)return {pass:false,concerns:[],facts:['Selected horse past performances unavailable: condition unverified'],horse:null,unverified:true};
   const pp=(horse.ppRaces||[]).filter(p=>Number(p.fin)>0&&Number(p.fin)<90);
   const firstTimers=live.filter(h=>!(h.ppRaces||[]).some(p=>Number(p.fin)>0&&Number(p.fin)<90)).length;
-  if(firstTimers>=2){concerns.push(firstTimers+' first-time starters: field visibility limited');}
-  if(pp.length<2){concerns.push('Only '+pp.length+' completed prior races');}
+  if(firstTimers>=2){facts.push(firstTimers+' first-time starters: field uncertainty (not a horse readiness failure)');}
+  if(pp.length<2){facts.push('Only '+pp.length+' completed prior races: insufficient history (not a demonstrated readiness failure)');}
   const recent=pp.slice(0,6),wins=recent.filter(p=>Number(p.fin)===1).length;
   if(recent.length>=6&&wins===0){facts.push('No wins in last six races');}
   const comparable=pp.filter(p=>surfaceMatchesToday(p,horse));
@@ -7825,7 +7825,7 @@ function hh932ConditionReview(card, result, selectionName){
   if(last&&Number(last.fin)>=6&&recent.length>=4&&wins===0)concerns.push('Last race finished '+last.fin+'; no wins in last '+recent.length);
   const near=pp.filter(p=>surfaceMatchesToday(p,horse)&&Number.isFinite(Number(p.dist))&&Number.isFinite(Number(horse.currentDistance))&&Math.abs(Number(p.dist)-Number(horse.currentDistance))<=330);
   if(near.length>=3&&!near.some(p=>Number(p.fin)<=3))concerns.push('No top-three finishes in '+near.length+' comparable surface/distance races');
-  return {pass:concerns.length>0,concerns,facts,horse};
+  return {pass:concerns.length>0,concerns,facts,horse,fieldUncertain:firstTimers>=2,limitedHistory:pp.length<2};
 }
 // v9.29: independent, evidence-only bet review. Does not change engine picks or wagers.
 function hh929Review(r,card){
@@ -7942,20 +7942,20 @@ function hh74Refresh(){
       const name=d?d[0]:(/^(ST|G1|G2|G3)$/.test(raceClass)?'STAKES':'CLASS UNVERIFIED');
       const pieces=[];
       if(condition.pass){
-        pieces.push('AI(1) #'+(r.final?.post??'?')+' '+ai1HorseName+' — READINESS VETO: '+condition.concerns.join('; '));
+        pieces.push('AI(1) #'+(r.final?.post??'?')+' '+ai1HorseName+' — HORSE-SPECIFIC CONDITION FLAG: '+condition.concerns.join('; '));
       }else if(d&&d[1]==='AI(1)'){
-        pieces.push('LEAN AI(1) · '+name+' · historical disagreement wins '+d[2]+'% vs '+d[3]+'% (n='+d[4]+')');
+        pieces.push('HISTORICAL CLASS CONTEXT ONLY · '+name+' · AI(1) '+d[2]+'% vs AI(2) '+d[3]+'% (n='+d[4]+'); not a race-level override');
       }else if(d){
         pieces.push('NO CLASS EDGE · CLAIMING · 21.9% each (n='+d[4]+') · PASS unless existing bet rules qualify');
       }else{
         pieces.push('NO CLASS EDGE · '+name+' · PASS unless existing bet rules qualify');
       }
-      if(ai2Condition.pass)pieces.push('AI(2) '+ai2Name+' — READINESS VETO: '+ai2Condition.concerns.join('; '));
+      if(ai2Condition.pass)pieces.push('AI(2) '+ai2Name+' — HORSE-SPECIFIC CONDITION FLAG: '+ai2Condition.concerns.join('; '));
       if(ai2Short&&!ai2Condition.pass)pieces.push('AI(2) '+ai2Name+' ML '+ai2.ml+' (<3-1) · watch, not a proven override');
       decision.style.display='block';decision.replaceChildren();
       pieces.forEach((line,i)=>{const el=document.createElement('div');el.style.cssText=i===0?'font-weight:900':i===pieces.length-1?'font-weight:850;margin-top:4px':'';el.textContent=line;decision.append(el);});
     }else{decision.style.display='none';}
-    // v9.42: A veto applies to the horse examined, not automatically to the other engine's horse.
+    // v9.44: A veto applies to the horse examined, not automatically to the other engine's horse.
     const raceCard=card.closest('.best-pick');
     if(raceCard){
       const heading=raceCard.querySelector('.decision-model-horse');
@@ -7970,7 +7970,7 @@ function hh74Refresh(){
       if(anyVeto){
         banner.style.display='block';
         banner.replaceChildren();
-        const bold=document.createElement('b');bold.textContent=bothVeto?'PASS — BOTH ENGINE PICKS FAIL READINESS':'PASS / REVIEW ALTERNATIVES — READINESS VETO';banner.append(bold);
+        const bold=document.createElement('b');bold.textContent=bothVeto?'PASS — BOTH PICKS HAVE CONDITION FLAGS':'PASS / REVIEW — HORSE-SPECIFIC CONDITION FLAG';banner.append(bold);
         for(const n of names){const line=document.createElement('div');line.textContent=n;banner.append(line);}
         if(!ai2Condition.pass&&condition.pass){const line=document.createElement('div');line.textContent='Review AI(2) '+card.getAttribute('data-ai2-name')+'; no automatic bet.';banner.append(line);}
         if(!condition.pass&&ai2Condition.pass){const line=document.createElement('div');line.textContent='Review AI(1) #'+(r?.final?.post??'?')+' '+ai1HorseName+'; no automatic bet.';banner.append(line);}
@@ -7978,11 +7978,28 @@ function hh74Refresh(){
         if(alt){const line=document.createElement('div');line.textContent='Other RS leader to examine: #'+alt.post+' '+alt.horse+'.';banner.append(line);}
         raceCard.classList.remove('read-green');raceCard.classList.add('read-red');
         if(heading){heading.style.opacity='.65';const tag=heading.querySelector('span:last-child');if(tag&&/RANK LEADER/.test(tag.textContent))tag.textContent='NUMERICAL RANK ONLY — NOT A BET';}
-        if(pct){pct.style.fontSize='12px';const btn=pct.querySelector('.prob-button');if(btn){btn.style.fontSize='15px';btn.style.opacity='.65';}const conf=pct.querySelector('.confidence');if(conf)conf.textContent='MODEL SHARE ONLY · VETO / PASS';}
-      }else{banner.style.display='none';}
+        if(pct){pct.style.fontSize='12px';const btn=pct.querySelector('.prob-button');if(btn){btn.style.fontSize='15px';btn.style.opacity='.65';}const conf=pct.querySelector('.confidence');if(conf)conf.textContent='MODEL SHARE ONLY · ENGINE PICKS FLAGGED';}
+      }else{banner.style.display='none';if(heading){heading.style.opacity='';const tag=heading.querySelector('span:last-child');if(tag&&tag.textContent==='NUMERICAL RANK ONLY — NOT A BET')tag.textContent='RANK LEADER';}if(pct){pct.style.fontSize='';const btn=pct.querySelector('.prob-button');if(btn){btn.style.fontSize='';btn.style.opacity='';}}}
     }
+    // v9.44: show field uncertainty separately from horse-specific concerns.
+    let uncertainty=card.querySelector('.hh943-field');
+    if(!uncertainty){uncertainty=document.createElement('div');uncertainty.className='hh943-field';uncertainty.style.cssText='margin-top:7px;padding:8px 10px;border-left:3px solid #b98222;background:#fff9e8;font-size:12px;line-height:1.45';card.appendChild(uncertainty);}
+    const uncertain=condition.fieldUncertain||ai2Condition.fieldUncertain;
+    uncertainty.style.display=uncertain?'block':'none';
+    if(uncertain)uncertainty.textContent='RACE UNCERTAINTY — 2+ first-time starters limit comparisons. This is NOT a readiness veto on either horse. Existing bet rules still apply.';
+    let leaderNote=card.querySelector('.hh943-leader');
+    if(!leaderNote){leaderNote=document.createElement('div');leaderNote.className='hh943-leader';leaderNote.style.cssText='margin-top:7px;padding:8px 10px;border-left:3px solid #315a7d;background:#f2f7fb;font-size:12px;line-height:1.45';card.appendChild(leaderNote);}
+    const leaderHorse=String(raceCard?.querySelector('.decision-model-horse')?.textContent||'').replace(/RANK LEADER|NUMERICAL RANK ONLY.*$/i,'').trim();
+    const leaderPost=leaderHorse.match(/#\s*(\d+)/)?.[1];
+    const leaderRunner=(typeof rows!=='undefined'&&Array.isArray(rows)?rows:[]).find(h=>String(h.race)===String(race)&&!h.scratched&&String(h.post)===String(leaderPost));
+    const leaderName=leaderRunner?.horse||leaderHorse.replace(/^#\s*\d+\s*/, '');
+    const ai1IsLeader=leaderRunner&&r?.final&&hh27SamePick(leaderRunner,r.final);
+    const ai2IsLeader=leaderRunner&&hh27SamePick(leaderRunner,hh27AI2Pick(card));
+    const leaderDiff=leaderRunner&&!ai1IsLeader&&!ai2IsLeader;
+    leaderNote.style.display=leaderDiff?'block':'none';
+    if(leaderDiff)leaderNote.textContent='NUMERICAL LEADER ≠ ENGINE SELECTION — #'+leaderPost+' '+leaderName+' leads the displayed ranking, but neither AI selected this horse. Compare the runner’s past performances and opposing evidence; no automatic promotion or bet.';
     if(condition.pass){betLine='NO WIN BET ON AI(1) — CONDITION/READINESS VETO · '+condition.concerns.join('; ');} 
-    if(ai2Condition.pass){betLine+=(betLine?' · ':'')+'NO WIN BET ON AI(2) — '+ai2Condition.concerns.join('; ');} 
+    if(ai2Condition.pass){betLine+=(betLine?' · ':'')+'NO WIN BET ON AI(2) — HORSE-SPECIFIC CONDITION FLAG · '+ai2Condition.concerns.join('; ');} 
     let reviewEl=card.querySelector('.hh929-review');
     if(!reviewEl){reviewEl=document.createElement('div');reviewEl.className='hh929-review';reviewEl.style.cssText='margin-top:9px;padding:8px 10px;border-left:3px solid #8a6a26;background:#f7f3e9;font-size:12px;line-height:1.5';card.appendChild(reviewEl);}
     reviewEl.style.display=(condition.pass||ai2Condition.pass)?'none':'block';
@@ -8004,10 +8021,31 @@ function hh74Refresh(){
     return '<div id="concurrence-race-'+escapeText(race)+'" class="hh-concurrence-race" style="padding:14px 0;border-top:1px solid #ddd;scroll-margin-top:110px"><b>Race '+escapeText(race)+'</b><div>'+escapeText(result)+'</div>'+(r?.top?'<div style="font-size:12px;opacity:.75">RS #1: #'+escapeText(r.top.post)+' '+escapeText(r.top.horse)+'</div>':'')+'</div>';
   });
   const out=document.getElementById('hh74-ai-summary');
-  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.42 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>'+lines.join('');
+  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.44 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>'+lines.join('');
 
 }
 
+
+/* v9.44 — Research-only maiden RS/CS challenger flag. Never changes picks or bets. */
+function hh944MaidenChallengerFlag(scored,field,ai2Horse){
+  const live=(field||[]).filter(h=>!h.scratched);
+  if(!live.length||!ai2Horse)return '';
+  const raceType=String(live[0].raceType||'').trim().toUpperCase();
+  if(!['S','M','MO'].includes(raceType))return '';
+  const board=hh64CaseBoard(scored,live);
+  const original=board.get(String(ai2Horse.id));
+  if(!original)return '';
+  // Compare pre-race morning-line values, not final odds or live wagering prices.
+  const ml=h=>oddsDecimal(h?.ml);
+  const originalML=ml(ai2Horse);
+  if(originalML===null||!Number.isFinite(originalML))return '';
+  const candidates=[...board.values()].filter(v=>v.rsRank===1 && String(v.horse.id)!==String(ai2Horse.id) &&
+    ml(v.horse)!==null && Number.isFinite(ml(v.horse)) && ml(v.horse)<originalML && v.tally>=original.tally+2);
+  if(!candidates.length)return '';
+  candidates.sort((a,b)=>b.tally-a.tally||ml(a.horse)-ml(b.horse));
+  const items=candidates.map(v=>`#${safe(v.horse.post)} ${horseNameLinkHTML(v.horse)} (ML ${safe(v.horse.ml)}, CS ${v.tally>=0?'+':''}${safe(v.tally)} vs AI(2) ${original.tally>=0?'+':''}${safe(original.tally)})`).join(' · ');
+  return `<div class="hh944-maiden-flag" style="padding:9px 11px;margin:9px 0;border-left:4px solid #a56a12;background:#fff8e8;border-radius:5px;font-size:12px;line-height:1.5"><b>MAIDEN CHALLENGER FLAG — REVIEW ONLY</b><div>RS #1 ${items}. Shorter morning line and CS tally advantage of at least 2 over AI(2). Historical research signal only; <b>no automatic switch or bet</b>.</div></div>`;
+}
 
 /* v8.86 — RS/CS historical confidence and verified opponent history.
    EXPLANATION ONLY: does not alter ranking, case scores, model probabilities, or wagering. */
@@ -8357,6 +8395,7 @@ function computeRaceCard(){
                 <div class="model-prob"><button class="prob-button" onclick="openProbability('${safe(raceNum)}')" aria-label="Open probability details">${(top.probability*100).toFixed(1)}%</button><div class="confidence">RELATIVE MODEL SHARE (NOT WIN PROBABILITY)</div></div>
             </div>
             <div class="hh-review" style="border-left:5px solid ${hh889FocusEligible?'#2E6E45':'#9a6c13'}"><b>RACE SCREEN: ${hh889FocusStatus} (not a bet rating)</b> · ${hh889FocusEligible?'Eligible for FOCUS race ordering; wager rules evaluated separately':safe(hh889FocusReason)} · ${activeField.length} active runners.</div>
+            ${hh944MaidenChallengerFlag(scored,activeField,modelLeader.horse)}
             <div class="hh74-ai" data-race="${safe(raceNum)}" data-ai2-name="${safe('#'+modelLeader.horse.post+' '+modelLeader.horse.horse)}" data-ai2-horse="${safe(modelLeader.horse.horse)}" style="margin:9px 0;padding:10px;border:1px solid #cfc2a0;border-radius:7px;background:#fff">
               <b>AI(1) / AI(2) PICKS</b>
               <div class="hh74-ai-result" style="margin-top:6px;font-weight:800">Calculating AI(1) ranking…</div>
@@ -8659,7 +8698,7 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v9.42</h2>
+      <h2>Help — Horse Handicap v9.44</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.63's actual final selection, after its review of race evidence and warnings. Its selection is the win-bet horse, otherwise a qualifying figure-leader bet, otherwise the horse with the highest reviewed chance.</p>
         <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; it is <b>not</b> a calibrated win probability.</p>
@@ -10550,7 +10589,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.42 · November 6, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.63</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.44 · November 9, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.63</div>
 
 <script>
 (function(){
@@ -10648,7 +10687,7 @@ document.addEventListener("click",e=>{
    // Do not block iPhone printing if the embedded AI(1) bridge is slow or fails.
    // Print all available facts, and label missing engine scores as Pending.
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.42 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.44 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.63 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    document.body.classList.add('hh922-print-pdf');window.print();
