@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.48 · November 10, 2026 — Belmont Replay Confirmation Flag</title>
+<title>Horse Handicap v9.49 · November 10, 2026 — Clean Historical Confirmation</title>
 
 <style>
 :root{
@@ -1373,7 +1373,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.48 · Nov 10, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.49 · Nov 10, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -7011,9 +7011,9 @@ function raceTypeRecordV799(horse){
 }
 function raceTypeTagV799(horse,full=false){
     const r=raceTypeRecordV799(horse);
-    const tag=`<span class="rtype-tag ${r.cls}">${safe(r.label)}${r.pct!==null?' '+r.pct+'%':''}</span>`;
-    if(!full || r.pct===null) return tag;
-    return `${tag}<span class="note">Picks in this race type have won <b>${r.pct}% (${r.wins} of ${r.n})</b></span>`;
+    // v9.49: older research win percentages used a different population.
+    // Do not show them beside the Belmont confirmation rate as if comparable.
+    return `<span class="rtype-tag ${r.cls}">${safe(r.label)}</span>`;
 }
 function paceRiskV799(field,pick){
     const p=paceProjection(field);
@@ -7944,9 +7944,9 @@ function hh74Refresh(){
       if(condition.pass){
         pieces.push('AI(1) #'+(r.final?.post??'?')+' '+ai1HorseName+' — HORSE-SPECIFIC CONDITION FLAG: '+condition.concerns.join('; '));
       }else if(d&&d[1]==='AI(1)'){
-        pieces.push('HISTORICAL CLASS CONTEXT ONLY · '+name+' · AI(1) '+d[2]+'% vs AI(2) '+d[3]+'% (n='+d[4]+'); not a race-level override');
+        pieces.push('OLDER DISAGREEMENT SAMPLE (NOT BELMONT AGREEMENT) · '+name+' · AI(1) '+d[2]+'% vs AI(2) '+d[3]+'% (n='+d[4]+'); not a race-level override');
       }else if(d){
-        pieces.push('NO CLASS EDGE · CLAIMING · 21.9% each (n='+d[4]+') · PASS unless existing bet rules qualify');
+        pieces.push('OLDER DISAGREEMENT SAMPLE (NOT BELMONT AGREEMENT) · CLAIMING · 21.9% each (n='+d[4]+') · no class override; follow existing bet rules');
       }else{
         pieces.push('NO CLASS EDGE · '+name+' · PASS unless existing bet rules qualify');
       }
@@ -8348,9 +8348,23 @@ function computeRaceCard(){
         hh98Snapshot(raceNum,activeField,scored,finalV860);
         if(betRaceRows.length) betRaceRows[betRaceRows.length-1].wager=wagerV815;
 
-        // Historical 501-race audit: agreement 128/327 (39.1%), disagreement 31/174 (17.8%).
-        // Research evidence is a review-order indicator, not an automatic wager qualification.
+        // v9.49: Belmont replay evidence is descriptive, never a wager qualification.
         const hh72Agree = String(modelLeader.horse.id)===String(top.horse.id);
+        // Class groups reflect the 101-race Belmont replay, not older class-specific audits.
+        // Only the 70 agreement races contribute to the figures below.
+        const hh949Type=String(top.horse.raceType||'').trim().toUpperCase();
+        const hh949ClassText=String(top.horse.currentRaceClass||top.horse.raceConditions||'').toUpperCase();
+        const hh949Class=/STARTER/.test(hh949ClassText)?'STARTER'
+          :(['G1','G2','G3','N','ST'].includes(hh949Type)||/\bSTAKES\b/.test(hh949ClassText))?'STAKES'
+          :(['M','MO','S'].includes(hh949Type)||/MAIDEN/.test(hh949ClassText))?'MAIDEN'
+          :(['A','AO','R'].includes(hh949Type)||/ALLOWANCE/.test(hh949ClassText))?'ALLOWANCE'
+          :(['C','CO'].includes(hh949Type)||/CLAIMING/.test(hh949ClassText))?'CLAIMING':'OTHER';
+        const hh949ClassHistory={CLAIMING:[5,11],STARTER:[2,5],ALLOWANCE:[4,14],MAIDEN:[6,30],STAKES:[1,10]};
+        const hh949History=hh949ClassHistory[hh949Class];
+        const hh949Evidence=hh72Agree && hh949History
+          ? `${hh949Class}: ${hh949History[0]} wins / ${hh949History[1]} agreement races (${(100*hh949History[0]/hh949History[1]).toFixed(1)}%). Small historical sample; not a horse probability or bet approval.`
+          : hh72Agree?'No verified class-specific agreement sample for this classification.'
+          :'Class breakdown not applicable to the RS #1 disagreement figure; no class-specific override validated.';
         const hh72Triage=hh68RaceTriage(activeField,top.horse,finalV860.horse);
         const hh877Pace=hh68PaceScenario(activeField);
         const hh877TopFour=probabilityScored.slice(0,4);
@@ -8397,9 +8411,9 @@ function computeRaceCard(){
             <div style="margin:10px 0 12px;padding:14px 12px;border:3px solid ${hh72Agree?'#176a36':'#a36a1c'};border-radius:10px;background:${hh72Agree?'#e3f4e8':'#fff2d9'};color:${hh72Agree?'#124e29':'#744613'};box-shadow:0 2px 7px rgba(0,0,0,.10)" role="status">
               <div style="font-weight:950;font-size:clamp(17px,4.4vw,23px);line-height:1.15;letter-spacing:.02em">${hh72Agree?'✓ STRONGER CONFIRMATION':'⚠ RANKINGS DISAGREE'}</div>
               <div style="font-weight:850;font-size:13px;margin-top:7px">RANK SCORE #1 ${hh72Agree?'+ AI(2) MODEL SHARE #1':'≠ AI(2) MODEL SHARE #1'}</div>
-              <div style="font-size:12px;margin-top:6px;line-height:1.45">Belmont replay (101 races): ${hh72Agree?'18 wins in 70 agreeing races (25.7%)':'4 wins in 31 disagreeing races (12.9%)'}. <b>Historical group rate, not this horse’s win probability. No automatic bet; review class, odds and existing wager rules.</b></div>
+              <div style="font-size:12px;margin-top:6px;line-height:1.45">Belmont replay (101 races): ${hh72Agree?'18/70 agreeing races (25.7%)':'RS leader won 4/31 disagreement races (12.9%)'}. <b>Group result, not a horse win probability.</b><div style="margin-top:5px;font-size:11.5px">${safe(hh949Evidence)}</div><div style="margin-top:5px;font-weight:800">NOT A BET SIGNAL · Existing wager decision and price requirements still govern.</div></div>
             </div>
-            <div class="hh-review" style="border-left:5px solid ${hh889FocusEligible?'#2E6E45':'#9a6c13'}"><b>RACE SCREEN: ${hh889FocusStatus} (not a bet rating)</b> · ${hh889FocusEligible?'Eligible for FOCUS race ordering; wager rules evaluated separately':safe(hh889FocusReason)} · ${activeField.length} active runners.</div>
+            <div class="hh-review" style="border-left:5px solid ${hh889FocusEligible?'#2E6E45':'#9a6c13'}"><b>RACE SCREEN: ${hh889FocusStatus} (not a bet rating)</b> · ${hh889FocusEligible?'Review priority only; not evidence of positive betting ROI':safe(hh889FocusReason)} · ${activeField.length} active runners.</div>
             ${hh944MaidenChallengerFlag(scored,activeField,modelLeader.horse)}
             <div class="hh74-ai" data-race="${safe(raceNum)}" data-ai2-name="${safe('#'+modelLeader.horse.post+' '+modelLeader.horse.horse)}" data-ai2-horse="${safe(modelLeader.horse.horse)}" style="margin:9px 0;padding:10px;border:1px solid #cfc2a0;border-radius:7px;background:#fff">
               <b>AI(1) / AI(2) PICKS</b>
