@@ -7977,9 +7977,9 @@ function hh74Refresh(){
         const alt=r?.top&&!hh27SamePick(r.top,r.final)&&!hh27SamePick(r.top,hh27AI2Pick(card))?r.top:null;
         if(alt){const line=document.createElement('div');line.textContent='Other RS leader to examine: #'+alt.post+' '+alt.horse+'.';banner.append(line);}
         raceCard.classList.remove('read-green');raceCard.classList.add('read-red');
-        if(heading){heading.style.opacity='.65';const tag=heading.querySelector('span:last-child');if(tag)tag.textContent='RANK SCORE';}
+        if(heading){heading.style.opacity='.65';const tag=heading.querySelector('span:last-child');if(tag)tag.textContent='RANK SCORE #1';}
         if(pct){pct.style.fontSize='12px';const btn=pct.querySelector('.prob-button');if(btn){btn.style.fontSize='15px';btn.style.opacity='.65';}const conf=pct.querySelector('.confidence');if(conf)conf.textContent='MODEL SHARE ONLY · ENGINE PICKS FLAGGED';}
-      }else{banner.style.display='none';if(heading){heading.style.opacity='';const tag=heading.querySelector('span:last-child');if(tag)tag.textContent='RANK SCORE';}if(pct){pct.style.fontSize='';const btn=pct.querySelector('.prob-button');if(btn){btn.style.fontSize='';btn.style.opacity='';}}}
+      }else{banner.style.display='none';if(heading){heading.style.opacity='';const tag=heading.querySelector('span:last-child');if(tag)tag.textContent='RANK SCORE #1';}if(pct){pct.style.fontSize='';const btn=pct.querySelector('.prob-button');if(btn){btn.style.fontSize='';btn.style.opacity='';}}}
     }
     // v9.46: show field uncertainty separately from horse-specific concerns.
     let uncertainty=card.querySelector('.hh943-field');
@@ -8388,7 +8388,7 @@ function computeRaceCard(){
                     <div class="best-horse">
                       
                       
-                      <div class="decision-model-horse"><span class="post">#${safe(top.horse.post)}</span>${horseNameLinkHTML(top.horse)} <span style="font-size:11px;font-weight:800;opacity:.72;">RANK SCORE</span></div>
+                      <div class="decision-model-horse"><span class="post">#${safe(top.horse.post)}</span>${horseNameLinkHTML(top.horse)} <span style="font-size:11px;font-weight:800;opacity:.72;">RANK SCORE #1</span></div>
                       <span data-strongest-race="${safe(raceNum)}"></span>
                     </div>
                 </div>
