@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.49 · November 10, 2026 — Clean Historical Confirmation</title>
+<title>Horse Handicap v9.60 · November 13, 2026 — AI(1) v4.76</title>
 
 <style>
 :root{
@@ -1386,7 +1386,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.59 · Nov 13, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.60 · Nov 13, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -6952,7 +6952,7 @@ function hh67PaceVerdict(field,horse){
   return {verdict,level,reason,shape:p.label,cluster:group.map(x=>`#${x.h.post||x.h.pgm} ${x.h.horse}`),style,nPace:p.nPace,n:p.n};
 }
 /* Research triage, not a validated wagering system. Does not alter horse rankings. */
-// v9.59: FOCUS is a view of the actual displayed BET decisions, not a
+// v9.60: FOCUS is a view of the actual displayed BET decisions, not a
 // second, independent eligibility model. Re-evaluate on every filter change.
 function hh959IsBet(card){
   const label=(card.querySelector('.hh953-selection')?.textContent||'').trim().toUpperCase();
@@ -7945,7 +7945,7 @@ function hh74Refresh(){
     const condition=hh932ConditionReview(card,r,ai1HorseName);
     const ai2Condition=hh932ConditionReview(card,r,ai2HorseName);
     const review=hh929Review(r,card);
-    // v9.59: The view derives FOCUS from the final BET label after vetoes.
+    // v9.60: The view derives FOCUS from the final BET label after vetoes.
     const existingFour=card.querySelector('.hh934-four');if(existingFour)existingFour.remove();
     const oldChecklist=card.querySelector('.hh936-checklist');if(oldChecklist)oldChecklist.remove();
     let decision=card.querySelector('.hh937-disagreement');
@@ -8803,7 +8803,7 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v9.48</h2>
+      <h2>Help — Horse Handicap v9.60</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.76's actual final selection, after its review of race evidence and warnings. Its selection is the win-bet horse, otherwise a qualifying figure-leader bet, otherwise the horse with the highest reviewed chance.</p>
         <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; it is <b>not</b> a calibrated win probability.</p>
@@ -10694,7 +10694,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.48 · November 10, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.76</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.60 · November 13, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.76</div>
 
 <script>
 (function(){
@@ -10792,7 +10792,7 @@ document.addEventListener("click",e=>{
    // Do not block iPhone printing if the embedded AI(1) bridge is slow or fails.
    // Print all available facts, and label missing engine scores as Pending.
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.48 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.60 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.76 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    document.body.classList.add('hh922-print-pdf');window.print();
