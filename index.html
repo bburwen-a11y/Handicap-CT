@@ -1365,6 +1365,19 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
  body.hh922-print-pdf #hh922PdfReport thead{display:table-header-group}
  body.hh922-print-pdf #hh922PdfReport tr{break-inside:avoid;page-break-inside:avoid}
 }
+<style id="hh951-compact-confirmation">
+/* Decision board: confirmation is a single line, not an evidence panel. */
+#bestSection .hist-confirm,
+#bestSection .concurrence-box,
+#bestSection .core-confirm{display:none!important}
+#bestSection .hh950-agreement{font-size:12px!important;line-height:1.25!important;font-weight:800!important}
+</style>
+<style id="hh950-simple-decisions">
+#bestSection .hh950-agreement{box-shadow:none!important;border-radius:5px!important}
+#bestSection .hh941-verdict{font-size:14px!important;line-height:1.4!important}
+#bestSection .hh941-verdict>div{margin-top:4px}
+#bestSection .hh-simple-pace{display:none!important}
+#bestSection .hh-review{display:none!important}
 </style></head>
 
 <body>
@@ -1373,7 +1386,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.49 · Nov 10, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.51 · Nov 12, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -7921,7 +7934,7 @@ function hh74Refresh(){
     const oldChecklist=card.querySelector('.hh936-checklist');if(oldChecklist)oldChecklist.remove();
     let decision=card.querySelector('.hh937-disagreement');
     if(!decision){decision=document.createElement('div');decision.className='hh937-disagreement';decision.style.cssText='margin-top:9px;padding:9px 11px;border-left:4px solid #315a7d;background:#f2f7fb;border-radius:5px;font-size:12px;line-height:1.45';card.appendChild(decision);}
-    if(r?.final?.horse && !hh27SamePick(r.final,hh27AI2Pick(card))){
+    if(r?.final?.horse && !hh27SamePick(r.final,hh27AI2Pick(card)) && !condition.pass && !ai2Condition.pass){
       const all=r.summary?.allRunners?.length?r.summary.allRunners:(r.summary?.field||[]);
       const ai1=all.find(h=>hh27SamePick(h,r.final))||r.final;
       const other=hh27AI2Pick(card);
@@ -7970,22 +7983,26 @@ function hh74Refresh(){
       if(anyVeto){
         banner.style.display='block';
         banner.replaceChildren();
-        const bold=document.createElement('b');bold.textContent=bothVeto?'PASS — BOTH PICKS HAVE CONDITION FLAGS':'PASS / REVIEW — HORSE-SPECIFIC CONDITION FLAG';banner.append(bold);
-        for(const n of names){const line=document.createElement('div');line.textContent=n;banner.append(line);}
-        if(!ai2Condition.pass&&condition.pass){const line=document.createElement('div');line.textContent='Review AI(2) '+card.getAttribute('data-ai2-name')+'; no automatic bet.';banner.append(line);}
-        if(!condition.pass&&ai2Condition.pass){const line=document.createElement('div');line.textContent='Review AI(1) #'+(r?.final?.post??'?')+' '+ai1HorseName+'; no automatic bet.';banner.append(line);}
-        const alt=r?.top&&!hh27SamePick(r.top,r.final)&&!hh27SamePick(r.top,hh27AI2Pick(card))?r.top:null;
-        if(alt){const line=document.createElement('div');line.textContent='Other RS leader to examine: #'+alt.post+' '+alt.horse+'.';banner.append(line);}
+        const sameFlaggedHorse=hh27SamePick(r?.final,hh27AI2Pick(card));
+        const bold=document.createElement('b');
+        bold.textContent='PASS — '+(bothVeto&&sameFlaggedHorse?'PICK HAS CONDITION FLAG':bothVeto?'BOTH PICKS FLAGGED':'PICK HAS CONDITION FLAG');
+        banner.append(bold);
+        const reason=document.createElement('div');
+        reason.textContent=[...new Set([...(condition.pass?condition.concerns:[]),...(ai2Condition.pass?ai2Condition.concerns:[])])].slice(0,2).join('; ');
+        banner.append(reason);
+        const agreement=raceCard.querySelector('.hh950-agreement');if(agreement)agreement.style.display='none';
+        const aiBox=raceCard.querySelector('.hh74-ai');if(aiBox)aiBox.style.display='none';
+        const pace=raceCard.querySelector('.hh-simple-pace');if(pace)pace.style.display='none';
         raceCard.classList.remove('read-green');raceCard.classList.add('read-red');
         if(heading){heading.style.opacity='.65';const tag=heading.querySelector('span:last-child');if(tag)tag.textContent='RANK SCORE #1';}
-        if(pct){pct.style.fontSize='12px';const btn=pct.querySelector('.prob-button');if(btn){btn.style.fontSize='15px';btn.style.opacity='.65';}const conf=pct.querySelector('.confidence');if(conf)conf.textContent='MODEL SHARE ONLY · ENGINE PICKS FLAGGED';}
+        if(pct){pct.style.fontSize='12px';const btn=pct.querySelector('.prob-button');if(btn){btn.style.fontSize='15px';btn.style.opacity='.65';}const conf=pct.querySelector('.confidence');if(conf)conf.textContent='MODEL SHARE ONLY · PICK FLAGGED';}
       }else{banner.style.display='none';if(heading){heading.style.opacity='';const tag=heading.querySelector('span:last-child');if(tag)tag.textContent='RANK SCORE #1';}if(pct){pct.style.fontSize='';const btn=pct.querySelector('.prob-button');if(btn){btn.style.fontSize='';btn.style.opacity='';}}}
     }
     // v9.46: show field uncertainty separately from horse-specific concerns.
     let uncertainty=card.querySelector('.hh943-field');
     if(!uncertainty){uncertainty=document.createElement('div');uncertainty.className='hh943-field';uncertainty.style.cssText='margin-top:7px;padding:8px 10px;border-left:3px solid #b98222;background:#fff9e8;font-size:12px;line-height:1.45';card.appendChild(uncertainty);}
     const uncertain=condition.fieldUncertain||ai2Condition.fieldUncertain;
-    uncertainty.style.display=uncertain?'block':'none';
+    uncertainty.style.display=uncertain&&!condition.pass&&!ai2Condition.pass?'block':'none';
     if(uncertain)uncertainty.textContent='RACE UNCERTAINTY — 2+ first-time starters limit comparisons. This is NOT a readiness veto on either horse. Existing bet rules still apply.';
     let leaderNote=card.querySelector('.hh943-leader');
     if(!leaderNote){leaderNote=document.createElement('div');leaderNote.className='hh943-leader';leaderNote.style.cssText='margin-top:7px;padding:8px 10px;border-left:3px solid #315a7d;background:#f2f7fb;font-size:12px;line-height:1.45';card.appendChild(leaderNote);}
@@ -8408,20 +8425,16 @@ function computeRaceCard(){
                 </div>
                 <div class="model-prob"><button class="prob-button" onclick="openProbability('${safe(raceNum)}')" aria-label="Open probability details">${(top.probability*100).toFixed(1)}%</button><div class="confidence">RELATIVE MODEL SHARE (NOT WIN PROBABILITY)</div></div>
             </div>
-            <div style="margin:10px 0 12px;padding:14px 12px;border:3px solid ${hh72Agree?'#176a36':'#a36a1c'};border-radius:10px;background:${hh72Agree?'#e3f4e8':'#fff2d9'};color:${hh72Agree?'#124e29':'#744613'};box-shadow:0 2px 7px rgba(0,0,0,.10)" role="status">
-              <div style="font-weight:950;font-size:clamp(17px,4.4vw,23px);line-height:1.15;letter-spacing:.02em">${hh72Agree?'✓ STRONGER CONFIRMATION':'⚠ RANKINGS DISAGREE'}</div>
-              <div style="font-weight:850;font-size:13px;margin-top:7px">RANK SCORE #1 ${hh72Agree?'+ AI(2) MODEL SHARE #1':'≠ AI(2) MODEL SHARE #1'}</div>
-              <div style="font-size:12px;margin-top:6px;line-height:1.45">Belmont replay (101 races): ${hh72Agree?'18/70 agreeing races (25.7%)':'RS leader won 4/31 disagreement races (12.9%)'}. <b>Group result, not a horse win probability.</b><div style="margin-top:5px;font-size:11.5px">${safe(hh949Evidence)}</div><div style="margin-top:5px;font-weight:800">NOT A BET SIGNAL · Existing wager decision and price requirements still govern.</div></div>
-            </div>
-            <div class="hh-review" style="border-left:5px solid ${hh889FocusEligible?'#2E6E45':'#9a6c13'}"><b>RACE SCREEN: ${hh889FocusStatus} (not a bet rating)</b> · ${hh889FocusEligible?'Review priority only; not evidence of positive betting ROI':safe(hh889FocusReason)} · ${activeField.length} active runners.</div>
+            <div class="hh950-agreement" style="margin:5px 0;padding:6px 9px;border-left:3px solid ${hh72Agree?'#176a36':'#a36a1c'};background:${hh72Agree?'#eaf4ed':'#fff6e7'};font-weight:850;font-size:13px">${hh72Agree?'✓ STRONG CONFIRMATION — BOTH ENGINES AGREE':'⚠ ENGINES DISAGREE'}</div>
+            <div class="hh-review" style="display:none"><b>RACE SCREEN: ${hh889FocusStatus}</b></div>
             ${hh944MaidenChallengerFlag(scored,activeField,modelLeader.horse)}
-            <div class="hh74-ai" data-race="${safe(raceNum)}" data-ai2-name="${safe('#'+modelLeader.horse.post+' '+modelLeader.horse.horse)}" data-ai2-horse="${safe(modelLeader.horse.horse)}" style="margin:9px 0;padding:10px;border:1px solid #cfc2a0;border-radius:7px;background:#fff">
+            <div class="hh74-ai" data-race="${safe(raceNum)}" data-ai2-name="${safe('#'+modelLeader.horse.post+' '+modelLeader.horse.horse)}" data-ai2-horse="${safe(modelLeader.horse.horse)}" style="display:none;margin:9px 0;padding:10px;border:1px solid #cfc2a0;border-radius:7px;background:#fff">
               <b>AI(1) / AI(2) PICKS</b>
               <div class="hh74-ai-result" style="margin-top:6px;font-weight:800">Calculating AI(1) ranking…</div>
               <div class="hh74-top" style="font-size:11px;opacity:.8;margin-top:3px"></div>
             </div>
-          <div class="hh-simple-pace">${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}</div>
-          <div class="decision-type-line">${raceTypeTagV799(top.horse,wagerV815.type==='BET_PICK')}</div>
+          <div class="hh-simple-pace" style="display:none">${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}</div>
+          
         </div>
 
         `;
