@@ -1386,7 +1386,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.55 · Nov 12, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.56 · Nov 12, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -7930,20 +7930,22 @@ function hh74Refresh(){
     const condition=hh932ConditionReview(card,r,ai1HorseName);
     const ai2Condition=hh932ConditionReview(card,r,ai2HorseName);
     const review=hh929Review(r,card);
-    // v9.52: any horse-specific veto or unverified condition excludes FOCUS.
-    // Do not confuse an AI ranking with an eligible win-bet selection.
+    // v9.56: FOCUS is decided from the ACTUAL displayed bet candidate.
+    // Condition flags on another horse must not veto this selection.
     const focusCard=card.closest('.best-pick');
-    if(focusCard && (condition.pass || ai2Condition.pass || condition.unverified || ai2Condition.unverified)){
-      focusCard.dataset.focusStatus='CONSIDER';
-      focusCard.dataset.focusOrder='99';
-      if(document.getElementById('hh90-focus-note')){
-        const qualified=[...document.querySelectorAll('#bestSection .best-pick[data-focus-status="FOCUS"]')].length;
-        const note=document.getElementById('hh90-focus-note');
-        if(!note.hidden)note.textContent=qualified?qualified+' races qualified as FOCUS after condition checks.':'NO FOCUS RACES QUALIFIED after condition checks.';
-      }
-      if(focusCard.parentElement && focusCard.parentElement.closest('#bestSection')){
-        const filter=document.querySelector('#bestSection [data-focus-filter]');
-        if(focusCard.hidden===false && [...document.querySelectorAll('#bestSection .best-pick')].some(el=>el.hidden))focusCard.hidden=true;
+    if(focusCard){
+      const selectedName=focusCard.querySelector('.decision-model-horse')?.textContent||'';
+      const selectedNorm=selectedName.toLowerCase().replace(/[^a-z0-9]/g,'');
+      const betCandidate=focusCard.querySelector('.hh953-selection')?.textContent?.trim()==='BET CANDIDATE';
+      const selectedReview=hh932ConditionReview(card,r,selectedName);
+      const confirmed=!!focusCard.querySelector('.hh950-agreement:not([style*="display:none"])');
+      const eligible=betCandidate && !selectedReview.pass && !selectedReview.unverified && confirmed;
+      focusCard.dataset.focusStatus=eligible?'FOCUS':'CONSIDER';
+      focusCard.dataset.focusOrder=eligible?'0':'99';
+      const note=document.getElementById('hh90-focus-note');
+      if(note && !note.hidden){
+        const n=document.querySelectorAll('#bestSection .best-pick[data-focus-status="FOCUS"]').length;
+        note.textContent=n?n+' races qualified as FOCUS.':'NO FOCUS RACES QUALIFIED.';
       }
     }
     const existingFour=card.querySelector('.hh934-four');if(existingFour)existingFour.remove();
@@ -8459,13 +8461,14 @@ function computeRaceCard(){
           const rs=Number(ev?.rsRank)||99,cs=Number(ev?.csRank)||99,tally=Number(ev?.tally)||0;
           const share=probabilityScored.find(x=>String(x.horse.id)===String(h.id))?.probability||0;
           const forCount=ev?.F?.length||0,againstCount=ev?.A?.length||0;
-          const ml=oddsDecimal(h.ml??h.odds);
+          const mlRaw=h.ml??h.odds;
+          const ml=oddsDecimal(mlRaw);
           // A bet candidate needs independently supporting race facts, not just ranking.
           const solid=contender&&tally>=2&&forCount>=3&&againstCount<=1&&rs<=2&&cs<=2&&!flags.length;
           const competitive=contender&&tally>0&&rs<=3&&cs<=3&&!flags.length;
           // ML is only an indicative price. Recheck actual odds before wagering.
-          const priceOK=ml!==null&&ml>=2;
-          return {item,h,ev,flags,contender,rs,cs,tally,share,ml,priceOK,solid,competitive,
+          const priceOK=Number.isFinite(ml)&&ml>=2;
+          return {item,h,ev,flags,contender,rs,cs,tally,share,ml,mlRaw,priceOK,solid,competitive,
             eligible:solid&&priceOK,
             score:rs*2+cs*2-Math.min(tally,5)*.6-Math.min(share,1)*2};
         }).sort((a,b)=>Number(b.eligible)-Number(a.eligible)||a.score-b.score||a.rs-b.rs);
@@ -8475,10 +8478,9 @@ function computeRaceCard(){
         const hh954Agreement=!!hh954Chosen && String(hh954Chosen.h.id)===String(modelLeader.horse.id) &&
           String(hh954Chosen.h.id)===String(top.horse.id);
         const hh953QualifiedSelection=!!hh954Chosen;
-        const hh889FocusEligible=!!hh954Chosen && hh954Agreement && !hh889LargeField &&
-          (hh92LowUncertainty || (hh92ModerateUncertainty && activeField.length<=7));
+        const hh889FocusEligible=!!hh954Chosen && hh954Agreement;
         const hh889FocusStatus=hh889FocusEligible?'FOCUS':'CONSIDER';
-        const hh889FocusReason=hh954Chosen?'Strong contender with supporting case evidence and acceptable indicative ML':'No bet-qualified candidate';
+        const hh889FocusReason=hh954Chosen?'Bet candidate with supporting case evidence and confirmed engine agreement':'No confirmed bet-qualified candidate';
         bestHTML += `
 
         <div class="best-pick race-anchor-target read-${readability.level}" id="decision-race-${safe(raceNum)}" data-race-order="${Number(raceNum)}" data-focus-status="${hh889FocusStatus}" data-focus-order="${hh889FocusEligible?0:10+hh72Priority*2+(hh72Agree?0:1)}">
@@ -8491,7 +8493,7 @@ function computeRaceCard(){
                       
                       <div class="hh953-selection" style="font-weight:900;font-size:17px;color:${hh953QualifiedSelection?'#1f6b3a':'#8B2A2A'}">${hh954Chosen?'BET CANDIDATE':hh955Contender?'CONTENDER — NO BET':'PASS — NO BET CANDIDATE'}</div>
                       <div class="decision-model-horse" style="${hh955Displayed?'':'display:none;'}"><span class="post">#${safe((hh955Displayed||hh954Candidates[0]).h.post)}</span>${horseNameLinkHTML((hh955Displayed||hh954Candidates[0]).h)} <span style="font-size:11px;font-weight:800;opacity:.72;">${hh955Displayed?'RS #'+hh955Displayed.rs+' · CS #'+hh955Displayed.cs+' · TALLY +'+hh955Displayed.tally:'NO SELECTION'}</span></div>
-                      ${hh954Chosen?`<div style="font-size:11px;opacity:.75">Indicative ML ${safe(hh954Chosen.h.ml??'—')} · Recheck live odds before betting</div>`:hh955Contender?`<div style="font-size:11px;opacity:.75">${hh955Contender.solid?'Price below screening threshold or unavailable':'Insufficient independent case support for a bet'}</div>`:''}
+                      ${hh954Chosen?`<div style="font-size:11px;opacity:.75">Indicative ML ${safe(hh954Chosen.mlRaw??'—')} · Recheck live odds before betting</div>`:hh955Contender?`<div style="font-size:11px;opacity:.75">${hh955Contender.solid?'Price below screening threshold or unavailable':'Insufficient independent case support for a bet'}</div>`:''}
                       <span data-strongest-race="${safe(raceNum)}"></span>
                     </div>
                 </div>
