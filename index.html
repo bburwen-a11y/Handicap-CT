@@ -1386,7 +1386,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.51 · Nov 12, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.53 · Nov 12, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -7930,6 +7930,22 @@ function hh74Refresh(){
     const condition=hh932ConditionReview(card,r,ai1HorseName);
     const ai2Condition=hh932ConditionReview(card,r,ai2HorseName);
     const review=hh929Review(r,card);
+    // v9.52: any horse-specific veto or unverified condition excludes FOCUS.
+    // Do not confuse an AI ranking with an eligible win-bet selection.
+    const focusCard=card.closest('.best-pick');
+    if(focusCard && (condition.pass || ai2Condition.pass || condition.unverified || ai2Condition.unverified)){
+      focusCard.dataset.focusStatus='CONSIDER';
+      focusCard.dataset.focusOrder='99';
+      if(document.getElementById('hh90-focus-note')){
+        const qualified=[...document.querySelectorAll('#bestSection .best-pick[data-focus-status="FOCUS"]')].length;
+        const note=document.getElementById('hh90-focus-note');
+        if(!note.hidden)note.textContent=qualified?qualified+' races qualified as FOCUS after condition checks.':'NO FOCUS RACES QUALIFIED after condition checks.';
+      }
+      if(focusCard.parentElement && focusCard.parentElement.closest('#bestSection')){
+        const filter=document.querySelector('#bestSection [data-focus-filter]');
+        if(focusCard.hidden===false && [...document.querySelectorAll('#bestSection .best-pick')].some(el=>el.hidden))focusCard.hidden=true;
+      }
+    }
     const existingFour=card.querySelector('.hh934-four');if(existingFour)existingFour.remove();
     const oldChecklist=card.querySelector('.hh936-checklist');if(oldChecklist)oldChecklist.remove();
     let decision=card.querySelector('.hh937-disagreement');
@@ -7980,21 +7996,27 @@ function hh74Refresh(){
       const names=[];
       if(condition.pass)names.push('AI(1) #'+(r?.final?.post??'?')+' '+ai1HorseName+' — '+condition.concerns[0]);
       if(ai2Condition.pass)names.push('AI(2) '+card.getAttribute('data-ai2-name')+' — '+ai2Condition.concerns[0]);
-      if(anyVeto){
+      if(anyVeto || condition.unverified || ai2Condition.unverified){
+        raceCard.dataset.focusStatus='CONSIDER';
+        raceCard.dataset.focusOrder='99';
+        const selection=raceCard.querySelector('.hh953-selection');
+        if(selection){selection.textContent='NO QUALIFIED PICK — PASS';selection.style.color='#8B2A2A';}
+        const rank=raceCard.querySelector('.decision-model-horse');
+        if(rank){rank.style.fontSize='13px';rank.style.opacity='.65';}
         banner.style.display='block';
         banner.replaceChildren();
         const sameFlaggedHorse=hh27SamePick(r?.final,hh27AI2Pick(card));
         const bold=document.createElement('b');
-        bold.textContent='PASS — '+(bothVeto&&sameFlaggedHorse?'PICK HAS CONDITION FLAG':bothVeto?'BOTH PICKS FLAGGED':'PICK HAS CONDITION FLAG');
+        bold.textContent='NO QUALIFIED PICK — PASS';
         banner.append(bold);
         const reason=document.createElement('div');
-        reason.textContent=[...new Set([...(condition.pass?condition.concerns:[]),...(ai2Condition.pass?ai2Condition.concerns:[])])].slice(0,2).join('; ');
+        reason.textContent=[...new Set([...(condition.pass?condition.concerns:[]),...(ai2Condition.pass?ai2Condition.concerns:[]),...(condition.unverified||ai2Condition.unverified?['Condition review incomplete']:[])])].slice(0,2).join('; ');
         banner.append(reason);
         const agreement=raceCard.querySelector('.hh950-agreement');if(agreement)agreement.style.display='none';
         const aiBox=raceCard.querySelector('.hh74-ai');if(aiBox)aiBox.style.display='none';
         const pace=raceCard.querySelector('.hh-simple-pace');if(pace)pace.style.display='none';
         raceCard.classList.remove('read-green');raceCard.classList.add('read-red');
-        if(heading){heading.style.opacity='.65';const tag=heading.querySelector('span:last-child');if(tag)tag.textContent='RANK SCORE #1';}
+        if(heading){heading.style.opacity='.65';const tag=heading.querySelector('span:last-child');if(tag)tag.textContent='NUMERICAL LEADER ONLY';}
         if(pct){pct.style.fontSize='12px';const btn=pct.querySelector('.prob-button');if(btn){btn.style.fontSize='15px';btn.style.opacity='.65';}const conf=pct.querySelector('.confidence');if(conf)conf.textContent='MODEL SHARE ONLY · PICK FLAGGED';}
       }else{banner.style.display='none';if(heading){heading.style.opacity='';const tag=heading.querySelector('span:last-child');if(tag)tag.textContent='RANK SCORE #1';}if(pct){pct.style.fontSize='';const btn=pct.querySelector('.prob-button');if(btn){btn.style.fontSize='';btn.style.opacity='';}}}
     }
@@ -8400,12 +8422,21 @@ function computeRaceCard(){
         const hh92StrongAgreement = hh72Agree && !!(top && modelLeader);
         const hh92LowUncertainty = hh72Priority <= 1 && !hh877Caution;
         const hh92ModerateUncertainty = hh72Priority <= 2;
-        const hh889FocusEligible = !hh889LargeField && hh92StrongAgreement &&
-          (hh92LowUncertainty || (hh92ModerateUncertainty && activeField.length <= 7));
+        // v9.52: FOCUS must be a defensible selection, not merely an agreement.
+        // Require RS #1, CS #1, positive case tally and verified contender status.
+        // Condition veto is additionally enforced after the AI(1) bridge resolves.
+        const hh952Case=hh64CaseBoard(scored,activeField).get(String(top.horse.id));
+        const hh952CaseQualified=!!hh952Case && hh952Case.rsRank===1 &&
+          hh952Case.csRank===1 && hh952Case.tally>0 &&
+          decisionClassMap[top.horse.id]?.label==='CONTENDER';
+        const hh953QualifiedSelection=hh952CaseQualified && hh92StrongAgreement && readability.level==='green' && selectionGate.status==='PICK' && !!selectionGate.officialPick;
+        const hh889FocusEligible = hh953QualifiedSelection && !hh889LargeField && hh92StrongAgreement &&
+          hh952CaseQualified && (hh92LowUncertainty || (hh92ModerateUncertainty && activeField.length <= 7));
         const hh889FocusStatus = hh889FocusEligible ? 'FOCUS' : 'CONSIDER';
         const hh889FocusReason = hh889LargeField
           ? '9+ active runners: large-field safeguard'
           : !hh92StrongAgreement ? 'independent ranking disagreement'
+          : !hh952CaseQualified ? 'RS/CS or positive contender case not qualified'
           : hh72Priority >= 3 ? 'multiple uncertainty warnings'
           : hh877Caution ? 'pace or contender uncertainty; review before wagering'
           : 'no sufficiently clear selection advantage';
@@ -8419,13 +8450,14 @@ function computeRaceCard(){
                     <div class="best-horse">
                       
                       
-                      <div class="decision-model-horse"><span class="post">#${safe(top.horse.post)}</span>${horseNameLinkHTML(top.horse)} <span style="font-size:11px;font-weight:800;opacity:.72;">RANK SCORE #1</span></div>
+                      <div class="hh953-selection" style="font-weight:900;font-size:17px;color:${hh953QualifiedSelection?'#1f6b3a':'#8B2A2A'}">${hh953QualifiedSelection?'QUALIFIED SELECTION':'NO QUALIFIED PICK — PASS'}</div>
+                      <div class="decision-model-horse" style="${hh953QualifiedSelection?'':'font-size:13px;opacity:.65;'}"><span class="post">#${safe(top.horse.post)}</span>${horseNameLinkHTML(top.horse)} <span style="font-size:11px;font-weight:800;opacity:.72;">${hh953QualifiedSelection?'RANK SCORE #1':'NUMERICAL LEADER ONLY'}</span></div>
                       <span data-strongest-race="${safe(raceNum)}"></span>
                     </div>
                 </div>
                 <div class="model-prob"><button class="prob-button" onclick="openProbability('${safe(raceNum)}')" aria-label="Open probability details">${(top.probability*100).toFixed(1)}%</button><div class="confidence">RELATIVE MODEL SHARE (NOT WIN PROBABILITY)</div></div>
             </div>
-            <div class="hh950-agreement" style="margin:5px 0;padding:6px 9px;border-left:3px solid ${hh72Agree?'#176a36':'#a36a1c'};background:${hh72Agree?'#eaf4ed':'#fff6e7'};font-weight:850;font-size:13px">${hh72Agree?'✓ STRONG CONFIRMATION — BOTH ENGINES AGREE':'⚠ ENGINES DISAGREE'}</div>
+            <div class="hh950-agreement" style="${hh953QualifiedSelection?'':'display:none;'}margin:5px 0;padding:6px 9px;border-left:3px solid ${hh72Agree?'#176a36':'#a36a1c'};background:${hh72Agree?'#eaf4ed':'#fff6e7'};font-weight:850;font-size:13px">${hh72Agree?'✓ STRONG CONFIRMATION — BOTH ENGINES AGREE':'⚠ ENGINES DISAGREE'}</div>
             <div class="hh-review" style="display:none"><b>RACE SCREEN: ${hh889FocusStatus}</b></div>
             ${hh944MaidenChallengerFlag(scored,activeField,modelLeader.horse)}
             <div class="hh74-ai" data-race="${safe(raceNum)}" data-ai2-name="${safe('#'+modelLeader.horse.post+' '+modelLeader.horse.horse)}" data-ai2-horse="${safe(modelLeader.horse.horse)}" style="display:none;margin:9px 0;padding:10px;border:1px solid #cfc2a0;border-radius:7px;background:#fff">
