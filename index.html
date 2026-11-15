@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.78 · November 15, 2026 — Two-Horse Evidence Decision</title>
+<title>Horse Handicap v9.80 · November 15, 2026 — Committed Evidence Picks</title>
 
 <style>
 :root{
@@ -1463,7 +1463,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.78 · Nov 15, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.80 · Nov 15, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -1471,7 +1471,7 @@ BRIS Single File parser + field-relative win-ranking engine using Prime Power, B
 
 <main>
 <details id="hh935ReleaseNotes" style="margin:0 0 14px;border:1px solid #CFC2A0;border-radius:8px;background:#fff;overflow:hidden">
-<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.78 · Pick vs Rival + Tap Race Facts · AI(1) v4.79</summary>
+<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.80 · Final Evidence Decision + Race Facts · AI(1) v4.79</summary>
 <div style="padding:0 12px 12px;font-size:12px;line-height:1.6">
 <b>Pick:</b> compare AI(1) and AI(2), the strongest challenger, and the recorded For/Against facts. <b>Confidence:</b> treat a low tier or a disagreement as a reason to review, not as proof of another winner. <b>Bet:</b> obey explicit NO BET and readiness warnings; do not infer a wager from a percentage alone. <b>Historical results:</b> experimental RS/CS reversal rules have not shown a reliable forward advantage and are not activated in this release.
 <br><b>Engine:</b> embedded Overlay Board v4.79 preserved exactly; original AI(2) logic and all race-data imports retained. This release adds a prominent historical RS/AI(2) agreement flag without changing betting decisions or percentages. It also separates race uncertainty from horse-specific condition flags, clarifies numerical-leader disagreements, and makes class disagreement statistics descriptive only. No claim of improved prediction accuracy.
@@ -8145,7 +8145,7 @@ function hh977Verdict(race,r,aiCard,condition,ai2Condition){
     !rivalH2H&&odds!==null&&odds>=1.5);
   let reason='No supported win wager';
   if(!pick)reason='Selection unavailable';
-  else if(originalOK)reason='Original betting qualifications met';
+  else if(originalOK)reason='Evidence selection supported';
   else if(experimental)reason='Second look: RS/CS #1, best last speed and Prime Power; engines agree';
   else if(repeated)reason='Career maiden: '+number(chosen.starts)+' starts without a win';
   else if(maidenMany)reason='Multiple first-time starters';
@@ -9074,7 +9074,7 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v9.73</h2>
+      <h2>Help — Horse Handicap v9.80</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.79's actual final selection, after its review of race evidence and warnings. Its selection is the win-bet horse, otherwise a qualifying figure-leader bet, otherwise the horse with the highest reviewed chance.</p>
         <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; it is <b>not</b> a calibrated win probability.</p>
@@ -11086,7 +11086,7 @@ document.addEventListener("click",e=>{
    if(conditions)line(section,'Conditions:',conditions.textContent.trim().replace(/\s+/g,' '));
    line(section,'AI(1) final pick:','#'+post+' '+ai1name+' · ML '+(chosen.ml||'—')+' · chance '+formatPct(chosen.chance));
    const finalCompact=card.querySelector('.hh974-compact');
-   if(finalCompact?.dataset?.evidencePick){line(section,'Evidence-based final selection:',finalCompact.dataset.evidencePick+' — two-horse comparison in Race Facts');}
+   if(finalCompact?.dataset?.evidencePick){line(section,'Final evidence-backed BET selection:',finalCompact.dataset.evidencePick+' — two-horse comparison in Race Facts');}
    if(finalCompact?.dataset?.finalBet){
      line(section,'FINAL BET / PASS:',finalCompact.dataset.finalBet+(finalCompact.dataset.finalResearch==='1'?' — EXPERIMENTAL SECOND LOOK (not independently validated)':'')+' — '+(finalCompact.dataset.finalReason||''));
    }
@@ -11097,7 +11097,7 @@ document.addEventListener("click",e=>{
      if(activeForHold.length){
        const evHold=hh970Evidence(activeForHold,lowerRankFieldV822(calculateProbabilities(activeForHold),activeForHold));
        if((evHold?.challengeHold || evHold?.careerMaidenAlert) && /\b(PLAY|WIN BET|BET CANDIDATE)\b/i.test(sm.planHeading||'')){
-         line(section,'v9.75 FINAL WAGER STATUS:','HOLD — repeated career maiden; review before wagering. Ordinary challenger observations do not automatically veto engine bets.');
+         line(section,'Historical caution (not final wager):','HOLD — repeated career maiden; review before wagering. Ordinary challenger observations do not automatically veto engine bets.');
        }
      }
    }catch(err){line(section,'Evidence gate:','Unavailable — cannot affirm independent wager approval.');}
@@ -11128,7 +11128,7 @@ document.addEventListener("click",e=>{
    const cards=candidates().filter(x=>sel.value==='all'||raceOf(x)===sel.value);
    if(!cards.length){alert('Compute the race card first, then open Decisions.');return false;}
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.78 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.80 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.79 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    return true;
@@ -11178,9 +11178,9 @@ document.addEventListener("click",e=>{
 })();
 </script>
 <script id="hh978-twohorse-decision">
-/* v9.78: Evidence is descriptive and the two-horse screen is an EXPLICIT experimental
+/* v9.80: Evidence is descriptive and the two-horse screen is an EXPLICIT experimental
    decision aid, not a statistically calibrated prediction or a new betting rule.
-   The unchanged AI engines and original wager protections remain authoritative. */
+   The unchanged AI engines remain as inputs; the displayed final selection is made by the evidence comparison. */
 (function(){
  const txt=x=>String(x??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  const n=x=>{const z=Number(x);return Number.isFinite(z)?z:0};
@@ -11250,11 +11250,12 @@ document.addEventListener("click",e=>{
    if(a.careerStarts>=4&&b.careerStarts>=4&&a.success-b.success>=.12)wins.push('higher demonstrated win rate');
    if(a.wins>b.wins)wins.push('more recent wins');
    if(a.last>b.last+4)wins.push('stronger latest speed');
+   if(a.avg3n>0&&b.avg3n>0&&a.avg3n-b.avg3n>=4)wins.push('stronger three-race speed average');
    if(a.item.improving&&!b.item.improving)wins.push('improving speed figures');
    if(a.item.rebound&&!b.item.rebound)wins.push('recent speed rebound');
    if(a.itm>=3&&b.itm<=1)wins.push('more consistent recent finishes');
    if(a.item.facts.some(t=>t.includes('placed on today'))&&!b.item.facts.some(t=>t.includes('placed on today')))wins.push('proven today’s surface');
-   if(a.pace>=2&&b.pace===0)wins.push('a stronger early pace position');
+   if(a.pace>=2&&a.pace-b.pace>=2)wins.push('a stronger early pace position');
    const h2=meeting(a.h,b.h);
    if(h2?.won)wins.unshift('won their prior head-to-head');
    if(wins.length===0){
@@ -11293,7 +11294,7 @@ document.addEventListener("click",e=>{
    <tr><td>Recent H2H</td><td colspan="2">${m?'Prior '+txt(m.date)+' race '+txt(m.race)+': '+(m.won?txt(a.h.horse):txt(b.h.horse))+' finished ahead ('+txt(m.pa)+' vs '+txt(m.pb)+')':'No verified direct meeting in available PPs'}</td></tr>
    </tbody></table>
    <p><b>Strongest support:</b> ${txt(facts(a))}. <b>Rival’s case:</b> ${txt(facts(b))}.</p>
-   <p><b>Selection method:</b> full-field comparison including contenders and questionable runners, then the strongest two by a descriptive evidence screen. The numbers are heuristic comparison points, NOT calibrated odds. No automatic win-bet approval or claim of historical validation.</p></div>`;
+   <p><b>Selection method:</b> full-field comparison including contenders and questionable runners, then the strongest two by a descriptive evidence screen. The numbers are heuristic comparison points, NOT calibrated odds. BET indicates a research-based selection, not a calibrated winning probability or proven positive-return wager.</p></div>`;
  }
  function compute(race,r,card){
    const field=(typeof rows!=='undefined'&&Array.isArray(rows)?rows:[]).filter(h=>String(h.race)===String(race)&&!h.scratched);
@@ -11325,17 +11326,33 @@ document.addEventListener("click",e=>{
    if(!summary)return;
    const v=hh977Verdict(race,r,aiCard,condition,ai2Condition);
    const h=summary.chosen.h;
-   // An evidence-only switch is a selection to REVIEW against history, never a newly approved BET.
-   const canBet=!!(v.bet&&!summary.changed);
-   compact.dataset.finalBet=canBet?'BET':'PASS';
-   compact.dataset.finalReason=summary.changed?'Evidence choice is experimental — wager not approved':v.reason;
-   compact.dataset.evidencePick='#'+h.post+' '+h.horse;
-   compact.innerHTML=`<div class="hh974-top"><span>RACE ${txt(race)}</span><strong class="hh974-status ${canBet?'hh974-bet':'hh974-pass'}">${canBet?'BET':'PASS'}</strong></div>
-   <div class="hh974-horse">#${txt(h.post)} ${txt(h.horse)}</div>
-   <div class="hh978-rival">vs #${txt(summary.opponent.h.post)} ${txt(summary.opponent.h.horse)}</div>
-   <div class="hh978-why">${txt(summary.explanation)}${summary.changed?' · evidence selection (unvalidated)':''}</div>
-   <div class="hh974-reason">${txt(summary.changed?'No automatic bet on an unvalidated reversal':v.reason)}</div>
-   <button type="button" class="hh978-facts-link" data-hh978-facts="${txt(race)}">Race Facts · Why this pick</button>`;
+   // v9.80: Assess the horse FIRST, then make one consistent final decision.
+   // Evidence is used to select, never to turn a named pick into an automatic PASS.
+   // A speculative field (many untested debut runners) or missing usable form
+   // is NO PICK, with no horse recommendation. All supported selections are BET.
+   const maidenUnknown=!!(r?.summary&&typeof hh27MaidenSafety==='function'&&hh27MaidenSafety(r.summary));
+   const repeatedMaiden=summary.chosen.careerStarts>=8&&summary.chosen.careerWins===0;
+   const missingEvidence=!summary.chosen.pp.length&&!summary.chosen.careerWins;
+   const significantConcern=summary.chosen.item.cautions.some(z=>/layoff|declining/i.test(z))&&summary.chosen.merit<=summary.opponent.merit;
+   const noPick=maidenUnknown||repeatedMaiden||missingEvidence||significantConcern;
+   const bet=!noPick;
+   const wagerReason=maidenUnknown?'Unrated first-time starters make the field uncertain':
+      repeatedMaiden?'Repeatedly beaten maiden; no supported win choice':
+      missingEvidence?'No comparable racing form':
+      significantConcern?'Readiness risk without a clear advantage':'';
+   compact.dataset.finalBet=bet?'BET':'NO PICK';
+   compact.dataset.finalResearch=summary.changed?'1':'0';
+   compact.dataset.finalReason=bet?summary.explanation:wagerReason;
+   compact.dataset.evidencePick=bet?'#'+h.post+' '+h.horse:'';
+   compact.innerHTML=bet?
+     `<div class="hh974-top"><span>RACE ${txt(race)}</span><strong class="hh974-status hh974-bet">BET</strong></div>
+      <div class="hh974-horse">#${txt(h.post)} ${txt(h.horse)}</div>
+      <div class="hh978-rival">Over #${txt(summary.opponent.h.post)} ${txt(summary.opponent.h.horse)}</div>
+      <div class="hh978-why"><b>Why:</b> ${txt(summary.explanation)}</div>
+      <button type="button" class="hh978-facts-link" data-hh978-facts="${txt(race)}">Race Facts · Full comparison</button>`:
+     `<div class="hh974-top"><span>RACE ${txt(race)}</span><strong class="hh974-status hh974-pass">NO PICK</strong></div>
+      <div class="hh974-reason">${txt(wagerReason)}</div>
+      <button type="button" class="hh978-facts-link" data-hh978-facts="${txt(race)}">Race Facts · Why no pick</button>`;
    const facts=document.getElementById('facts-race-'+race);
    if(facts){
      facts.querySelectorAll('.hh978-facts').forEach(x=>x.remove());
