@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.75 · November 15, 2026 — Bet Gate Repair</title>
+<title>Horse Handicap v9.76 · November 15, 2026 — Decisions and Second Look</title>
 
 <style>
 :root{
@@ -1436,6 +1436,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 .hh974-status{font:900 12px ui-monospace,monospace;padding:4px 10px;border-radius:5px}
 .hh974-bet{background:#dceede;color:#17522e}
 .hh974-pass{background:#f2e8e4;color:#8b3029}
+.hh974-review{background:#fff0cc;color:#765200}
 .hh974-horse{font-size:19px;font-weight:900;margin:5px 0 3px;overflow-wrap:anywhere}
 .hh974-reason{font-size:12px;color:#526158;overflow-wrap:anywhere}
 #bestSection .bestof > .small-note{display:none!important}
@@ -1450,7 +1451,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.75 · Nov 15, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.76 · Nov 15, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -1458,7 +1459,7 @@ BRIS Single File parser + field-relative win-ranking engine using Prime Power, B
 
 <main>
 <details id="hh935ReleaseNotes" style="margin:0 0 14px;border:1px solid #CFC2A0;border-radius:8px;background:#fff;overflow:hidden">
-<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.75 · Clear BET / PASS · AI(1) v4.79</summary>
+<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.76 · Clear BET / REVIEW / PASS · AI(1) v4.79</summary>
 <div style="padding:0 12px 12px;font-size:12px;line-height:1.6">
 <b>Pick:</b> compare AI(1) and AI(2), the strongest challenger, and the recorded For/Against facts. <b>Confidence:</b> treat a low tier or a disagreement as a reason to review, not as proof of another winner. <b>Bet:</b> obey explicit NO BET and readiness warnings; do not infer a wager from a percentage alone. <b>Historical results:</b> experimental RS/CS reversal rules have not shown a reliable forward advantage and are not activated in this release.
 <br><b>Engine:</b> embedded Overlay Board v4.79 preserved exactly; original AI(2) logic and all race-data imports retained. This release adds a prominent historical RS/AI(2) agreement flag without changing betting decisions or percentages. It also separates race uncertainty from horse-specific condition flags, clarifies numerical-leader disagreements, and makes class disagreement statistics descriptive only. No claim of improved prediction accuracy.
@@ -8089,40 +8090,58 @@ function hh929Review(r,card){
 }
 /* v9.74: One pick, one wagering action, one short explanation.
    Existing prediction, pre-race review and report remain unchanged. */
+/* v9.76: Separate a high-quality *selection* from an approved *wager*.
+   REVIEW is NOT a second BET: it only highlights a pre-race, corroborated
+   alternative to the legacy no-figure-favourite skip. No quota or backfit. */
 function hh974UpdateCompact(race,r,aiCard,condition,ai2Condition){
   const wrap=aiCard?.closest('.best-pick');
   const target=wrap?.querySelector('.hh974-compact');
   if(!target)return;
   const safeText=x=>String(x??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  const record=(typeof rows!=='undefined'&&Array.isArray(rows)?rows:[]).filter(h=>String(h.race)===String(race)&&!h.scratched);
-  let evidence=null;
-  if(record.length){try{evidence=hh970Evidence(record,lowerRankFieldV822(calculateProbabilities(record),record));}catch(e){/* no fabricated evidence */}}
+  const field=(typeof rows!=='undefined'&&Array.isArray(rows)?rows:[]).filter(h=>String(h.race)===String(race)&&!h.scratched);
   const finalPick=r?.final?.horse?r.final:r?.summary?.selection?.horse?r.summary.selection:r?.top?.horse?r.top:null;
-  const horse=finalPick?.horse||null;
-  const post=finalPick?.post||'?';
+  const horse=finalPick?.horse||null,post=finalPick?.post||'?';
   const plan=String(r?.summary?.planHeading||r?.status||'');
   const originalBet=/PLAY\s*[-–]\s*WIN BET|\bBET\s*[-–:]\s*WIN\b/i.test(plan);
   const veto=!!(condition?.pass||ai2Condition?.pass||condition?.unverified||ai2Condition?.unverified);
   const unreadable=!!r?.summary?.warnings?.unreadable;
   const maidenMany=!!(r?.summary&&hh27MaidenSafety(r.summary));
-  const challenge=!!evidence?.challengeHold;
-  const bet=!!(horse&&originalBet&&!veto&&!unreadable&&!maidenMany&&!challenge);
-  let reason='No qualified wager under the existing rules';
-  // v9.75: show the actual BET/PASS rationale first; never use a mere
-  // exception/other-horse observation as a default reason to PASS.
-  if(!horse)reason='Engine pick unavailable';
-  else if(veto)reason=String((condition?.concerns||[]).concat(ai2Condition?.concerns||[])[0]||'Horse-specific readiness concern');
+  const softNoStandout=unreadable&&/no standout/i.test(String(r?.summary?.warnings?.unreadable||''))&&!/case|unreadable|ineligible|maiden/i.test(String(r?.summary?.warnings?.unreadable||''));
+  let ev=null,caseFact=null;
+  if(field.length){
+    try{
+      const scored=lowerRankFieldV822(calculateProbabilities(field),field);
+      ev=hh970Evidence(field,scored);
+      const h=field.find(x=>String(x.post)===String(post)&&String(x.horse).toLowerCase().replace(/[^a-z0-9]/g,'')===String(horse).toLowerCase().replace(/[^a-z0-9]/g,''));
+      if(h)caseFact=hh64CaseBoard(scored,field).get(String(h.id));
+    }catch(e){/* Data absent: do not invent a REVIEW or BET */}
+  }
+  const repeated=!!ev?.leader?.repeatedMaiden;
+  const bet=!!(horse&&originalBet&&!veto&&!unreadable&&!maidenMany&&!repeated);
+  // This is an additional independent shortlist, not a new wagering rule.
+  // Requires strong RS/CS consensus, positive case evidence, established form,
+  // and rejection solely from the general 'no figure favourite' screen.
+  const exceptional=!!(horse&&!bet&&!veto&&!maidenMany&&!repeated&&(!unreadable||softNoStandout)&&
+    /no figure favourite/i.test(String(r?.summary?.planWhy||'')+' '+plan)&&
+    caseFact&&caseFact.rsRank===1&&caseFact.csRank===1&&caseFact.F.length>=5&&caseFact.A.length<=1&&
+    hh27SamePick(finalPick,hh27AI2Pick(aiCard))&&
+    ev?.leader&&ev.leader.ppCount>=4&&ev.leader.competitive>=4&&
+    !ev.leader.cautions.some(x=>/layoff|declin/i.test(x)));
+  const status=bet?'BET':exceptional?'REVIEW':'PASS';
+  let reason='No qualified wager under the current rules';
+  if(!horse)reason='Selection unavailable';
+  else if(bet)reason='Original win-bet requirements met';
+  else if(exceptional)reason='Strong RS/CS and recent form; price and rival review required';
+  else if(repeated)reason='Repeated maiden: '+ev.leader.careerStarts+' starts without a win';
   else if(maidenMany)reason='Multiple first-time starters';
+  else if(veto)reason=String((condition?.concerns||[]).concat(ai2Condition?.concerns||[])[0]||'Readiness concern');
   else if(unreadable)reason='Race lacks a reliable advantage';
-  else if(evidence?.careerMaidenAlert)reason='Repeated maiden: '+evidence.leader.careerStarts+' starts, no wins';
-  else if(bet)reason='Original win-bet qualifications met';
-  else if(plan&&!/PLAY\s*[-–]\s*WIN BET/i.test(plan))reason=plan.replace(/^(?:SKIP|PASS|NO WIN BET)\s*[-–:]?\s*/i,'').slice(0,105)||reason;
-  else if(!bet)reason='No qualifying wager under the original rules';
-  const status=bet?'BET':'PASS';
-  target.innerHTML='<div class="hh974-top"><span>RACE '+safeText(race)+'</span><strong class="hh974-status '+(bet?'hh974-bet':'hh974-pass')+'">'+status+'</strong></div>'+
-    '<div class="hh974-horse">'+(horse?'#'+safeText(post)+' '+safeText(horse):'No selection available')+'</div>'+
+  else if(plan)reason=plan.replace(/^(?:SKIP|PASS|NO WIN BET)\s*[-–:]?\s*/i,'').slice(0,90)||reason;
+  target.innerHTML='<div class="hh974-top"><span>RACE '+safeText(race)+'</span><strong class="hh974-status '+(bet?'hh974-bet':exceptional?'hh974-review':'hh974-pass')+'">'+status+'</strong></div>'+ 
+    '<div class="hh974-horse">'+(horse?'#'+safeText(post)+' '+safeText(horse):'No selection available')+'</div>'+ 
     '<div class="hh974-reason">'+safeText(reason)+'</div>';
 }
+
 function hh74Refresh(){
   const cards=[...document.querySelectorAll('#bestSection .hh74-ai')];
   let agree=0,disagree=0,unknown=0,qualified=0,twoHorse=0;
@@ -10922,7 +10941,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.75 · November 15, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.76 · November 15, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
 
 <script>
 (function(){
@@ -11077,7 +11096,7 @@ document.addEventListener("click",e=>{
    const cards=candidates().filter(x=>sel.value==='all'||raceOf(x)===sel.value);
    if(!cards.length){alert('Compute the race card first, then open Decisions.');return false;}
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.73 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.76 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.79 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    return true;
