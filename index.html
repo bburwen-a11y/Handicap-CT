@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.80 · November 15, 2026 — Committed Evidence Picks</title>
+<title>Horse Handicap v9.81 · November 16, 2026 — Committed Evidence Picks</title>
 
 <style>
 :root{
@@ -1463,7 +1463,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.80 · Nov 15, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.81 · Nov 16, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -1471,7 +1471,7 @@ BRIS Single File parser + field-relative win-ranking engine using Prime Power, B
 
 <main>
 <details id="hh935ReleaseNotes" style="margin:0 0 14px;border:1px solid #CFC2A0;border-radius:8px;background:#fff;overflow:hidden">
-<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.80 · Final Evidence Decision + Race Facts · AI(1) v4.79</summary>
+<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.81 · Final Evidence Decision + Race Facts · AI(1) v4.79</summary>
 <div style="padding:0 12px 12px;font-size:12px;line-height:1.6">
 <b>Pick:</b> compare AI(1) and AI(2), the strongest challenger, and the recorded For/Against facts. <b>Confidence:</b> treat a low tier or a disagreement as a reason to review, not as proof of another winner. <b>Bet:</b> obey explicit NO BET and readiness warnings; do not infer a wager from a percentage alone. <b>Historical results:</b> experimental RS/CS reversal rules have not shown a reliable forward advantage and are not activated in this release.
 <br><b>Engine:</b> embedded Overlay Board v4.79 preserved exactly; original AI(2) logic and all race-data imports retained. This release adds a prominent historical RS/AI(2) agreement flag without changing betting decisions or percentages. It also separates race uncertainty from horse-specific condition flags, clarifies numerical-leader disagreements, and makes class disagreement statistics descriptive only. No claim of improved prediction accuracy.
@@ -9074,7 +9074,7 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v9.80</h2>
+      <h2>Help — Horse Handicap v9.81</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.79's actual final selection, after its review of race evidence and warnings. Its selection is the win-bet horse, otherwise a qualifying figure-leader bet, otherwise the horse with the highest reviewed chance.</p>
         <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; it is <b>not</b> a calibrated win probability.</p>
@@ -10967,7 +10967,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.77 · November 15, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.77 · November 16, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
 
 <script>
 (function(){
@@ -11128,7 +11128,7 @@ document.addEventListener("click",e=>{
    const cards=candidates().filter(x=>sel.value==='all'||raceOf(x)===sel.value);
    if(!cards.length){alert('Compute the race card first, then open Decisions.');return false;}
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.80 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.81 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.79 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    return true;
@@ -11178,7 +11178,7 @@ document.addEventListener("click",e=>{
 })();
 </script>
 <script id="hh978-twohorse-decision">
-/* v9.80: Evidence is descriptive and the two-horse screen is an EXPLICIT experimental
+/* v9.81: Evidence is descriptive and the two-horse screen is an EXPLICIT experimental
    decision aid, not a statistically calibrated prediction or a new betting rule.
    The unchanged AI engines remain as inputs; the displayed final selection is made by the evidence comparison. */
 (function(){
@@ -11294,6 +11294,7 @@ document.addEventListener("click",e=>{
    <tr><td>Recent H2H</td><td colspan="2">${m?'Prior '+txt(m.date)+' race '+txt(m.race)+': '+(m.won?txt(a.h.horse):txt(b.h.horse))+' finished ahead ('+txt(m.pa)+' vs '+txt(m.pb)+')':'No verified direct meeting in available PPs'}</td></tr>
    </tbody></table>
    <p><b>Strongest support:</b> ${txt(facts(a))}. <b>Rival’s case:</b> ${txt(facts(b))}.</p>
+   <p><b>Field uncertainty:</b> Multiple first-time starters are not a blanket veto on a form-based selection; their unknown capabilities still limit confidence.</p>
    <p><b>Selection method:</b> full-field comparison including contenders and questionable runners, then the strongest two by a descriptive evidence screen. The numbers are heuristic comparison points, NOT calibrated odds. BET indicates a research-based selection, not a calibrated winning probability or proven positive-return wager.</p></div>`;
  }
  function compute(race,r,card){
@@ -11326,7 +11327,7 @@ document.addEventListener("click",e=>{
    if(!summary)return;
    const v=hh977Verdict(race,r,aiCard,condition,ai2Condition);
    const h=summary.chosen.h;
-   // v9.80: Assess the horse FIRST, then make one consistent final decision.
+   // v9.81: Assess the horse FIRST, then make one consistent final decision.
    // Evidence is used to select, never to turn a named pick into an automatic PASS.
    // A speculative field (many untested debut runners) or missing usable form
    // is NO PICK, with no horse recommendation. All supported selections are BET.
@@ -11334,12 +11335,16 @@ document.addEventListener("click",e=>{
    const repeatedMaiden=summary.chosen.careerStarts>=8&&summary.chosen.careerWins===0;
    const missingEvidence=!summary.chosen.pp.length&&!summary.chosen.careerWins;
    const significantConcern=summary.chosen.item.cautions.some(z=>/layoff|declining/i.test(z))&&summary.chosen.merit<=summary.opponent.merit;
-   const noPick=maidenUnknown||repeatedMaiden||missingEvidence||significantConcern;
+   // v9.81: First-time starters are uncertainty, NOT a veto on a demonstrated
+   // form horse. This removes the blanket maidenUnknown override that blocked
+   // #3 THE SECRET ANA despite the strongest available raced-horse evidence.
+   // Only horse-specific reasons can withhold a recommendation.
+   const noPick=repeatedMaiden||missingEvidence||significantConcern;
    const bet=!noPick;
-   const wagerReason=maidenUnknown?'Unrated first-time starters make the field uncertain':
-      repeatedMaiden?'Repeatedly beaten maiden; no supported win choice':
+   const wagerReason=repeatedMaiden?'Repeatedly beaten maiden; no supported win choice':
       missingEvidence?'No comparable racing form':
       significantConcern?'Readiness risk without a clear advantage':'';
+   const fieldCaution=maidenUnknown?' · First-time starters create unmeasured competition':'';
    compact.dataset.finalBet=bet?'BET':'NO PICK';
    compact.dataset.finalResearch=summary.changed?'1':'0';
    compact.dataset.finalReason=bet?summary.explanation:wagerReason;
@@ -11348,7 +11353,7 @@ document.addEventListener("click",e=>{
      `<div class="hh974-top"><span>RACE ${txt(race)}</span><strong class="hh974-status hh974-bet">BET</strong></div>
       <div class="hh974-horse">#${txt(h.post)} ${txt(h.horse)}</div>
       <div class="hh978-rival">Over #${txt(summary.opponent.h.post)} ${txt(summary.opponent.h.horse)}</div>
-      <div class="hh978-why"><b>Why:</b> ${txt(summary.explanation)}</div>
+      <div class="hh978-why"><b>Why:</b> ${txt(summary.explanation)}${txt(fieldCaution)}</div>
       <button type="button" class="hh978-facts-link" data-hh978-facts="${txt(race)}">Race Facts · Full comparison</button>`:
      `<div class="hh974-top"><span>RACE ${txt(race)}</span><strong class="hh974-status hh974-pass">NO PICK</strong></div>
       <div class="hh974-reason">${txt(wagerReason)}</div>
