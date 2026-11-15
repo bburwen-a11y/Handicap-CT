@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.68 · November 14, 2026 — Three-Contender Review</title>
+<title>Horse Handicap v9.70 · November 15, 2026 — Three-Contender Review</title>
 
 <style>
 :root{
@@ -1351,7 +1351,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 @media print{
  @page{size:letter;margin:12mm 12mm 14mm}
  body.hh922-print-pdf #hh922PdfReport{font:10pt Arial,sans-serif!important;color:#151515!important;padding:0!important;position:absolute!important;top:0;left:0;width:100%!important}
- body.hh922-print-pdf #hh922PdfReport h1{font-size:17pt;margin:0 0 4px}
+ body.hh922-print-pdf #hh922PdfReport h1{font-size:17pt;margin:0 0 4px;color:#111!important}
  body.hh922-print-pdf #hh922PdfReport h2{font-size:13pt;margin:0 0 7px;border-top:2px solid #173e30;padding-top:9px}
  body.hh922-print-pdf #hh922PdfReport .hh923-stamp{font-size:9pt;color:#555;margin:0 0 16px}
  body.hh922-print-pdf #hh922PdfReport .hh923-race{break-inside:auto!important;page-break-inside:auto!important;margin:0 0 15px;padding:0;border:0}
@@ -1429,7 +1429,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.68 · Nov 14, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.70 · Nov 15, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -1437,7 +1437,7 @@ BRIS Single File parser + field-relative win-ranking engine using Prime Power, B
 
 <main>
 <details id="hh935ReleaseNotes" style="margin:0 0 14px;border:1px solid #CFC2A0;border-radius:8px;background:#fff;overflow:hidden">
-<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.68 · AI(1) v4.77 + Belmont-Validated RS/AI(2) Flag</summary>
+<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.70 · AI(1) v4.77 + Belmont-Validated RS/AI(2) Flag</summary>
 <div style="padding:0 12px 12px;font-size:12px;line-height:1.6">
 <b>Pick:</b> compare AI(1) and AI(2), the strongest challenger, and the recorded For/Against facts. <b>Confidence:</b> treat a low tier or a disagreement as a reason to review, not as proof of another winner. <b>Bet:</b> obey explicit NO BET and readiness warnings; do not infer a wager from a percentage alone. <b>Historical results:</b> experimental RS/CS reversal rules have not shown a reliable forward advantage and are not activated in this release.
 <br><b>Engine:</b> embedded Overlay Board v4.77 preserved exactly; original AI(2) logic and all race-data imports retained. This release adds a prominent historical RS/AI(2) agreement flag without changing betting decisions or percentages. It also separates race uncertainty from horse-specific condition flags, clarifies numerical-leader disagreements, and makes class disagreement statistics descriptive only. No claim of improved prediction accuracy.
@@ -1642,8 +1642,11 @@ Compute Race Card →
  <div id="hh922PdfOptions" style="display:none;margin-top:12px;">
   <label for="hh922RaceSelect" style="font-weight:700;">Races to include</label>
   <select id="hh922RaceSelect" style="font-size:15px;max-width:230px;padding:9px;"><option value="all">All races</option></select>
-  <button id="hh922PrintNow" type="button" style="padding:10px 14px;margin-left:6px;background:#d9a73b;color:#1e1b14;border:0;border-radius:5px;font-weight:700;">Open Print / PDF</button>
-  <p style="font-size:12px;margin:8px 0 0;">iPhone: use the print preview's Share option, then Save to Files. PDF includes every runner, race decisions, chance, RS, CS, FOR/AGAINST and warnings.</p>
+  <button id="hh922PrintNow" type="button" style="padding:10px 14px;margin-left:6px;background:#d9a73b;color:#1e1b14;border:0;border-radius:5px;font-weight:700;">Print</button>
+  <button id="hh969CopyReport" type="button" style="padding:10px 14px;margin:6px 0 0;background:#15332a;color:white;border:0;border-radius:5px;font-weight:700;">Copy Report</button>
+  <button id="hh969SaveReport" type="button" style="padding:10px 14px;margin:6px;background:#315a7d;color:white;border:0;border-radius:5px;font-weight:700;">Save Printable Report</button>
+  <div id="hh969ReportStatus" role="status" aria-live="polite" style="font-size:12px;font-weight:700;margin-top:6px;"></div>
+  <p style="font-size:12px;margin:8px 0 0;">iPhone: if Print does not open, choose Copy Report to paste into Notes, email, or this chat. Save Printable Report creates an offline HTML file that opens in Safari and can be printed from Share. Includes every runner and each race decision.</p>
  </div>
 </div>
 <section id="hh922PdfReport" aria-hidden="true"></section>
@@ -4286,17 +4289,17 @@ function rankConsensusV773(horse,field){
     score += (tjComboStrength(horse)-.5)*.012;
     score += (postPositionEvidence(horse,active).score-.5)*.02;
 
-    // v9.68 REVIEW FLAGS: historical ablation did not support subtracting points for these flags.
+    // v9.70 REVIEW FLAGS: historical ablation did not support subtracting points for these flags.
     const penaltyFlags=modelPenaltyFlagsV837(horse,active);
     horse._modelPenaltyFlagsV837=penaltyFlags;
     const penaltyPoints=penaltyFlags.reduce((sum,f)=>sum+number(f.points),0);
-    // v9.68: condition flag retained for review, but no longer deducts model score (100-race retrospective test).
+    // v9.70: condition flag retained for review, but no longer deducts model score (100-race retrospective test).
 
-    // v9.68 REVIEW FLAGS: fade signals are shown as cautions, with no automatic score deduction.
+    // v9.70 REVIEW FLAGS: fade signals are shown as cautions, with no automatic score deduction.
     const fadeFlags=fadeSignalsV838(horse,active);
     horse._fadeSignalsV838=fadeFlags;
     const fadePoints=fadeFlags.reduce((sum,f)=>sum+number(f.points),0);
-    // v9.68: fade flags retained for review, but no longer deduct model score (100-race retrospective test).
+    // v9.70: fade flags retained for review, but no longer deduct model score (100-race retrospective test).
 
     const quality=dataQuality(horse);
     if(quality.label==='POOR') score-=.045;
@@ -6502,10 +6505,84 @@ function hh887ChallengerStrengths(field,scored){
 }
 
 
-/* v9.68: Three-contender REVIEW, not an automatic win-bet override.
+/* v9.70: Three-contender REVIEW, not an automatic win-bet override.
    Retain the existing numerical leader; two challengers chosen using only pre-race RS and M/L rankings.
    Independent Sep-Oct filtered replay: 134 winners in 183 three-horse reviews, versus 78 original single wins.
    This is shortlist coverage, NOT a validated single-selection improvement. */
+
+/* v9.70 TODAY'S EVIDENCE CHECK — experimental selection, not wagering logic.
+   Historical 17-race comparison was retrospective and small. Never use results here.
+   Components are named facts, not invented probabilities or opaque point scores. */
+function hh970Evidence(field,scored){
+  const active=(field||[]).filter(h=>!h.scratched);
+  if(!active.length||!scored?.length)return null;
+  const lead=scored[0].horse;
+  const prime=[...active].filter(h=>number(h.primePower||h.score)>0).sort((a,b)=>number(b.primePower||b.score)-number(a.primePower||a.score));
+  const last=[...active].filter(h=>number(h.lastSpeed)>0).sort((a,b)=>number(b.lastSpeed)-number(a.lastSpeed));
+  const rank=(a,h)=>a.findIndex(x=>String(x.id)===String(h.id))+1;
+  const all=[];
+  for(const item of scored){
+    const h=item.horse;const pp=(h.ppRaces||[]).filter(p=>number(p.fin)>0&&number(p.fin)<90).slice(0,5);
+    const competitive=pp.filter(p=>{const f=number(p.fin),n=number(p.entrants);return f<=3||(n>=4&&f<=Math.ceil(n*.40));}).length;
+    const speed=pp.map(p=>number(p.speed));
+    const improving=speed.length>=3&&speed.slice(0,3).every(x=>x>0)&&speed[0]>speed[1]&&speed[1]>speed[2];
+    const rebound=speed.length>=2&&speed[0]>0&&speed[1]>0&&speed[0]-speed[1]>=5;
+    const pr=rank(prime,h),lr=rank(last,h);
+    const same=(pp||[]).filter(p=>sameSurface(h.currentSurface,p.surf));
+    const surfOK=same.length>=2&&same.some(p=>number(p.fin)>0&&number(p.fin)<=3);
+    const recentWorks=eligibleWorkouts(h);
+    const facts=[];const cautions=[];
+    if(pr>0&&pr<=3)facts.push('Prime Power #'+pr);
+    if(lr===1&&number(h.lastSpeed)>0)facts.push('field-best last speed '+number(h.lastSpeed));
+    else if(lr>0&&lr<=3)facts.push('last speed #'+lr);
+    if(pp.length===5&&competitive===5)facts.push('competitive 5/5 recent races');
+    else if(pp.length>=3&&competitive>=3)facts.push('competitive '+competitive+'/'+pp.length+' recent races');
+    if(improving)facts.push('last three speed figures improving');
+    else if(rebound)facts.push('last speed improved '+(speed[0]-speed[1])+' points');
+    if(surfOK)facts.push('placed on today’s surface');
+    const classMove=classMoveSupportV805(h,active);
+    if(classMove.label&&classMove.label!=='SAME'&&classMove.label!=='UNKNOWN')facts.push('class '+classMove.label.toLowerCase());
+    if(recentWorks.length)facts.push(recentWorks.length+' recorded workout(s) within 30 days');
+    if(number(h.daysSinceLast)>=120)cautions.push('layoff '+number(h.daysSinceLast)+' days');
+    if(speed.length>=3&&speed.slice(0,3).every(x=>x>0)&&speed[0]<speed[1]&&speed[1]<speed[2])cautions.push('three declining speed figures');
+    if(pp.length<2)cautions.push('thin prior-race evidence');
+    const cl=classificationEvidence(item,scored,active)?.label||'UNCLASSIFIED';
+    all.push({h,rank:scored.indexOf(item)+1,pr,lr,competitive,ppCount:pp.length,improving,rebound,facts,cautions,cl});
+  }
+  const leader=all[0];
+  // A previously tested screening hypothesis: top-four, Prime Power top 3,
+  // five competitive recent races. Never infer a 100% chance from it.
+  const qualified=all.filter(x=>x.rank>1&&x.rank<=4&&x.cl==='CONTENDER'&&x.pr>0&&x.pr<=3&&x.ppCount===5&&x.competitive===5);
+  const differing=qualified.filter(x=>!(leader.ppCount===5&&leader.competitive===5&&leader.pr>0&&leader.pr<=3));
+  differing.sort((a,b)=>a.pr-b.pr||a.rank-b.rank);
+  const choice=differing[0]||leader;
+  // Prior direct meetings: check actual date/race equivalence and finish order.
+  function direct(a,b){
+    for(const pa of (a.ppRaces||[]))for(const pb of (b.ppRaces||[])){
+      if(String(pa.date||'')&&String(pa.date||'')===String(pb.date||'')&&String(pa.raceNum||'')&&String(pa.raceNum||'')===String(pb.raceNum||'')&&String(pa.track||'')===String(pb.track||'')){
+        const fa=number(pa.fin),fb=number(pb.fin);
+        if(fa>0&&fb>0&&fa!==fb)return {winner:fa<fb?a:b,date:String(pa.date),race:String(pa.raceNum),finA:fa,finB:fb};
+      }
+    }
+    return null;
+  }
+  const h2h=choice!==leader?direct(choice.h,lead):null;
+  return {leader,choice,all,h2h,changed:choice!==leader,qualified:qualified.length};
+}
+function hh970EvidenceHTML(field,scored,compact=false){
+  const ev=hh970Evidence(field,scored);if(!ev)return '';
+  const {leader,choice,all,h2h,changed}=ev;
+  const lines=[leader,...all.filter(x=>x!==leader).sort((a,b)=>{
+    const aa=(a.ppCount===5&&a.competitive===5&&a.pr<=3)?0:1;
+    const bb=(b.ppCount===5&&b.competitive===5&&b.pr<=3)?0:1;
+    return aa-bb||a.rank-b.rank;
+  }).slice(0,compact?2:3)];
+  const unique=[...new Map(lines.map(x=>[String(x.h.id),x])).values()];
+  const rows=unique.map(x=>`<div style="padding:7px 0;border-top:1px solid #d5dfda"><b>#${safe(x.h.post)} ${horseNameLinkHTML(x.h)}</b> · model #${x.rank} · ${safe(x.cl)}${x===choice?' · <b>EVIDENCE CHOICE</b>':''}<div style="margin-top:3px">${safe(x.facts.join(' · ')||'No corroborating recent facts recorded')}</div>${x.cautions.length?`<div style="color:#93400d">Caution: ${safe(x.cautions.join(' · '))}</div>`:''}</div>`).join('');
+  const meeting=h2h?`<div><b>Direct prior meeting:</b> ${safe(h2h.date)}, race ${safe(h2h.race)} — #${safe(h2h.winner.post)} finished ahead (challenger ${h2h.finA}, leader ${h2h.finB}).</div>`:'';
+  return `<section class="hh970-evidence" style="margin:9px 0;padding:11px;border:1px solid #8caaa2;border-left:4px solid #245e53;border-radius:7px;background:#f6faf8;color:#1f3930;font-size:12px;line-height:1.5"><b>TODAY'S EVIDENCE CHECK · EXPERIMENTAL</b><div style="font-size:13px;margin:5px 0"><b>${changed?'CHALLENGER FOR REVIEW':'KEEP BOARD LEADER'}:</b> #${safe(choice.h.post)} ${horseNameLinkHTML(choice.h)}</div><div style="font-size:11px;color:#4a6158">${changed?'Top-four contender with top-three Prime Power and 5/5 competitive recent races; original leader lacks that combined confirmation.':'No uniquely qualified five-race-form challenger displaces the leader under the experimental screen.'} This is a research selection, not a win probability or BET approval.</div>${rows}${meeting}<div style="font-size:10px;color:#586a62;margin-top:5px">17-race retrospective: screened rule changed four selections, recovered two winners, sacrificed zero original winners; not independently validated. Additional checks are descriptive, not untested promotion rules.</div></section>`;
+}
+
 function hh963ThreeReview(field,scored){
   const active=(field||[]).filter(h=>!h.scratched);
   if(!active.length||!scored?.length)return '';
@@ -8145,7 +8222,7 @@ function hh74Refresh(){
     return '<div id="concurrence-race-'+escapeText(race)+'" class="hh-concurrence-race" style="padding:14px 0;border-top:1px solid #ddd;scroll-margin-top:110px"><b>Race '+escapeText(race)+'</b><div>'+escapeText(result)+'</div>'+(r?.top?'<div style="font-size:12px;opacity:.75">RS #1: #'+escapeText(r.top.post)+' '+escapeText(r.top.horse)+'</div>':'')+'</div>';
   });
   const out=document.getElementById('hh74-ai-summary');
-  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.68 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>'+lines.join('');
+  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.70 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>'+lines.join('');
 
 }
 
@@ -8429,6 +8506,7 @@ function computeRaceCard(){
           ${hh886Confidence(scored,activeField,top.horse)}
 
           ${hh963ThreeReview(activeField,scored)}
+          ${hh970EvidenceHTML(activeField,scored,false)}
           ${hh64CaseSummary(hh64CaseBoard(scored,activeField))}
           ${hh67PaceVerdictHTML(activeField,top.horse,"RS rank leader")}
           ${raceFactsHTMLV806(activeField,scored)}
@@ -8544,6 +8622,7 @@ function computeRaceCard(){
                 <div class="model-prob"><button class="prob-button" onclick="openProbability('${safe(raceNum)}')" aria-label="Open probability details">MODEL #${probabilityScored.findIndex(x=>String(x.horse.id)===String(top.horse.id))+1}</button><div class="confidence">RELATIVE MODEL RANK · NOT A WIN PROBABILITY</div></div>
             </div>
             <div class="hh950-agreement" style="${hh953QualifiedSelection?'':'display:none;'}margin:5px 0;padding:6px 9px;border-left:3px solid ${hh72Agree?'#176a36':'#a36a1c'};background:${hh72Agree?'#eaf4ed':'#fff6e7'};font-weight:850;font-size:13px">${hh72Agree?'✓ STRONG CONFIRMATION — BOTH ENGINES AGREE':'⚠ ENGINES DISAGREE'}</div>
+            ${hh970EvidenceHTML(activeField,scored,true)}
             <div class="hh-review" style="display:none"><b>RACE SCREEN: ${hh889FocusStatus}</b></div>
             ${hh944MaidenChallengerFlag(scored,activeField,modelLeader.horse)}
             <div class="hh74-ai" data-race="${safe(raceNum)}" data-ai2-name="${safe('#'+modelLeader.horse.post+' '+modelLeader.horse.horse)}" data-ai2-horse="${safe(modelLeader.horse.horse)}" style="display:none;margin:9px 0;padding:10px;border:1px solid #cfc2a0;border-radius:7px;background:#fff">
@@ -8584,6 +8663,7 @@ function computeRaceCard(){
             <div style="font-size:12px;margin-top:5px">${safe(classMap[top.horse.id]?.reason||'Evidence classification unavailable.')}</div>
             ${classMap[top.horse.id]?.label!=='CONTENDER'?'<div style="font-size:12px;margin-top:7px;color:#8B2A2A"><b>Important:</b> The top-ranked model selection does not meet the separate True Contender evidence threshold. It remains the ML ×1 rank leader, but its contender qualification is disputed; it is not silently promoted.</div>':''}
           </div>
+          ${hh970EvidenceHTML(activeField,scored,false)}
           <div class="hh877-ranked" style="padding:12px;margin:10px 0;border:2px solid #315A7D;border-radius:8px;background:#fff">
             <b>TOP 4 — ALL MODEL-RANKED RUNNERS (NOT AN ELIMINATION LIST)</b>
             <div class="small-note">Rank is not the same as True Contender qualification. Every ranked runner remains visible, even when the evidence category is Questionable or Pretender.</div>
@@ -8848,7 +8928,7 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v9.68</h2>
+      <h2>Help — Horse Handicap v9.70</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.77's actual final selection, after its review of race evidence and warnings. Its selection is the win-bet horse, otherwise a qualifying figure-leader bet, otherwise the horse with the highest reviewed chance.</p>
         <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; it is <b>not</b> a calibrated win probability.</p>
@@ -10741,7 +10821,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.68 · November 14, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.77</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.70 · November 15, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.77</div>
 
 <script>
 (function(){
@@ -10833,16 +10913,58 @@ document.addEventListener("click",e=>{
    section.append(node('p','Chance is AI(1) model share, not a betting recommendation. RS: lower is better. CS: case rank. For/Ag: favourable/unfavourable facts.','hh923-foot'));
    return section;
  }
- byId('hh922PrintNow').addEventListener('click',()=>{
-   refreshOptions();const cards=candidates().filter(x=>sel.value==='all'||raceOf(x)===sel.value);
-   if(!cards.length){alert('Compute the race card before saving a PDF.');return;}
-   // Do not block iPhone printing if the embedded AI(1) bridge is slow or fails.
-   // Print all available facts, and label missing engine scores as Pending.
+ // v9.70: one shared report generator for Print, Copy, and iPhone file export.
+ // This removes dependence on the browser's print sheet to share the decisions.
+ function createReport(){
+   refreshOptions();
+   const cards=candidates().filter(x=>sel.value==='all'||raceOf(x)===sel.value);
+   if(!cards.length){alert('Compute the race card first, then open Decisions.');return false;}
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.68 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.70 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.77 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
-   document.body.classList.add('hh922-print-pdf');window.print();
+   return true;
+ }
+ function status(msg){const el=byId('hh969ReportStatus');if(el)el.textContent=msg;}
+ function reportText(){
+   // innerText requires visible elements. textContent is reliable while the print section is hidden.
+   return report.textContent.replace(/\s{3,}/g,'  ').trim();
+ }
+ byId('hh922PrintNow').addEventListener('click',()=>{
+   if(!createReport())return;
+   document.body.classList.add('hh922-print-pdf');
+   status('Print requested. If nothing opens, use Copy Report or Save Printable Report below.');
+   window.print();
+ });
+ byId('hh969CopyReport').addEventListener('click',async()=>{
+   if(!createReport())return;
+   const value=reportText();
+   try{
+     if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(value);status('Report copied. Paste it into this chat, Notes, or email.');return;}
+     throw Error('Clipboard API unavailable');
+   }catch(err){
+     // Older iOS/local Safari can deny Clipboard API. Textarea fallback runs in the click handler.
+     const t=document.createElement('textarea');t.value=value;t.readOnly=true;
+     t.style.cssText='position:fixed;left:0;top:0;width:100%;height:140px;z-index:99999;';
+     document.body.append(t);t.focus();t.select();t.setSelectionRange(0,t.value.length);
+     const copied=document.execCommand('copy');t.remove();
+     if(copied){status('Report copied. Paste it into this chat, Notes, or email.');}
+     else{
+       const popup=window.open('','_blank');
+       if(popup){const pre=popup.document.createElement('pre');pre.textContent=value;pre.style.whiteSpace='pre-wrap';popup.document.body.append(pre);}
+       status('Clipboard was blocked. Select and copy the report from the opened page.');
+     }
+   }
+ });
+ byId('hh969SaveReport').addEventListener('click',()=>{
+   if(!createReport())return;
+   const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Horse Handicap Race Report</title><style>body{font:14px Arial,sans-serif;margin:20px;color:#182920}h1{font-size:21px}h2{font-size:17px;border-top:2px solid #315a49;padding-top:14px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border-bottom:1px solid #ccc;text-align:left;padding:5px}th{background:#eaf0ec}.hh923-race{break-inside:avoid;margin-bottom:25px}.hh923-line{margin:5px 0}button{padding:9px;margin:8px 0}@media print{button{display:none}body{margin:0}@page{size:letter;margin:13mm}}</style></head><body><button onclick="window.print()">Print this report</button>'+report.innerHTML+'</body></html>';
+   const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+   const url=URL.createObjectURL(blob);
+   const a=document.createElement('a');a.href=url;a.download='Horse_Handicap_Race_Report.html';
+   document.body.append(a);a.click();a.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),30000);
+   status('Printable report saved. Open it in Safari, or share the file.');
  });
  window.addEventListener('afterprint',()=>document.body.classList.remove('hh922-print-pdf'));
 })();
