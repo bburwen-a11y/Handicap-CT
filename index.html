@@ -1427,6 +1427,21 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 #hh922PdfReport .hh971-evidence-horse .hh923-line{margin:2px 0}
 @media print{body.hh922-print-pdf #hh922PdfReport .hh971-evidence-horse{break-inside:avoid;page-break-inside:avoid}}
 </style>
+<style id="hh974-one-decision">
+/* Only the Decisions view is condensed; race facts and printable detail remain. */
+#bestSection #hh69-decision-list > .best-pick{padding:12px!important;margin:8px 0!important;border:1px solid #cbbf9e!important;border-left:5px solid #294c3f!important;background:#fff!important;box-shadow:none!important}
+#bestSection #hh69-decision-list > .best-pick > :not(.hh974-compact){display:none!important}
+.hh974-compact{display:block!important;padding:0!important;font-size:14px;line-height:1.4;color:#20382e}
+.hh974-top{display:flex;justify-content:space-between;align-items:center;font:800 11px ui-monospace,monospace;letter-spacing:.04em;color:#455a50}
+.hh974-status{font:900 12px ui-monospace,monospace;padding:4px 10px;border-radius:5px}
+.hh974-bet{background:#dceede;color:#17522e}
+.hh974-pass{background:#f2e8e4;color:#8b3029}
+.hh974-horse{font-size:19px;font-weight:900;margin:5px 0 3px;overflow-wrap:anywhere}
+.hh974-reason{font-size:12px;color:#526158;overflow-wrap:anywhere}
+#bestSection .bestof > .small-note{display:none!important}
+#bestSection #hh98-audit{display:none!important}
+@media(max-width:700px){#bestSection #hh69-decision-list > .best-pick{padding:11px!important}.hh974-horse{font-size:18px}}
+</style>
 </head>
 
 <body>
@@ -1435,7 +1450,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.72 · Nov 15, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.74 · Nov 15, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -1443,7 +1458,7 @@ BRIS Single File parser + field-relative win-ranking engine using Prime Power, B
 
 <main>
 <details id="hh935ReleaseNotes" style="margin:0 0 14px;border:1px solid #CFC2A0;border-radius:8px;background:#fff;overflow:hidden">
-<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.73 · AI(1) v4.79 + Belmont-Validated RS/AI(2) Flag</summary>
+<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.74 · Short Decisions · AI(1) v4.79</summary>
 <div style="padding:0 12px 12px;font-size:12px;line-height:1.6">
 <b>Pick:</b> compare AI(1) and AI(2), the strongest challenger, and the recorded For/Against facts. <b>Confidence:</b> treat a low tier or a disagreement as a reason to review, not as proof of another winner. <b>Bet:</b> obey explicit NO BET and readiness warnings; do not infer a wager from a percentage alone. <b>Historical results:</b> experimental RS/CS reversal rules have not shown a reliable forward advantage and are not activated in this release.
 <br><b>Engine:</b> embedded Overlay Board v4.79 preserved exactly; original AI(2) logic and all race-data imports retained. This release adds a prominent historical RS/AI(2) agreement flag without changing betting decisions or percentages. It also separates race uncertainty from horse-specific condition flags, clarifies numerical-leader disagreements, and makes class disagreement statistics descriptive only. No claim of improved prediction accuracy.
@@ -8072,6 +8087,44 @@ function hh929Review(r,card){
     ' · '+(agreement?'engines agree':'engines differ');
   return {verdict,why,performance,agreement};
 }
+/* v9.74: One pick, one wagering action, one short explanation.
+   Existing prediction, pre-race review and report remain unchanged. */
+function hh974UpdateCompact(race,r,aiCard,condition,ai2Condition){
+  const wrap=aiCard?.closest('.best-pick');
+  const target=wrap?.querySelector('.hh974-compact');
+  if(!target)return;
+  const safeText=x=>String(x??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const record=(typeof rows!=='undefined'&&Array.isArray(rows)?rows:[]).filter(h=>String(h.race)===String(race)&&!h.scratched);
+  let evidence=null;
+  if(record.length){try{evidence=hh970Evidence(record,lowerRankFieldV822(calculateProbabilities(record),record));}catch(e){/* no fabricated evidence */}}
+  const finalPick=r?.final?.horse?r.final:r?.summary?.selection?.horse?r.summary.selection:r?.top?.horse?r.top:null;
+  const horse=finalPick?.horse||null;
+  const post=finalPick?.post||'?';
+  const plan=String(r?.summary?.planHeading||r?.status||'');
+  const originalBet=/PLAY\s*[-–]\s*WIN BET|\bBET\s*[-–:]\s*WIN\b/i.test(plan);
+  const veto=!!(condition?.pass||ai2Condition?.pass||condition?.unverified||ai2Condition?.unverified);
+  const unreadable=!!r?.summary?.warnings?.unreadable;
+  const maidenMany=!!(r?.summary&&hh27MaidenSafety(r.summary));
+  const challenge=!!evidence?.challengeHold;
+  const bet=!!(horse&&originalBet&&!veto&&!unreadable&&!maidenMany&&!challenge);
+  let reason='No qualifying wager under the existing rules';
+  if(!horse)reason='Engine pick not available';
+  else if(evidence?.careerMaidenAlert)reason='Career maiden: '+evidence.leader.careerWins+' wins in '+evidence.leader.careerStarts+' starts';
+  else if(evidence?.notable?.length){
+    const x=evidence.notable[0];
+    const why=x.reasons.find(t=>t.startsWith('BEAT LEADER'))||x.reasons.find(t=>t==='BEST LAST SPEED')||x.reasons.find(t=>t.includes('SPEED'))||x.reasons[0];
+    reason='Challenger #'+x.x.h.post+' '+x.x.h.horse+(why?' — '+why.toLowerCase():'');
+  }
+  else if(veto)reason=String((condition?.concerns||[]).concat(ai2Condition?.concerns||[])[0]||'Readiness check failed');
+  else if(maidenMany)reason='Multiple first-time starters';
+  else if(unreadable)reason='Race lacks a reliable advantage';
+  else if(bet)reason='Existing win-bet qualifications met';
+  else if(plan&&!/PLAY\s*[-–]\s*WIN BET/i.test(plan))reason=plan.replace(/^(?:SKIP|PASS|NO WIN BET)\s*[-–:]?\s*/i,'').slice(0,105)||reason;
+  const status=bet?'BET':'PASS';
+  target.innerHTML='<div class="hh974-top"><span>RACE '+safeText(race)+'</span><strong class="hh974-status '+(bet?'hh974-bet':'hh974-pass')+'">'+status+'</strong></div>'+
+    '<div class="hh974-horse">'+(horse?'#'+safeText(post)+' '+safeText(horse):'No selection available')+'</div>'+
+    '<div class="hh974-reason">'+safeText(reason)+'</div>';
+}
 function hh74Refresh(){
   const cards=[...document.querySelectorAll('#bestSection .hh74-ai')];
   let agree=0,disagree=0,unknown=0,qualified=0,twoHorse=0;
@@ -8266,6 +8319,7 @@ function hh74Refresh(){
     if(rsLine)rsLine.remove();
     if(r?.top){const note=document.createElement('div');note.className='hh74-rs-note';note.style.cssText='font-size:12px;opacity:.75;margin-top:4px';note.textContent='Rank score alone: #'+r.top.post+' '+r.top.horse+'.';card.appendChild(note);}
     if(verdict)verdict.remove();
+    hh974UpdateCompact(race,r,card,condition,ai2Condition);
     const meta=r ? ' · Tier '+escapeText(r.tier?.tier??'unavailable')+' of 7 · confidence '+escapeText(r.confidence||'unavailable') : '';
     return '<div id="concurrence-race-'+escapeText(race)+'" class="hh-concurrence-race" style="padding:14px 0;border-top:1px solid #ddd;scroll-margin-top:110px"><b>Race '+escapeText(race)+'</b><div>'+escapeText(result)+'</div>'+(r?.top?'<div style="font-size:12px;opacity:.75">RS #1: #'+escapeText(r.top.post)+' '+escapeText(r.top.horse)+'</div>':'')+'</div>';
   });
@@ -8655,6 +8709,7 @@ function computeRaceCard(){
         bestHTML += `
 
         <div class="best-pick race-anchor-target read-${readability.level}" id="decision-race-${safe(raceNum)}" data-race-order="${Number(raceNum)}" data-focus-status="${hh889FocusStatus}" data-focus-order="${hh889FocusEligible?0:10+hh72Priority*2+(hh72Agree?0:1)}">
+          <div class="hh974-compact" data-compact-race="${safe(raceNum)}"><b>Race ${safe(raceNum)} · Analyzing</b></div>
 
             <div class="best-header">
                 <div>
