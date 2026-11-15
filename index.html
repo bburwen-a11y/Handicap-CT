@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.73 · November 15, 2026 — Three-Contender Review</title>
+<title>Horse Handicap v9.75 · November 15, 2026 — Bet Gate Repair</title>
 
 <style>
 :root{
@@ -1450,7 +1450,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.74 · Nov 15, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.75 · Nov 15, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -1458,7 +1458,7 @@ BRIS Single File parser + field-relative win-ranking engine using Prime Power, B
 
 <main>
 <details id="hh935ReleaseNotes" style="margin:0 0 14px;border:1px solid #CFC2A0;border-radius:8px;background:#fff;overflow:hidden">
-<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.74 · Short Decisions · AI(1) v4.79</summary>
+<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.75 · Clear BET / PASS · AI(1) v4.79</summary>
 <div style="padding:0 12px 12px;font-size:12px;line-height:1.6">
 <b>Pick:</b> compare AI(1) and AI(2), the strongest challenger, and the recorded For/Against facts. <b>Confidence:</b> treat a low tier or a disagreement as a reason to review, not as proof of another winner. <b>Bet:</b> obey explicit NO BET and readiness warnings; do not infer a wager from a percentage alone. <b>Historical results:</b> experimental RS/CS reversal rules have not shown a reliable forward advantage and are not activated in this release.
 <br><b>Engine:</b> embedded Overlay Board v4.79 preserved exactly; original AI(2) logic and all race-data imports retained. This release adds a prominent historical RS/AI(2) agreement flag without changing betting decisions or percentages. It also separates race uncertainty from horse-specific condition flags, clarifies numerical-leader disagreements, and makes class disagreement statistics descriptive only. No claim of improved prediction accuracy.
@@ -6605,7 +6605,7 @@ function hh970Evidence(field,scored){
   notable.sort((a,b)=>Number(b.headToHead)-Number(a.headToHead)||Number(b.x.lr===1)-Number(a.x.lr===1)||a.x.rank-b.x.rank);
   // The original engine is NOT overridden here: until out-of-sample evidence exists,
   // an unresolved, meaningful alternative places an extra review HOLD on betting.
-  const challengeHold=notable.length>0 || leader.repeatedMaiden;
+  const challengeHold=!!leader.repeatedMaiden; // v9.75: ordinary corroborated alternatives are research, not automatic wager vetoes
   // Specific pre-race question: has the leader repeatedly been unable to win?
   // This is a warning / review gate, NOT a negative probability or an automatic challenger promotion.
   const careerMaidenAlert=leader.repeatedMaiden ?
@@ -6641,7 +6641,7 @@ function hh970EvidenceHTML(field,scored,compact=false){
   const unique=[...new Map(lines.map(x=>[String(x.h.id),x])).values()];
   const rows=unique.map(x=>`<div style="padding:7px 0;border-top:1px solid #d5dfda"><b>#${safe(x.h.post)} ${horseNameLinkHTML(x.h)}</b> · model #${x.rank} · ${safe(x.cl)}${x===choice?' · <b>EVIDENCE CHOICE</b>':''}<div style="margin-top:3px">${safe(x.facts.join(' · ')||'No corroborating recent facts recorded')}</div>${x.cautions.length?`<div style="color:#93400d">Caution: ${safe(x.cautions.join(' · '))}</div>`:''}</div>`).join('');
   const maidenWarning=ev.careerMaidenAlert?`<div style="margin:8px 0;padding:8px;border-left:4px solid #a84b26;background:#fff0e4;font-weight:700">REPEATED-MAIDEN WARNING — #${safe(leader.h.post)} ${safe(leader.h.horse)}: ${safe(ev.careerMaidenAlert)}. A high RS/CS or low M/L does not erase a 0-for-career record. Compare recent rivals and H2H before wagering; not an automatic loser.</div>`:'';
-  const flags=ev.notable.length?`<div style="margin-top:8px;border-top:1px solid #afc9bd;padding-top:7px"><b>FULL-FIELD EXCEPTIONS (${ev.notable.length} / ${all.length-1} other runners)</b>${ev.notable.map(z=>`<div style="margin:5px 0"><b>#${safe(z.x.h.post)} ${horseNameLinkHTML(z.x.h)} · numerical #${z.x.rank}</b>: ${safe(z.reasons.join(' · '))}</div>`).join('')}<div style="font-size:11px;color:#845119">${ev.challengeHold?'UNRESOLVED CHALLENGE — any win-bet approval must be reviewed; the original selection is not independently confirmed.':'No escalated challenger.'}</div></div>`:`<div style="margin-top:7px">Full-field check: no independently corroborated challenger detected. This does not guarantee the leader wins.</div>`;
+  const flags=ev.notable.length?`<div style="margin-top:8px;border-top:1px solid #afc9bd;padding-top:7px"><b>FULL-FIELD EXCEPTIONS (${ev.notable.length} / ${all.length-1} other runners)</b>${ev.notable.map(z=>`<div style="margin:5px 0"><b>#${safe(z.x.h.post)} ${horseNameLinkHTML(z.x.h)} · numerical #${z.x.rank}</b>: ${safe(z.reasons.join(' · '))}</div>`).join('')}<div style="font-size:11px;color:#845119">${ev.challengeHold?'REPEATED-MAIDEN CAUTION — review before wagering.':'No escalated challenger.'}</div></div>`:`<div style="margin-top:7px">Full-field check: no independently corroborated challenger detected. This does not guarantee the leader wins.</div>`;
   const meeting=h2h?`<div><b>Direct prior meeting:</b> ${safe(h2h.date)}, race ${safe(h2h.race)} — #${safe(h2h.winner.post)} finished ahead (challenger ${h2h.finA}, leader ${h2h.finB}).</div>`:'';
   return `<section class="hh970-evidence" style="margin:9px 0;padding:11px;border:1px solid #8caaa2;border-left:4px solid #245e53;border-radius:7px;background:#f6faf8;color:#1f3930;font-size:12px;line-height:1.5"><b>TODAY'S EVIDENCE CHECK · EXPERIMENTAL</b><div style="font-size:13px;margin:5px 0"><b>${changed?'CHALLENGER FOR REVIEW':'KEEP BOARD LEADER'}:</b> #${safe(choice.h.post)} ${horseNameLinkHTML(choice.h)}</div><div style="font-size:11px;color:#4a6158">${changed?'Top-four contender with top-three Prime Power and 5/5 competitive recent races; original leader lacks that combined confirmation.':'No uniquely qualified five-race-form challenger displaces the leader under the experimental screen.'} This is a research selection, not a win probability or BET approval.</div>${maidenWarning}${rows}${flags}${meeting}<div style="font-size:10px;color:#586a62;margin-top:5px">17-race retrospective: screened rule changed four selections, recovered two winners, sacrificed zero original winners; not independently validated. Additional checks are descriptive, not untested promotion rules.</div></section>`;
 }
@@ -8107,19 +8107,17 @@ function hh974UpdateCompact(race,r,aiCard,condition,ai2Condition){
   const maidenMany=!!(r?.summary&&hh27MaidenSafety(r.summary));
   const challenge=!!evidence?.challengeHold;
   const bet=!!(horse&&originalBet&&!veto&&!unreadable&&!maidenMany&&!challenge);
-  let reason='No qualifying wager under the existing rules';
-  if(!horse)reason='Engine pick not available';
-  else if(evidence?.careerMaidenAlert)reason='Career maiden: '+evidence.leader.careerWins+' wins in '+evidence.leader.careerStarts+' starts';
-  else if(evidence?.notable?.length){
-    const x=evidence.notable[0];
-    const why=x.reasons.find(t=>t.startsWith('BEAT LEADER'))||x.reasons.find(t=>t==='BEST LAST SPEED')||x.reasons.find(t=>t.includes('SPEED'))||x.reasons[0];
-    reason='Challenger #'+x.x.h.post+' '+x.x.h.horse+(why?' — '+why.toLowerCase():'');
-  }
-  else if(veto)reason=String((condition?.concerns||[]).concat(ai2Condition?.concerns||[])[0]||'Readiness check failed');
+  let reason='No qualified wager under the existing rules';
+  // v9.75: show the actual BET/PASS rationale first; never use a mere
+  // exception/other-horse observation as a default reason to PASS.
+  if(!horse)reason='Engine pick unavailable';
+  else if(veto)reason=String((condition?.concerns||[]).concat(ai2Condition?.concerns||[])[0]||'Horse-specific readiness concern');
   else if(maidenMany)reason='Multiple first-time starters';
   else if(unreadable)reason='Race lacks a reliable advantage';
-  else if(bet)reason='Existing win-bet qualifications met';
+  else if(evidence?.careerMaidenAlert)reason='Repeated maiden: '+evidence.leader.careerStarts+' starts, no wins';
+  else if(bet)reason='Original win-bet qualifications met';
   else if(plan&&!/PLAY\s*[-–]\s*WIN BET/i.test(plan))reason=plan.replace(/^(?:SKIP|PASS|NO WIN BET)\s*[-–:]?\s*/i,'').slice(0,105)||reason;
+  else if(!bet)reason='No qualifying wager under the original rules';
   const status=bet?'BET':'PASS';
   target.innerHTML='<div class="hh974-top"><span>RACE '+safeText(race)+'</span><strong class="hh974-status '+(bet?'hh974-bet':'hh974-pass')+'">'+status+'</strong></div>'+
     '<div class="hh974-horse">'+(horse?'#'+safeText(post)+' '+safeText(horse):'No selection available')+'</div>'+
@@ -10924,7 +10922,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.73 · November 15, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.75 · November 15, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
 
 <script>
 (function(){
@@ -11011,7 +11009,7 @@ document.addEventListener("click",e=>{
          'numerical #'+z.x.rank+' · '+z.reasons.join(' · '));
      }
      if(ev.challengeHold)line(section,'BETTING SAFETY STATUS:',
-       'EVIDENCE REVIEW HOLD: independent challenger evidence or repeatedly beaten maiden. No automatic reversal or validated BET approval.');
+       'REPEATED-MAIDEN HOLD: repeated career failure to win; review before wagering.');
      line(section,'Evidence interpretation:','Workouts, class, surface, improvement and head-to-head are descriptive checks. The five-race challenger screen was retrospective (17 races), not independently validated. The 0-for-8+ career warning is research-only and does not automatically change the pick. No win-probability or wagering override.');
    }catch(err){line(section,'Evidence:', 'Could not calculate from imported BRIS runners ('+String(err?.message||err)+').');}
  }
@@ -11048,7 +11046,7 @@ document.addEventListener("click",e=>{
      if(activeForHold.length){
        const evHold=hh970Evidence(activeForHold,lowerRankFieldV822(calculateProbabilities(activeForHold),activeForHold));
        if((evHold?.challengeHold || evHold?.careerMaidenAlert) && /\b(PLAY|WIN BET|BET CANDIDATE)\b/i.test(sm.planHeading||'')){
-         line(section,'v9.73 FINAL WAGER STATUS:','HOLD / NO AUTOMATIC WIN BET — unresolved evidence or repeated-maiden concern. Original engine wager below is provisional.');
+         line(section,'v9.75 FINAL WAGER STATUS:','HOLD — repeated career maiden; review before wagering. Ordinary challenger observations do not automatically veto engine bets.');
        }
      }
    }catch(err){line(section,'Evidence gate:','Unavailable — cannot affirm independent wager approval.');}
