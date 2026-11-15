@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.70 · November 15, 2026 — Three-Contender Review</title>
+<title>Horse Handicap v9.71 · November 15, 2026 — Three-Contender Review</title>
 
 <style>
 :root{
@@ -1421,6 +1421,12 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 #bestSection .model-prob .prob-button{font-size:18px!important;line-height:1.2!important}
 #bestSection .model-prob .confidence{font-size:9px!important;max-width:170px!important}
 </style>
+<style id="hh971-evidence-print">
+#hh922PdfReport .hh971-evidence-heading{font-size:13px;margin:12px 0 6px;border-top:1px solid #a7b6ab;padding-top:8px;color:#15382e}
+#hh922PdfReport .hh971-evidence-horse{padding:5px 0;border-bottom:1px solid #dee6e1;break-inside:avoid}
+#hh922PdfReport .hh971-evidence-horse .hh923-line{margin:2px 0}
+@media print{body.hh922-print-pdf #hh922PdfReport .hh971-evidence-horse{break-inside:avoid;page-break-inside:avoid}}
+</style>
 </head>
 
 <body>
@@ -1429,7 +1435,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.70 · Nov 15, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.71 · Nov 15, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -1437,7 +1443,7 @@ BRIS Single File parser + field-relative win-ranking engine using Prime Power, B
 
 <main>
 <details id="hh935ReleaseNotes" style="margin:0 0 14px;border:1px solid #CFC2A0;border-radius:8px;background:#fff;overflow:hidden">
-<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.70 · AI(1) v4.77 + Belmont-Validated RS/AI(2) Flag</summary>
+<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.71 · AI(1) v4.77 + Belmont-Validated RS/AI(2) Flag</summary>
 <div style="padding:0 12px 12px;font-size:12px;line-height:1.6">
 <b>Pick:</b> compare AI(1) and AI(2), the strongest challenger, and the recorded For/Against facts. <b>Confidence:</b> treat a low tier or a disagreement as a reason to review, not as proof of another winner. <b>Bet:</b> obey explicit NO BET and readiness warnings; do not infer a wager from a percentage alone. <b>Historical results:</b> experimental RS/CS reversal rules have not shown a reliable forward advantage and are not activated in this release.
 <br><b>Engine:</b> embedded Overlay Board v4.77 preserved exactly; original AI(2) logic and all race-data imports retained. This release adds a prominent historical RS/AI(2) agreement flag without changing betting decisions or percentages. It also separates race uncertainty from horse-specific condition flags, clarifies numerical-leader disagreements, and makes class disagreement statistics descriptive only. No claim of improved prediction accuracy.
@@ -4289,17 +4295,17 @@ function rankConsensusV773(horse,field){
     score += (tjComboStrength(horse)-.5)*.012;
     score += (postPositionEvidence(horse,active).score-.5)*.02;
 
-    // v9.70 REVIEW FLAGS: historical ablation did not support subtracting points for these flags.
+    // v9.71 REVIEW FLAGS: historical ablation did not support subtracting points for these flags.
     const penaltyFlags=modelPenaltyFlagsV837(horse,active);
     horse._modelPenaltyFlagsV837=penaltyFlags;
     const penaltyPoints=penaltyFlags.reduce((sum,f)=>sum+number(f.points),0);
-    // v9.70: condition flag retained for review, but no longer deducts model score (100-race retrospective test).
+    // v9.71: condition flag retained for review, but no longer deducts model score (100-race retrospective test).
 
-    // v9.70 REVIEW FLAGS: fade signals are shown as cautions, with no automatic score deduction.
+    // v9.71 REVIEW FLAGS: fade signals are shown as cautions, with no automatic score deduction.
     const fadeFlags=fadeSignalsV838(horse,active);
     horse._fadeSignalsV838=fadeFlags;
     const fadePoints=fadeFlags.reduce((sum,f)=>sum+number(f.points),0);
-    // v9.70: fade flags retained for review, but no longer deduct model score (100-race retrospective test).
+    // v9.71: fade flags retained for review, but no longer deduct model score (100-race retrospective test).
 
     const quality=dataQuality(horse);
     if(quality.label==='POOR') score-=.045;
@@ -6505,12 +6511,12 @@ function hh887ChallengerStrengths(field,scored){
 }
 
 
-/* v9.70: Three-contender REVIEW, not an automatic win-bet override.
+/* v9.71: Three-contender REVIEW, not an automatic win-bet override.
    Retain the existing numerical leader; two challengers chosen using only pre-race RS and M/L rankings.
    Independent Sep-Oct filtered replay: 134 winners in 183 three-horse reviews, versus 78 original single wins.
    This is shortlist coverage, NOT a validated single-selection improvement. */
 
-/* v9.70 TODAY'S EVIDENCE CHECK — experimental selection, not wagering logic.
+/* v9.71 TODAY'S EVIDENCE CHECK — experimental selection, not wagering logic.
    Historical 17-race comparison was retrospective and small. Never use results here.
    Components are named facts, not invented probabilities or opaque point scores. */
 function hh970Evidence(field,scored){
@@ -8222,7 +8228,7 @@ function hh74Refresh(){
     return '<div id="concurrence-race-'+escapeText(race)+'" class="hh-concurrence-race" style="padding:14px 0;border-top:1px solid #ddd;scroll-margin-top:110px"><b>Race '+escapeText(race)+'</b><div>'+escapeText(result)+'</div>'+(r?.top?'<div style="font-size:12px;opacity:.75">RS #1: #'+escapeText(r.top.post)+' '+escapeText(r.top.horse)+'</div>':'')+'</div>';
   });
   const out=document.getElementById('hh74-ai-summary');
-  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.70 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>'+lines.join('');
+  if(out)out.innerHTML='<h3>HORSE HANDICAP v9.71 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>'+lines.join('');
 
 }
 
@@ -8928,7 +8934,7 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v9.70</h2>
+      <h2>Help — Horse Handicap v9.71</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.77's actual final selection, after its review of race evidence and warnings. Its selection is the win-bet horse, otherwise a qualifying figure-leader bet, otherwise the horse with the highest reviewed chance.</p>
         <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; it is <b>not</b> a calibrated win probability.</p>
@@ -10821,7 +10827,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.70 · November 15, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.77</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.71 · November 15, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.77</div>
 
 <script>
 (function(){
@@ -10867,6 +10873,43 @@ document.addEventListener("click",e=>{
  function line(parent,label,value){if(value===null||value===undefined||value==='')return;const p=node('p',null,'hh923-line');p.append(node('strong',label+' '),document.createTextNode(String(value)));parent.append(p);}
  function formatPct(x){return Number.isFinite(Number(x))?Number(x).toFixed(1).replace(/\.0$/,'')+'%':'—';}
  function getAI2(card,race){const cmp=document.querySelector('#bestSection .hh74-ai[data-race="'+race+'"]');return cmp?.getAttribute('data-ai2-name')||card.querySelector('.hh74-ai')?.getAttribute('data-ai2-name')||'';}
+ // v9.71: Export precisely the same pre-race evidence calculation used on screen.
+ // Recompute from the active BRIS rows, not from the summary text or outcomes.
+ function appendEvidence(section,race){
+   const active=(typeof rows!=='undefined'&&Array.isArray(rows)?rows:[])
+     .filter(h=>String(h.race)===String(race)&&!h.scratched);
+   const heading=node('h3',"TODAY'S EVIDENCE CHECK — EXPERIMENTAL",'hh971-evidence-heading');
+   section.append(heading);
+   if(!active.length){line(section,'Evidence:','No active BRIS runners available. Import the race card and apply RSS before generating the report.');return;}
+   try{
+     const ranked=lowerRankFieldV822(calculateProbabilities(active),active);
+     const ev=hh970Evidence(active,ranked);
+     if(!ev){line(section,'Evidence:','Evidence calculation unavailable for this race.');return;}
+     const choice=ev.choice,lead=ev.leader;
+     line(section,'Original numerical leader:','#'+lead.h.post+' '+lead.h.horse);
+     line(section,ev.changed?'CHALLENGER FOR REVIEW:':'KEEP BOARD LEADER:', '#'+choice.h.post+' '+choice.h.horse);
+     line(section,'Evidence decision:',ev.changed?
+       'Top-four contender with top-three Prime Power and five competitive recent races; the numerical leader lacks the combined confirmation. Review only; NOT a new BET approval.':
+       'No uniquely qualifying challenger under the experimental five-race-form screen. No automatic reversal.');
+     const items=[lead,...ev.all.filter(x=>x!==lead).sort((a,b)=>{
+       const aa=(a.ppCount===5&&a.competitive===5&&a.pr<=3)?0:1;
+       const bb=(b.ppCount===5&&b.competitive===5&&b.pr<=3)?0:1;
+       return aa-bb||a.rank-b.rank;
+     }).slice(0,3)];
+     const used=new Set();
+     for(const x of items){
+       if(used.has(String(x.h.id)))continue;used.add(String(x.h.id));
+       const r=node('div',null,'hh971-evidence-horse');
+       const label=(x===lead?'BOARD LEADER':x===choice?'EVIDENCE CHOICE':'CHALLENGER');
+       line(r,label+':','#'+x.h.post+' '+x.h.horse+' · model #'+x.rank+' · '+x.cl);
+       line(r,'Pre-race support:',x.facts.length?x.facts.join(' · '):'No corroborating recent facts recorded');
+       if(x.cautions.length)line(r,'Readiness concerns:',x.cautions.join(' · '));
+       section.append(r);
+     }
+     if(ev.h2h){line(section,'Direct prior meeting:',ev.h2h.date+' race '+ev.h2h.race+' — #'+ev.h2h.winner.post+' finished ahead (challenger '+ev.h2h.finA+', leader '+ev.h2h.finB+').');}
+     line(section,'Evidence interpretation:','Workouts, class, surface, improvement and head-to-head are descriptive checks. The challenger rule was tested retrospectively on 17 races, not independently validated. No win-probability or wagering override.');
+   }catch(err){line(section,'Evidence:', 'Could not calculate from imported BRIS runners ('+String(err?.message||err)+').');}
+ }
  function renderRace(card){
    const race=raceOf(card),data=typeof hh74Results!=='undefined'?hh74Results[race]:null,sm=data?.summary;
    const section=node('section',null,'hh923-race');section.append(node('h2','RACE '+race));
@@ -10883,6 +10926,7 @@ document.addEventListener("click",e=>{
        const tr=node('tr');[h.post||'—',h.horse||'—',h.ml||'—','Pending','—','—','—'].forEach(v=>tr.append(node('td',v)));body.append(tr);
      });table.append(body);section.append(table);
      line(section,'Report note:','AI(1) has not supplied its scores for this race. Missing values are marked pending; no figures have been invented.');
+     appendEvidence(section,race);
      return section;
    }
    const all=(sm.allRunners&&sm.allRunners.length?sm.allRunners:sm.field)||[];
@@ -10911,16 +10955,17 @@ document.addEventListener("click",e=>{
      values.forEach(v=>tr.append(node('td',v)));tbody.append(tr);
    });table.append(tbody);section.append(table);
    section.append(node('p','Chance is AI(1) model share, not a betting recommendation. RS: lower is better. CS: case rank. For/Ag: favourable/unfavourable facts.','hh923-foot'));
+   appendEvidence(section,race);
    return section;
  }
- // v9.70: one shared report generator for Print, Copy, and iPhone file export.
+ // v9.71: one shared report generator for Print, Copy, and iPhone file export.
  // This removes dependence on the browser's print sheet to share the decisions.
  function createReport(){
    refreshOptions();
    const cards=candidates().filter(x=>sel.value==='all'||raceOf(x)===sel.value);
    if(!cards.length){alert('Compute the race card first, then open Decisions.');return false;}
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.70 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.71 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.77 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    return true;
@@ -10958,7 +11003,7 @@ document.addEventListener("click",e=>{
  });
  byId('hh969SaveReport').addEventListener('click',()=>{
    if(!createReport())return;
-   const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Horse Handicap Race Report</title><style>body{font:14px Arial,sans-serif;margin:20px;color:#182920}h1{font-size:21px}h2{font-size:17px;border-top:2px solid #315a49;padding-top:14px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border-bottom:1px solid #ccc;text-align:left;padding:5px}th{background:#eaf0ec}.hh923-race{break-inside:avoid;margin-bottom:25px}.hh923-line{margin:5px 0}button{padding:9px;margin:8px 0}@media print{button{display:none}body{margin:0}@page{size:letter;margin:13mm}}</style></head><body><button onclick="window.print()">Print this report</button>'+report.innerHTML+'</body></html>';
+   const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Horse Handicap Race Report</title><style>body{font:14px Arial,sans-serif;margin:20px;color:#182920}h1{font-size:21px}h2{font-size:17px;border-top:2px solid #315a49;padding-top:14px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border-bottom:1px solid #ccc;text-align:left;padding:5px}th{background:#eaf0ec}.hh923-race{break-inside:avoid;margin-bottom:25px}.hh923-line{margin:5px 0}.hh971-evidence-heading{font-size:14px;border-top:1px solid #aaa;padding-top:9px;margin:12px 0 7px}.hh971-evidence-horse{padding:5px 0;border-bottom:1px solid #ddd;break-inside:avoid}.hh971-evidence-horse .hh923-line{margin:2px 0}button{padding:9px;margin:8px 0}@media print{button{display:none}body{margin:0}@page{size:letter;margin:13mm}}</style></head><body><button onclick="window.print()">Print this report</button>'+report.innerHTML+'</body></html>';
    const blob=new Blob([html],{type:'text/html;charset=utf-8'});
    const url=URL.createObjectURL(blob);
    const a=document.createElement('a');a.href=url;a.download='Horse_Handicap_Race_Report.html';
