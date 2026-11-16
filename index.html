@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.82 · November 16, 2026 — Evidence Decision Correction</title>
+<title>Horse Handicap v9.83 · November 16, 2026 — Evidence Decision Correction</title>
 
 <style>
 :root{
@@ -1455,6 +1455,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 .hh978-facts li{margin:3px 0}
 @media(max-width:700px){.hh978-facts{padding:9px;font-size:12px}.hh978-facts table{font-size:10.5px}}
 </style>
+<style id="hh983-historical-style">#bestSection .hh983-history{font-size:11px;color:#355546;margin:6px 0 2px;line-height:1.4}.hh978-facts .hh983-history{border-top:1px solid #cfc2a0;padding-top:7px;margin-top:8px}</style>
 </head>
 
 <body>
@@ -9074,7 +9075,7 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v9.82</h2>
+      <h2>Help — Horse Handicap v9.83</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.79's actual final selection, after its review of race evidence and warnings. Its selection is the win-bet horse, otherwise a qualifying figure-leader bet, otherwise the horse with the highest reviewed chance.</p>
         <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; it is <b>not</b> a calibrated win probability.</p>
@@ -10967,7 +10968,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.82 · November 16, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.83 · November 16, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
 
 <script>
 (function(){
@@ -11128,7 +11129,7 @@ document.addEventListener("click",e=>{
    const cards=candidates().filter(x=>sel.value==='all'||raceOf(x)===sel.value);
    if(!cards.length){alert('Compute the race card first, then open Decisions.');return false;}
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.82 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.83 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.79 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    return true;
@@ -11178,7 +11179,7 @@ document.addEventListener("click",e=>{
 })();
 </script>
 <script id="hh978-twohorse-decision">
-/* v9.82: Evidence is descriptive and the two-horse screen is an EXPLICIT experimental
+/* v9.83: Evidence is descriptive and the two-horse screen is an EXPLICIT experimental
    decision aid, not a statistically calibrated prediction or a new betting rule.
    The unchanged AI engines remain as inputs; the displayed final selection is made by the evidence comparison. */
 (function(){
@@ -11321,6 +11322,21 @@ document.addEventListener("click",e=>{
          (h2hEdge && avgEdge && formEdge)) && (winnerStatus || h2hEdge);
     return {ok,reasons};
   }
+  // Historical condition-level priority. These are earlier Board audit results,
+  // NOT calibrated chances for the present horse and NOT permission for an automatic wager.
+  function hh983HistoricalContext(field){
+    const rt=String(field?.[0]?.raceType||'').trim().toUpperCase();
+    const count=field.length;
+    const favorable=count<=8 && ['A','AO','M','MO'].includes(rt);
+    const allowance=count<=8 && ['A','AO'].includes(rt);
+    const label=typeof raceTypeLabel==='function'?raceTypeLabel(rt):rt;
+    if(allowance)return {favorable:true,label:'Historically favorable: allowance, 8 or fewer starters',
+      detail:'Earlier Board: 59/121 wins (48.8%), +23.8% ROI across all dates; later-period 34/68 (50.0%), +30.3% ROI. This is not a calibrated probability for this horse.'};
+    if(favorable)return {favorable:true,label:'Historically favorable: '+label+', 8 or fewer starters',
+      detail:'Earlier Board, allowance or maiden claiming with fewer than 9 starters: 85/178 wins (47.8%), +17.8% ROI; later period 47/95 (49.5%), +28.2% ROI. This is not a calibrated probability for this horse.'};
+    return {favorable:false,label:'No verified historical priority for this class/field combination',
+      detail:'The earlier Board had 218/595 wins (36.6%) overall. Maiden special weight and 9+ runner races were weaker on average. Class/field history alone cannot identify today’s winner.'};
+  }
   function compute(race,r,card){
     const field=(typeof rows!=='undefined'&&Array.isArray(rows)?rows:[]).filter(h=>String(h.race)===String(race)&&!h.scratched);
     if(!field.length)return null;
@@ -11389,6 +11405,7 @@ document.addEventListener("click",e=>{
     if(!summary)return;
     const h=summary.chosen.h;
     const wager=decideWager(summary,r);
+    const historical=hh983HistoricalContext(summary.field);
     const bet=wager.bet;
     compact.dataset.finalBet=bet?'BET':'PASS';
     compact.dataset.finalResearch=summary.changed?'1':'0';
@@ -11399,11 +11416,15 @@ document.addEventListener("click",e=>{
       <div class="hh978-rival">Over #${txt(summary.opponent.h.post)} ${txt(summary.opponent.h.horse)}</div>
       <div class="hh978-why"><b>Pick evidence:</b> ${txt(summary.explanation)}</div>
       <div class="hh974-reason"><b>${bet?'Wager support':'Why no win bet'}:</b> ${txt(wager.why)}</div>
+      <div class="hh983-history"><b>${historical.favorable?'HISTORICAL PRIORITY':'HISTORICAL CONTEXT'}:</b> ${txt(historical.label)}</div>
       <button type="button" class="hh978-facts-link" data-hh978-facts="${txt(race)}">Race Facts · Full comparison</button>`;
     const facts=document.getElementById('facts-race-'+race);
     if(facts){
       facts.querySelectorAll('.hh978-facts').forEach(x=>x.remove());
       const holder=document.createElement('div');holder.innerHTML=summary.facts;
+      const historic=document.createElement('p');historic.className='hh983-history';
+      historic.textContent=historical.label+'. '+historical.detail;
+      holder.firstElementChild?.appendChild(historic);
       const child=holder.firstElementChild;
       if(child)facts.insertBefore(child,facts.querySelector('summary')?.nextSibling||null);
     }
