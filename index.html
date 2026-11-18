@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.85 · November 18, 2026 — Evidence Decision Correction</title>
+<title>Horse Handicap v9.86 · November 18, 2026 — Original Pick Safeguard</title>
 
 <style>
 :root{
@@ -1456,6 +1456,9 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 @media(max-width:700px){.hh978-facts{padding:9px;font-size:12px}.hh978-facts table{font-size:10.5px}}
 </style>
 <style id="hh983-historical-style">#bestSection .hh983-history{font-size:11px;color:#355546;margin:6px 0 2px;line-height:1.4}.hh978-facts .hh983-history{border-top:1px solid #cfc2a0;padding-top:7px;margin-top:8px}</style>
+<style id="hh986-original-pick-style">
+.hh986-research{margin:8px 0;padding:8px 10px;background:#fff8e9;border-left:4px solid #ad7a2a;border-radius:4px;color:#493b24;font-size:12px;line-height:1.5}
+</style>
 </head>
 
 <body>
@@ -1464,7 +1467,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.82 · Nov 16, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.86 · Nov 18, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -1472,9 +1475,9 @@ BRIS Single File parser + field-relative win-ranking engine using Prime Power, B
 
 <main>
 <details id="hh935ReleaseNotes" style="margin:0 0 14px;border:1px solid #CFC2A0;border-radius:8px;background:#fff;overflow:hidden">
-<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.82 · Final Evidence Decision + Race Facts · AI(1) v4.79</summary>
+<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.86 · Original Pick Safeguard + Loss Signs · AI(1) v4.79</summary>
 <div style="padding:0 12px 12px;font-size:12px;line-height:1.6">
-<b>Pick:</b> compare AI(1) and AI(2), the strongest challenger, and the recorded For/Against facts. <b>Confidence:</b> treat a low tier or a disagreement as a reason to review, not as proof of another winner. <b>Bet:</b> obey explicit NO BET and readiness warnings; do not infer a wager from a percentage alone. <b>Historical results:</b> experimental RS/CS reversal rules have not shown a reliable forward advantage and are not activated in this release.
+<b>Pick:</b> compare AI(1) and AI(2), the strongest challenger, and the recorded For/Against facts. <b>Confidence:</b> treat a low tier or a disagreement as a reason to review, not as proof of another winner. <b>Bet:</b> obey explicit NO BET and readiness warnings; do not infer a wager from a percentage alone. <b>Historical results:</b> experimental RS/CS and challenger-promotion reversal rules failed to establish a reliable later-period advantage, so the original selection is retained. Would-be reversals are displayed only for research.
 <br><b>Engine:</b> embedded Overlay Board v4.79 preserved exactly; original AI(2) logic and all race-data imports retained. This release adds a prominent historical RS/AI(2) agreement flag without changing betting decisions or percentages. It also separates race uncertainty from horse-specific condition flags, clarifies numerical-leader disagreements, and makes class disagreement statistics descriptive only. No claim of improved prediction accuracy.
 </div></details>
 
@@ -9075,7 +9078,7 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v9.85</h2>
+      <h2>Help — Horse Handicap v9.86</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.79's actual final selection, after its review of race evidence and warnings. Its selection is the win-bet horse, otherwise a qualifying figure-leader bet, otherwise the horse with the highest reviewed chance.</p>
         <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; it is <b>not</b> a calibrated win probability.</p>
@@ -10968,7 +10971,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.85 · November 18, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.86 · November 18, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
 
 <script>
 (function(){
@@ -11129,7 +11132,7 @@ document.addEventListener("click",e=>{
    const cards=candidates().filter(x=>sel.value==='all'||raceOf(x)===sel.value);
    if(!cards.length){alert('Compute the race card first, then open Decisions.');return false;}
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.85 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.86 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.79 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    return true;
@@ -11354,12 +11357,16 @@ document.addEventListener("click",e=>{
       .map(x=>({x,proof:preRacePromotion(x,boardChoice)}))
       .filter(z=>z.proof.ok)
       .sort((a,b)=>b.x.last-a.x.last||b.x.avg3n-a.x.avg3n)[0];
-    const chosen=promoted?.x||boardChoice;
-    let opponent=promoted?boardChoice:(ranked.find(x=>!same(x.h,chosen.h))||null);
+    // v9.86: historical reversal tests did NOT validate automatic promotion.
+    // Preserve the original engine's named horse. Expose any would-be challenger
+    // separately as RESEARCH ONLY; never silently substitute it as the pick.
+    const chosen=boardChoice;
+    const opponent=(promoted?.x)||(ranked.find(x=>!same(x.h,chosen.h))||null);
     if(!opponent)return null;
-    const explanation=promoted ? ('Promoted on '+promoted.proof.reasons.slice(0,2).join(' + ')) : explain(chosen,opponent);
-    return {chosen,opponent,all,original,changed:!!promoted,explanation,
-      facts:report(chosen,opponent,all,original,ai2),field,scored,promoted};
+    const explanation=explain(chosen,opponent);
+    return {chosen,opponent,all,original,changed:false,explanation,
+      facts:report(chosen,opponent,all,original,ai2),field,scored,promoted,
+      suggestedSwitch:!!promoted};
   }
   function decideWager(summary,r){
     const h=summary.chosen,lead=summary.opponent;
@@ -11414,7 +11421,8 @@ document.addEventListener("click",e=>{
     compact.innerHTML=`<div class="hh974-top"><span>RACE ${txt(race)}</span><strong class="hh974-status ${bet?'hh974-bet':'hh974-pass'}">${bet?'BET':'PASS'}</strong></div>
       <div class="hh974-horse">#${txt(h.post)} ${txt(h.horse)}</div>
       <div class="hh978-rival">Over #${txt(summary.opponent.h.post)} ${txt(summary.opponent.h.horse)}</div>
-      <div class="hh978-why"><b>Pick evidence:</b> ${txt(summary.explanation)}</div>
+      <div class="hh978-why"><b>Original pick retained:</b> ${txt(summary.explanation)}</div>
+      ${summary.suggestedSwitch ? `<div class="hh986-research"><b>CHALLENGER — RESEARCH ONLY:</b> #${txt(summary.opponent.h.post)} ${txt(summary.opponent.h.horse)} · ${txt(summary.promoted.proof.reasons.join(' + '))}. Historical reversals have not proved a net winner gain; this does not change the pick or bet.</div>` : ''}
       <div class="hh974-reason"><b>${bet?'Wager support':'Why no win bet'}:</b> ${txt(wager.why)}</div>
       <div class="hh983-history"><b>${historical.favorable?'HISTORICAL PRIORITY':'HISTORICAL CONTEXT'}:</b> ${txt(historical.label)}</div>
       <button type="button" class="hh978-facts-link" data-hh978-facts="${txt(race)}">Race Facts · Full comparison</button>`;
@@ -11425,6 +11433,11 @@ document.addEventListener("click",e=>{
       const historic=document.createElement('p');historic.className='hh983-history';
       historic.textContent=historical.label+'. '+historical.detail;
       holder.firstElementChild?.appendChild(historic);
+      if(summary.suggestedSwitch){
+        const note=document.createElement('p');note.className='hh986-research';
+        note.textContent='RESEARCH CHALLENGER (not selected): #'+summary.opponent.h.post+' '+summary.opponent.h.horse+'. Evidence: '+summary.promoted.proof.reasons.join(' + ')+'. No independent validation for automatically replacing the original pick.';
+        holder.firstElementChild?.appendChild(note);
+      }
       const child=holder.firstElementChild;
       if(child)facts.insertBefore(child,facts.querySelector('summary')?.nextSibling||null);
     }
