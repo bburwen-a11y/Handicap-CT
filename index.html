@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.83 · November 16, 2026 — Evidence Decision Correction</title>
+<title>Horse Handicap v9.85 · November 18, 2026 — Evidence Decision Correction</title>
 
 <style>
 :root{
@@ -9075,7 +9075,7 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v9.83</h2>
+      <h2>Help — Horse Handicap v9.85</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.79's actual final selection, after its review of race evidence and warnings. Its selection is the win-bet horse, otherwise a qualifying figure-leader bet, otherwise the horse with the highest reviewed chance.</p>
         <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; it is <b>not</b> a calibrated win probability.</p>
@@ -10968,7 +10968,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.83 · November 16, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.85 · November 18, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
 
 <script>
 (function(){
@@ -11129,7 +11129,7 @@ document.addEventListener("click",e=>{
    const cards=candidates().filter(x=>sel.value==='all'||raceOf(x)===sel.value);
    if(!cards.length){alert('Compute the race card first, then open Decisions.');return false;}
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.83 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.85 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.79 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    return true;
@@ -11437,6 +11437,102 @@ document.addEventListener('click',e=>{
    target.open=true;showTab('facts');
    requestAnimationFrame(()=>target.scrollIntoView({behavior:'smooth',block:'start'}));
  });
+})();
+</script>
+<style id="hh985-loss-signs-style">
+.hh985-signs{margin:9px 0;padding:9px 11px;border:1px solid #c9b77e;border-radius:8px;background:#fff9e8;font-size:12px;line-height:1.45;color:#3e392b}
+.hh985-signs.hh985-green{border-color:#45815a;background:#eef9f0}
+.hh985-signs.hh985-red{border-color:#b14c4c;background:#fff0ed}
+.hh985-signs ul{margin:5px 0 0;padding-left:19px}
+.hh985-signs small{display:block;margin-top:5px;color:#655b4a}
+</style>
+<script id="hh985-loss-signs-script">
+/* Exact five conditions transcribed from the supplied Overlay Board v4.81
+   pickWarnings(rs,h), adapted only to Horse Handicap's field names:
+   .spd => .speed; .lastSpd => .lastSpeed; .mlOddsStr => .odds;
+   .layoffDays => .daysSinceLast. Display-only; never modifies decisions. */
+(function(){
+'use strict';
+const escapeText=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const numeric=v=>v==null||String(v).trim()===''?null:(Number.isFinite(Number(v))?Number(v):null);
+const norm=s=>String(s??'').trim().toLowerCase().replace(/[^a-z0-9]/g,'');
+const same=(a,b)=>norm(a)===norm(b);
+const validFigure=v=>numeric(v)!=null&&numeric(v)>0;
+function market(h){
+ try{const o=oddsDecimal(h.odds??h.ml);return o==null||!Number.isFinite(Number(o))?null:Number(o)}catch(_){return null}
+}
+function avg3(h){
+ // Claude: take the first 3 POSITIVE recorded figures; may have only 1 or 2.
+ const a=(h.ppRaces||[]).map(p=>numeric(p.speed)).filter(v=>v!=null&&v>0).slice(0,3);
+ return a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+}
+function figureFavorite(field){
+ const f=field.filter(h=>!h.scratched);
+ const priced=f.map(h=>({h,v:market(h)})).filter(x=>x.v!=null).sort((a,b)=>a.v-b.v);
+ if(priced.length<2||priced[0].v===priced[1].v)return null;
+ const rated=f.map(h=>({h,v:avg3(h)})).filter(x=>x.v!=null).sort((a,b)=>b.v-a.v);
+ if(rated.length<3||rated[0].v===rated[1].v)return null;
+ return rated[0].h===priced[0].h?priced[0].h:null;
+}
+function rankLast(field,h){
+ // Claude's rankIn() requires >=3 horses with positive last speed.
+ const r=field.map(x=>({h:x,v:numeric(x.lastSpeed)})).filter(x=>x.v!=null&&x.v>0);
+ if(r.length<3)return null;
+ const m=r.find(x=>x.h===h);
+ if(!m)return null;
+ return {rank:1+r.filter(x=>x.v>m.v).length,tied:r.filter(x=>x.v===m.v).length>1};
+}
+function pickWarnings(field,h){
+ const out=[];
+ if(!h)return out;
+ const rec=(h.ppRaces||[]).slice(0,4).filter(p=>numeric(p.fin)!=null);
+ const itm=rec.filter(p=>{const f=parseInt(p.fin,10);return f>=1&&f<=3}).length;
+ if(rec.length&&itm/rec.length<0.6)out.push('in the money in '+itm+' of its last '+rec.length);
+ const lr=rankLast(field,h);
+ if(!lr||lr.rank!==1||lr.tied)out.push(lr?'last figure ranks #'+lr.rank+(lr.tied?' tied':'')+', not top alone':'no last figure to compare');
+ const avgs=field.map(x=>({h:x,v:avg3(x)})).filter(x=>x.v!=null).sort((a,b)=>b.v-a.v);
+ if(avgs.length>=2&&avgs[0].h===h&&avgs[0].v-avgs[1].v<=1)
+   out.push('three-race average leads '+avgs[1].h.horse+' by only '+(avgs[0].v-avgs[1].v).toFixed(2));
+ const ml=market(h);
+ // Claude's parseOdds returns gross odds, threshold 4.5; HH returns NET odds.
+ if(ml!=null&&ml>=3.5)out.push('morning line '+String(h.odds??h.ml)+', 7-2 or longer');
+ const away=numeric(h.daysSinceLast);
+ if(away!=null&&away>90)out.push('off '+away+' days');
+ return out;
+}
+function appendToRace(race,box){
+ const facts=document.getElementById('facts-race-'+race);
+ if(facts){facts.querySelectorAll('.hh984-facts-copy,.hh985-facts-copy').forEach(x=>x.remove());const copy=box.cloneNode(true);copy.classList.add('hh985-facts-copy');facts.appendChild(copy)}
+ const cardSection=document.getElementById('cardSection');
+ if(cardSection){const t=cardSection.querySelector('[id="race-live-'+race+'"], [id="race-full-'+race+'"], [id="race-card-'+race+'"]');if(t){t.querySelectorAll('.hh984-card-copy,.hh985-card-copy').forEach(x=>x.remove());const c=box.cloneNode(true);c.classList.add('hh985-card-copy');t.appendChild(c)}}
+}
+function update(race,result,card){
+ const root=card?.closest('.best-pick');if(!root)return;
+ const compact=root.querySelector('.hh974-compact');if(!compact)return;
+ root.querySelectorAll('.hh984-signs,.hh985-signs').forEach(x=>x.remove());
+ const f=(typeof rows!=='undefined'&&Array.isArray(rows)?rows:[]).filter(h=>String(h.race)===String(race)&&!h.scratched);
+ const favorite=figureFavorite(f);
+ const pickLabel=compact.dataset.evidencePick||compact.querySelector('.hh974-horse')?.textContent||'';
+ if(!favorite||!same(pickLabel.replace(/^\s*#\S+\s*/,''),favorite.horse)){
+   const facts=document.getElementById('facts-race-'+race);if(facts)facts.querySelectorAll('.hh984-facts-copy,.hh985-facts-copy').forEach(x=>x.remove());
+   return;
+ }
+ const warnings=pickWarnings(f,favorite),count=warnings.length;
+ const box=document.createElement('div');box.className='hh985-signs '+(count>=2?'hh985-red':count===0?'hh985-green':'');
+ box.innerHTML='<b>'+(count?'⚠':'✓')+' Loss signs '+count+' of 5</b>'+
+   (count?'<ul>'+warnings.map(x=>'<li>'+escapeText(x)+'</li>').join('')+'</ul>':'<div>None of the five conditions present.</div>')+
+   (count>=2?'<div><b>Two or more:</b> this Pick reads as an ordinary favourite.</div>':'')+
+   '<small>Claude v4.81 exact five conditions · display only · no change to picks, rankings or betting decisions. Historical win rates are research findings, not calibrated probabilities.</small>';
+ compact.appendChild(box);appendToRace(race,box);
+}
+if(typeof hh974UpdateCompact==='function'){
+ const previous=hh974UpdateCompact;
+ hh974UpdateCompact=function(race,r,aiCard,condition,ai2Condition){
+   const ret=previous.apply(this,arguments);
+   try{update(race,r,aiCard)}catch(err){console.warn('Loss signs display unavailable',err)}
+   return ret;
+ };
+}
 })();
 </script>
 </body>
