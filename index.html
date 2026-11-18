@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.86 · November 18, 2026 — Original Pick Safeguard</title>
+<title>Horse Handicap v9.87 · November 18, 2026 — Original Pick Safeguard</title>
 
 <style>
 :root{
@@ -1467,7 +1467,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.86 · Nov 18, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.87 · Nov 18, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -1475,9 +1475,9 @@ BRIS Single File parser + field-relative win-ranking engine using Prime Power, B
 
 <main>
 <details id="hh935ReleaseNotes" style="margin:0 0 14px;border:1px solid #CFC2A0;border-radius:8px;background:#fff;overflow:hidden">
-<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.86 · Original Pick Safeguard + Loss Signs · AI(1) v4.79</summary>
+<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.87 · Original Pick Safeguard + Loss Signs + Allowance Strong Sign · AI(1) v4.79</summary>
 <div style="padding:0 12px 12px;font-size:12px;line-height:1.6">
-<b>Pick:</b> compare AI(1) and AI(2), the strongest challenger, and the recorded For/Against facts. <b>Confidence:</b> treat a low tier or a disagreement as a reason to review, not as proof of another winner. <b>Bet:</b> obey explicit NO BET and readiness warnings; do not infer a wager from a percentage alone. <b>Historical results:</b> experimental RS/CS and challenger-promotion reversal rules failed to establish a reliable later-period advantage, so the original selection is retained. Would-be reversals are displayed only for research.
+<b>Pick:</b> compare AI(1) and AI(2), the strongest challenger, and the recorded For/Against facts. <b>Confidence:</b> treat a low tier or a disagreement as a reason to review, not as proof of another winner. <b>Bet:</b> obey explicit NO BET and readiness warnings; do not infer a wager from a percentage alone. <b>Historical results:</b> experimental RS/CS and challenger-promotion reversal rules failed to establish a reliable later-period advantage, so the original selection is retained. Would-be reversals are displayed only for research. A small-field allowance Strong Sign is display only and does not modify picks or bets.
 <br><b>Engine:</b> embedded Overlay Board v4.79 preserved exactly; original AI(2) logic and all race-data imports retained. This release adds a prominent historical RS/AI(2) agreement flag without changing betting decisions or percentages. It also separates race uncertainty from horse-specific condition flags, clarifies numerical-leader disagreements, and makes class disagreement statistics descriptive only. No claim of improved prediction accuracy.
 </div></details>
 
@@ -9078,7 +9078,7 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v9.86</h2>
+      <h2>Help — Horse Handicap v9.87</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.79's actual final selection, after its review of race evidence and warnings. Its selection is the win-bet horse, otherwise a qualifying figure-leader bet, otherwise the horse with the highest reviewed chance.</p>
         <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; it is <b>not</b> a calibrated win probability.</p>
@@ -10971,7 +10971,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.86 · November 18, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.87 · November 18, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
 
 <script>
 (function(){
@@ -11132,7 +11132,7 @@ document.addEventListener("click",e=>{
    const cards=candidates().filter(x=>sel.value==='all'||raceOf(x)===sel.value);
    if(!cards.length){alert('Compute the race card first, then open Decisions.');return false;}
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.86 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.87 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.79 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    return true;
@@ -11459,6 +11459,9 @@ document.addEventListener('click',e=>{
 .hh985-signs ul{margin:5px 0 0;padding-left:19px}
 .hh985-signs small{display:block;margin-top:5px;color:#655b4a}
 </style>
+<style id="hh987-allowance-style">
+.hh987-strong{margin-top:7px;padding:7px 9px;border-left:4px solid #287044;background:#edf6ed;color:#194b30;border-radius:4px;font-weight:650}
+</style>
 <script id="hh985-loss-signs-script">
 /* Exact five conditions transcribed from the supplied Overlay Board v4.81
    pickWarnings(rs,h), adapted only to Horse Handicap's field names:
@@ -11513,6 +11516,14 @@ function pickWarnings(field,h){
  if(away!=null&&away>90)out.push('off '+away+' days');
  return out;
 }
+// Claude v4.83 exact condition: current race type A, AO, or R; 1-8 active starters.
+// Do not add this to Loss Signs, change selections, or alter bet decisions.
+function allowanceStrongSign(field, favorite){
+ if(!favorite)return '';
+ const rt=String(favorite.raceType??'').trim().toUpperCase();
+ const n=field.filter(x=>!x.scratched).length;
+ return ['A','AO','R'].includes(rt)&&n>0&&n<=8 ? 'allowance race, '+n+' starters' : '';
+}
 function appendToRace(race,box){
  const facts=document.getElementById('facts-race-'+race);
  if(facts){facts.querySelectorAll('.hh984-facts-copy,.hh985-facts-copy').forEach(x=>x.remove());const copy=box.cloneNode(true);copy.classList.add('hh985-facts-copy');facts.appendChild(copy)}
@@ -11531,11 +11542,13 @@ function update(race,result,card){
    return;
  }
  const warnings=pickWarnings(f,favorite),count=warnings.length;
+ const strong=allowanceStrongSign(f,favorite);
  const box=document.createElement('div');box.className='hh985-signs '+(count>=2?'hh985-red':count===0?'hh985-green':'');
  box.innerHTML='<b>'+(count?'⚠':'✓')+' Loss signs '+count+' of 5</b>'+
    (count?'<ul>'+warnings.map(x=>'<li>'+escapeText(x)+'</li>').join('')+'</ul>':'<div>None of the five conditions present.</div>')+
    (count>=2?'<div><b>Two or more:</b> this Pick reads as an ordinary favourite.</div>':'')+
-   '<small>Claude v4.81 exact five conditions · display only · no change to picks, rankings or betting decisions. Historical win rates are research findings, not calibrated probabilities.</small>';
+   (strong?'<div class="hh987-strong"><b>★ Strong sign:</b> '+escapeText(strong)+'</div>':'')+
+   '<small>Claude v4.81 five loss conditions + v4.83 small allowance field · display only · no change to picks, rankings or betting decisions. Historical win rates are research findings, not calibrated probabilities.</small>';
  compact.appendChild(box);appendToRace(race,box);
 }
 if(typeof hh974UpdateCompact==='function'){
