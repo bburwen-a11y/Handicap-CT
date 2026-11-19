@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.87 · November 18, 2026 — Original Pick Safeguard</title>
+<title>Horse Handicap v9.88 · November 19, 2026 — Form Recovery & M/L Share</title>
 
 <style>
 :root{
@@ -1467,7 +1467,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.87 · Nov 18, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.88 · Nov 19, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -1475,7 +1475,7 @@ BRIS Single File parser + field-relative win-ranking engine using Prime Power, B
 
 <main>
 <details id="hh935ReleaseNotes" style="margin:0 0 14px;border:1px solid #CFC2A0;border-radius:8px;background:#fff;overflow:hidden">
-<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.87 · Original Pick Safeguard + Loss Signs + Allowance Strong Sign · AI(1) v4.79</summary>
+<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.88 · Form Recovery + M/L Fallback + Original Pick Safeguard + Loss Signs + Allowance Strong Sign · AI(1) v4.79</summary>
 <div style="padding:0 12px 12px;font-size:12px;line-height:1.6">
 <b>Pick:</b> compare AI(1) and AI(2), the strongest challenger, and the recorded For/Against facts. <b>Confidence:</b> treat a low tier or a disagreement as a reason to review, not as proof of another winner. <b>Bet:</b> obey explicit NO BET and readiness warnings; do not infer a wager from a percentage alone. <b>Historical results:</b> experimental RS/CS and challenger-promotion reversal rules failed to establish a reliable later-period advantage, so the original selection is retained. Would-be reversals are displayed only for research. A small-field allowance Strong Sign is display only and does not modify picks or bets.
 <br><b>Engine:</b> embedded Overlay Board v4.79 preserved exactly; original AI(2) logic and all race-data imports retained. This release adds a prominent historical RS/AI(2) agreement flag without changing betting decisions or percentages. It also separates race uncertainty from horse-specific condition flags, clarifies numerical-leader disagreements, and makes class disagreement statistics descriptive only. No claim of improved prediction accuracy.
@@ -1582,7 +1582,7 @@ Apply Feed Updates
 
 <div id="rssStatus" class="status"></div>
 <div class="final-odds-note">
-<b>Price discipline:</b> MODEL SHARE measures relative score strength within the field; it is not a win probability or a betting recommendation.
+<b>Price discipline:</b> MODEL SHARE measures relative score strength within the field (M/L fallback for missing form); it is not a win probability or a betting recommendation.
 v7.74 does not convert it into fair odds or VALUE/UNDERLAY. Final odds remain visible.
 RSS changes still trigger a full-card recompute and surface reevaluation.
 </div>
@@ -4364,7 +4364,7 @@ function fairOddsFromProbability(p){
     if(net<2) return `${(Math.ceil(net*10)/10).toFixed(1)}-1`;
     return `${Math.round(net)}-1`;
 }
-function modelPct(p){ return "NOT CALIBRATED"; }
+function modelPct(p){ return Number.isFinite(Number(p)) ? (100*Number(p)).toFixed(1)+"%" : "—"; }
 function valueAssessment(h,p){
     const dec=oddsDecimal(h.odds ?? h.finalOdds ?? h.ml);
     if(dec===null || !p) return {label:"NO ODDS",edge:null};
@@ -4504,30 +4504,57 @@ function paceBadgeV762(h,raceHorses){
   return r?`<span class="badge ${r.contender?'badge-green':'badge-blue'}" title="${safe(r.detail)}">${safe(r.label)}</span>`:'';
 }
 
+/* v9.88 — distinguish genuinely unraced horses from missing / unreadable PPs.
+   Career starts (BRIS field 97), finishes, and dated PP entries are checked
+   independently; no horse is declared an FTS merely because speed is blank. */
+function hh988FormStatus(h){
+    const pp=Array.isArray(h.ppRaces)?h.ppRaces:[];
+    const dated=pp.filter(p=>String(p.date||'').trim() && String(p.date||'').trim()!=='0');
+    const usable=dated.filter(p=>number(p.fin)>0 && number(p.fin)<90);
+    const starts=number(h.starts);
+    const recorded=starts>0 || dated.length>0 || number(h.wins)>0 || number(h.places)>0 || number(h.shows)>0;
+    if(!recorded) return {type:'FTS',label:'FIRST-TIME STARTER · M/L ESTIMATE',starts:0,dated:0,usable:0};
+    if(!dated.length) return {type:'MISSING',label:'PRIOR STARTS · PP LINES MISSING',starts,dated:0,usable:0};
+    if(!usable.length) return {type:'INCOMPLETE',label:'PRIOR STARTS · PP RESULTS UNREADABLE',starts,dated:dated.length,usable:0};
+    if(!dated.some(p=>number(p.speed)>0)) return {type:'INCOMPLETE',label:'PP PRESENT · SPEED MISSING',starts,dated:dated.length,usable:usable.length};
+    return {type:'FORM',label:'PP SCORE',starts,dated:dated.length,usable:usable.length};
+}
+function hh988MorningLineWeight(h){
+    const o=oddsDecimal(h.odds ?? h.ml);
+    return o!==null && Number.isFinite(o) && o>=0 ? 1/(1+o) : null;
+}
 function calculateProbabilities(field){
-
-    const scored=field.map(horse=>{
+    const scored=(field||[]).filter(h=>!h.scratched).map(horse=>{
         const model=calculateHorseScore(horse,field);
-        return {
-            horse,
-            raw:model.score,
-            components:model.components
-        };
+        const formStatus=hh988FormStatus(horse);
+        return {horse,raw:model.score,components:model.components,formStatus,
+            shareSource:formStatus.type==='FORM'?'MODEL':'M/L ESTIMATE'};
     });
-
-    /*
-    v7.74: Model Share is derived from the rank-consensus score. Ranking is primary;
-    the share is a normalized relative-strength display, not a win probability.
-    */
+    if(!scored.length) return scored;
     const temperature=.12;
     const maxRaw=Math.max(...scored.map(x=>x.raw));
-    const exps=scored.map(x=>Math.exp((x.raw-maxRaw)/temperature));
-    const total=exps.reduce((a,b)=>a+b,0);
-
-    scored.forEach((x,i)=>{
-        x.probability=total ? exps[i]/total : 1/scored.length;
+    // Preserve the original v9.87 engine for horses with usable form.
+    const rawWeights=scored.map(x=>Math.exp((x.raw-maxRaw)/temperature));
+    const markets=scored.map(x=>hh988MorningLineWeight(x.horse));
+    const known=scored.map((x,i)=>i).filter(i=>scored[i].formStatus.type==='FORM');
+    const avgKnownModel=known.length ? known.reduce((a,i)=>a+rawWeights[i],0)/known.length : 1;
+    const knownMarket=known.filter(i=>markets[i]!==null);
+    const avgKnownMarket=knownMarket.length ? knownMarket.reduce((a,i)=>a+markets[i],0)/knownMarket.length : null;
+    const usableMarket=markets.filter(v=>v!==null);
+    const fieldMarketMean=usableMarket.length ? usableMarket.reduce((a,b)=>a+b,0)/usableMarket.length : null;
+    const baseMarket=avgKnownMarket || fieldMarketMean;
+    const weights=rawWeights.map((w,i)=>{
+        if(scored[i].formStatus.type==='FORM') return w;
+        // A missing form line is NOT evidence of poor ability. Use M/L as
+        // a transparent fallback, on the established-model weight scale.
+        return baseMarket ? avgKnownModel*((markets[i]??baseMarket)/baseMarket) : avgKnownModel;
     });
-
+    const total=weights.reduce((a,b)=>a+b,0);
+    scored.forEach((x,i)=>{
+        x.probability=total>0?weights[i]/total:1/scored.length;
+        x.marketAvailable=markets[i]!==null;
+        if(x.shareSource==='M/L ESTIMATE' && !x.marketAvailable) x.shareSource='EQUAL-WEIGHT ESTIMATE · NO M/L';
+    });
     return scored.sort((a,b)=>b.probability-a.probability);
 }
 
@@ -4826,8 +4853,7 @@ function performanceEarningsHTML(field,horse){
 }
 
 function isFirstTimeStarterForQuality(h){
-    const usable=(h.ppRaces || []).filter(p=>number(p.fin)>0 && number(p.fin)<90);
-    return usable.length===0;
+    return hh988FormStatus(h).type==='FTS';
 }
 
 // v7.62 — SIGNAL CONSENSUS + AUTOMATIC FROZEN INTERNAL RULE
@@ -6414,11 +6440,13 @@ function firstTimerWorksV808(h){
     return `${w.length} work${w.length===1?'':'s'} last 30d${bullets?` · ${bullets} bullet${bullets===1?'':'s'}`:''}${last?` · latest ${safe(last.date||'')} ${safe(last.track||'')} ${safe(last.distance||'')} ${safe(last.description||'')}`:''}`;
 }
 function firstTimerEvidenceRowV808(h){
-    if(number(h.starts)>0 || (h.ppRaces||[]).length>0) return '';
+    const status=hh988FormStatus(h);
+    if(status.type==='FORM') return '';
+    if(status.type!=='FTS') return `<tr class="rf806-fts"><td colspan="26"><b>DATA CHECK — ${safe(status.label)}</b> · Lifetime starts ${safe(h.starts||status.dated||'unknown')}; readable finish lines ${safe(status.usable)}. M/L share estimate is provisional. Verify BRIS PP parsing; DO NOT label this horse a first-time starter.</td></tr>`;
     const ped=`Dirt ${safe(h.dirtPedigree||'—')} · Mud ${safe(h.mudPedigree||'—')} · Turf ${safe(h.turfPedigree||'—')} · Dist ${safe(h.distPedigree||'—')}`;
     const tr=h.trainerYearStarts?`${safe(h.trainer||'—')} year ${pct761(h.trainerYearWins,h.trainerYearStarts)} (${h.trainerYearStarts} st)`:safe(h.trainer||'—');
     const jk=h.jockeyYearStarts?`${safe(h.jockey||'—')} year ${pct761(h.jockeyYearWins,h.jockeyYearStarts)} (${h.jockeyYearStarts} st)`:safe(h.jockey||'—');
-    return `<tr class="rf806-fts"><td colspan="25"><div class="rf806-fts-grid"><span class="rf806-fts-head">FIRST-TIME STARTER — USE NON-RACE EVIDENCE</span><span><b>M/L:</b> ${safe(mlDisplayV804(h.odds))}</span><span><b>Trainer:</b> ${tr}</span><span><b>FTS angle:</b> ${firstTimerTrainerAngleV808(h)}</span><span><b>Jockey:</b> ${jk}</span><span><b>Works:</b> ${firstTimerWorksV808(h)}</span><span><b>Pedigree:</b> ${ped}</span><span><b>Weight:</b> ${safe(h.weight||'—')}${h.apprenticeAllowance?` (-${safe(h.apprenticeAllowance)})`:''}</span><span><b>Med/Equip:</b> ${safe(medicationLabelV806(h.todayMedication))} · ${safe(equipmentLabelV806(h.equipmentChange))}</span></div></td></tr>`;
+    return `<tr class="rf806-fts"><td colspan="26"><div class="rf806-fts-grid"><span class="rf806-fts-head">FIRST-TIME STARTER — USE NON-RACE EVIDENCE</span><span><b>M/L:</b> ${safe(mlDisplayV804(h.odds))}</span><span><b>Trainer:</b> ${tr}</span><span><b>FTS angle:</b> ${firstTimerTrainerAngleV808(h)}</span><span><b>Jockey:</b> ${jk}</span><span><b>Works:</b> ${firstTimerWorksV808(h)}</span><span><b>Pedigree:</b> ${ped}</span><span><b>Weight:</b> ${safe(h.weight||'—')}${h.apprenticeAllowance?` (-${safe(h.apprenticeAllowance)})`:''}</span><span><b>Med/Equip:</b> ${safe(medicationLabelV806(h.todayMedication))} · ${safe(equipmentLabelV806(h.equipmentChange))}</span></div></td></tr>`;
 }
 
 /* v8.65 — DISPLAY-ONLY CASE companion to RS. Uses native BRIS fields and
@@ -6698,7 +6726,7 @@ function raceFactsHTMLV806(field,scored){
     const highestShare=Math.max(0,...[...modelShareById.values()].filter(Number.isFinite));
     const rows=[...active].sort((a,b)=>(scoreRank.get(String(a.id))||99)-(scoreRank.get(String(b.id))||99));
     return `<details class="rf806"><summary>RACE FACTS — EVERY HORSE SIDE BY SIDE · MODEL RANKS</summary><div class="rf806-wrap"><table class="rf806-table"><thead><tr>
-      <th>Rk</th><th>Horse</th><th>Model Rank</th><th>RS</th><th>CS</th><th>FOR / AGAINST</th><th>M/L</th><th>Last-3</th><th>Last</th><th>Prime Power</th><th>Surface</th><th>Distance</th><th>Cond Speed</th><th>Class</th><th>Last Race</th><th>$/Start</th><th>Style</th><th>Days</th><th>Wt</th><th>Med</th><th>Equip</th><th>Trainer</th><th>Trainer Angles / Changes</th><th>Jockey</th><th>Jockey Angle</th>
+      <th>Rk</th><th>Horse</th><th>Model Rank</th><th>Model Share / Source</th><th>RS</th><th>CS</th><th>FOR / AGAINST</th><th>M/L</th><th>Last-3</th><th>Last</th><th>Prime Power</th><th>Surface</th><th>Distance</th><th>Cond Speed</th><th>Class</th><th>Last Race</th><th>$/Start</th><th>Style</th><th>Days</th><th>Wt</th><th>Med</th><th>Equip</th><th>Trainer</th><th>Trainer Angles / Changes</th><th>Jockey</th><th>Jockey Angle</th>
     </tr></thead><tbody>${rows.map(h=>{
       const sr=surfaceRecordV806(h), l3=last3AverageV806(h), cs=conditionsSpeedV805(h), cm=classMoveSupportV805(h,field), eps=careerEPS(h), flags=changeFlagsV806(h);
       const js=h.jockeySpecialStarts?`${safe(h.jockeySpecialLabel||'Jky angle')} ${safe(h.jockeySpecialStarts)} st/${safe(h.jockeySpecialWins||0)} w · ROI ${safe(h.jockeySpecialROI??'—')}`:'';
@@ -6708,7 +6736,9 @@ function raceFactsHTMLV806(field,scored){
       const share=modelShareById.get(String(h.id));
       const shareValid=Number.isFinite(share);
       const shareLabel=scoreRank.get(String(h.id))?'#'+scoreRank.get(String(h.id)):'—';
-      return `<tr><td>${scoreRank.get(String(h.id))||'—'}</td><td><b>${horseNameLinkHTML(h)}</b></td><td${shareValid&&share===highestShare?' class="rf806-best"':''}><b>${shareLabel}</b></td><td><b>${safe(hh64.get(String(h.id))?.rs??'—')}</b></td><td><b>${safe(hh64.get(String(h.id))?.csRank??'—')}</b></td><td>${hh64CaseLine(h,hh64,true)}</td><td>${safe(mlDisplayV804(h.odds))}</td>
+      const shareRow=(scored||[]).find(x=>String(x.horse.id)===String(h.id));
+      const source=shareRow?.shareSource||'MODEL';
+      return `<tr><td>${scoreRank.get(String(h.id))||'—'}</td><td><b>${horseNameLinkHTML(h)}</b></td><td${shareValid&&share===highestShare?' class="rf806-best"':''}><b>${shareLabel}</b></td><td><b>${modelPct(share)}</b><div style="font-size:9px">${safe(source)}</div>${shareRow?.formStatus?.type!=='FORM'?`<div style="font-size:9px;color:#8B2A2A">${safe(shareRow.formStatus.label)}</div>`:''}</td><td><b>${safe(hh64.get(String(h.id))?.rs??'—')}</b></td><td><b>${safe(hh64.get(String(h.id))?.csRank??'—')}</b></td><td>${hh64CaseLine(h,hh64,true)}</td><td>${safe(mlDisplayV804(h.odds))}</td>
        <td${best(l3Rank.get(h.id))}>${l3!==null?l3.toFixed(1):'—'}${l3Rank.get(h.id)?` #${l3Rank.get(h.id)}`:''}</td>
        <td${best(lastRank.get(h.id))}>${h.lastSpeed||'—'}${lastRank.get(h.id)?` #${lastRank.get(h.id)}`:''}</td>
        <td${best(ppRank.get(h.id))}>${safe(h.primePower||h.score||'—')}${ppRank.get(h.id)?` #${ppRank.get(h.id)}`:''}</td>
@@ -6721,7 +6751,7 @@ function raceFactsHTMLV806(field,scored){
        <td>${safe(h.weight||'—')}${h.apprenticeAllowance?` (-${safe(h.apprenticeAllowance)})`:''}</td>
        <td>${safe(medicationLabelV806(h.todayMedication))}</td><td>${safe(equipmentLabelV806(h.equipmentChange))}</td>
        <td>${tr}</td><td>${flags.length?`<b>${safe(flags.join(' · '))}</b><br>`:''}<b>TRAINER ANGLES:</b><br>${trainerAnglesHTMLV806(h)}</td><td>${jk}</td><td>${js||'—'}</td></tr>${firstTimerEvidenceRowV808(h)}`;
-    }).join('')}</tbody></table></div><div class="note" style="padding:7px 9px;font-size:10px;">Model Rank = relative AI(2) score order among the active runners (lower rank is better). No numerical model percentage is presented as a win probability. Green = field best on ranked numeric facts. Red = never on today's surface. For first-time starters, the highlighted line replaces unavailable race-history evidence with M/L, trainer FTS angle, workouts, pedigree, jockey, weight, medication and equipment. These facts are display evidence only; This display does not change picks or ranking math.</div></details>`;
+    }).join('')}</tbody></table></div><div class="note" style="padding:7px 9px;font-size:10px;">Model Rank = relative AI(2) score order among the active runners (lower rank is better). The numerical Model Share sums to 100% for active runners but is NOT a calibrated win probability. FTS and incomplete-form runners receive a clearly marked morning-line estimate (equal weight only when M/L is absent). Green = field best on ranked numeric facts. Red = never on today's surface. For actual first-time starters, the highlighted line replaces unavailable race-history evidence with M/L, trainer FTS angle, workouts, pedigree, jockey, weight, medication and equipment. These facts are display evidence only; v9.88 changes only the missing-form Model Share fallback; original selection and wager rules remain in place.</div></details>`;
 }
 
 function fieldTableHTML(raceNum,field,scored,classMap,liveOnly=false){
@@ -7470,7 +7500,7 @@ function modelSeparationV796(scored,field){
     const market=(field||[]).filter(h=>!h.scratched&&oddsDecimal(h.odds)!==null).slice().sort((a,b)=>oddsDecimal(a.odds)-oddsDecimal(b.odds));
     const mr=h=>{const i=market.findIndex(x=>String(x.id)===String(h?.id));return i<0?null:i+1};
     const topMR=mr(top.horse), secondMR=second?mr(second.horse):null;
-    const fts=(field||[]).filter(h=>!h.scratched && (h.ppRaces||[]).filter(p=>number(p.fin)>0&&number(p.fin)<90).length===0).length;
+    const fts=(field||[]).filter(h=>!h.scratched && isFirstTimeStarterForQuality(h)).length;
     const ftsPct=(field||[]).filter(h=>!h.scratched).length ? fts/(field||[]).filter(h=>!h.scratched).length : 0;
     const s2=second ? runningLineShapeV795((second.horse.ppRaces||[])[0]) : null;
     const h2h=topPickH2HContext(field,top.horse,{surface:top.horse.currentSurface,distance:top.horse.currentDistance});
@@ -7688,7 +7718,7 @@ function mainThreatHTMLV814(scored,field,classMap,hasOfficialPick=true,isNoChoic
 ============================================================ */
 function lowerRankFieldV822(scored,field){
     const live=(field||[]).filter(h=>!h.scratched);
-    const lifetimeStarts=h=>{ const n=Number(h.starts ?? h.ltStarts ?? 0); return Number.isFinite(n)&&n>=0?n:0; };
+    const lifetimeStarts=h=>{ const n=Number(h.starts ?? h.ltStarts ?? 0); return Number.isFinite(n)&&n>0?n:(h.ppRaces||[]).filter(p=>String(p.date||'').trim()).length; };
     const experienced=live.filter(h=>lifetimeStarts(h)>=2).length;
     const thin=live.length>0 && experienced*2<live.length;
     const mlOrder=live.filter(h=>oddsDecimal(h.odds ?? h.ml)!==null)
@@ -7704,7 +7734,7 @@ function lowerRankFieldV822(scored,field){
       // In a thin field, an unraced horse has no BRIS figure to rank.
       // Use its market rank for both missing historical slots, but do not
       // create a fictitious speed figure or a 3/3 concurrence.
-      const ftsThin=thin && starts===0;
+      const ftsThin=thin && hh988FormStatus(h).type==='FTS';
       const usedFigureRank=fr;
       const pr=starts<3?fr:pp;
       const lowerScore=usedFigureRank+pr+mr;
@@ -9078,10 +9108,10 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v9.87</h2>
+      <h2>Help — Horse Handicap v9.88</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.79's actual final selection, after its review of race evidence and warnings. Its selection is the win-bet horse, otherwise a qualifying figure-leader bet, otherwise the horse with the highest reviewed chance.</p>
-        <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; it is <b>not</b> a calibrated win probability.</p>
+        <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; where PPs are absent it uses a marked morning-line estimate; it is <b>not</b> a calibrated win probability.</p>
         <p><b>Bet / Pass:</b> A separate betting assessment. A model percentage by itself is not advice to bet or pass. <b>Not evaluated</b> means no betting verdict was calculated.</p>
         <p><b>RS:</b> Rank Score; lower rank number means stronger ranking (RS #1 is the rank-score leader). <b>CS:</b> Case Score rank; CS #1 has the strongest net case evidence. <b>Tally:</b> number of FOR facts minus AGAINST facts (5 FOR and 1 AGAINST = +4); not a probability.</p>
       </div>
@@ -10971,7 +11001,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.87 · November 18, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.88 · November 19, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
 
 <script>
 (function(){
@@ -11132,7 +11162,7 @@ document.addEventListener("click",e=>{
    const cards=candidates().filter(x=>sel.value==='all'||raceOf(x)===sel.value);
    if(!cards.length){alert('Compute the race card first, then open Decisions.');return false;}
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.87 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.88 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.79 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    return true;
