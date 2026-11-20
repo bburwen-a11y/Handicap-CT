@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.89 · November 20, 2026 — Form Recovery & M/L Share</title>
+<title>Horse Handicap v9.90 · November 20, 2026 — Form Recovery & M/L Share</title>
 
 <style>
 :root{
@@ -1467,7 +1467,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.89 · Nov 20, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.90 · Nov 20, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -1475,7 +1475,7 @@ BRIS Single File parser + field-relative win-ranking engine using Prime Power, B
 
 <main>
 <details id="hh935ReleaseNotes" style="margin:0 0 14px;border:1px solid #CFC2A0;border-radius:8px;background:#fff;overflow:hidden">
-<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.89 · Form Recovery + M/L Fallback + Original Pick Safeguard + Loss Signs + Allowance Strong Sign · AI(1) v4.79</summary>
+<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.90 · Form Recovery + M/L Fallback + Original Pick Safeguard + Loss Signs + Allowance Strong Sign · AI(1) v4.79</summary>
 <div style="padding:0 12px 12px;font-size:12px;line-height:1.6">
 <b>Pick:</b> compare AI(1) and AI(2), the strongest challenger, and the recorded For/Against facts. <b>Confidence:</b> treat a low tier or a disagreement as a reason to review, not as proof of another winner. <b>Bet:</b> obey explicit NO BET and readiness warnings; do not infer a wager from a percentage alone. <b>Historical results:</b> experimental RS/CS and challenger-promotion reversal rules failed to establish a reliable later-period advantage, so the original selection is retained. Would-be reversals are displayed only for research. A small-field allowance Strong Sign is display only and does not modify picks or bets.
 <br><b>Engine:</b> embedded Overlay Board v4.79 preserved exactly; original AI(2) logic and all race-data imports retained. This release adds a prominent historical RS/AI(2) agreement flag without changing betting decisions or percentages. It also separates race uncertainty from horse-specific condition flags, clarifies numerical-leader disagreements, and makes class disagreement statistics descriptive only. No claim of improved prediction accuracy.
@@ -4504,7 +4504,7 @@ function paceBadgeV762(h,raceHorses){
   return r?`<span class="badge ${r.contender?'badge-green':'badge-blue'}" title="${safe(r.detail)}">${safe(r.label)}</span>`:'';
 }
 
-/* v9.89 — distinguish genuinely unraced horses from missing / unreadable PPs.
+/* v9.90 — distinguish genuinely unraced horses from missing / unreadable PPs.
    Career starts (BRIS field 97), finishes, and dated PP entries are checked
    independently; no horse is declared an FTS merely because speed is blank. */
 function hh988FormStatus(h){
@@ -6751,7 +6751,7 @@ function raceFactsHTMLV806(field,scored){
        <td>${safe(h.weight||'—')}${h.apprenticeAllowance?` (-${safe(h.apprenticeAllowance)})`:''}</td>
        <td>${safe(medicationLabelV806(h.todayMedication))}</td><td>${safe(equipmentLabelV806(h.equipmentChange))}</td>
        <td>${tr}</td><td>${flags.length?`<b>${safe(flags.join(' · '))}</b><br>`:''}<b>TRAINER ANGLES:</b><br>${trainerAnglesHTMLV806(h)}</td><td>${jk}</td><td>${js||'—'}</td></tr>${firstTimerEvidenceRowV808(h)}`;
-    }).join('')}</tbody></table></div><div class="note" style="padding:7px 9px;font-size:10px;">Model Rank = relative AI(2) score order among the active runners (lower rank is better). The numerical Model Share sums to 100% for active runners but is NOT a calibrated win probability. FTS and incomplete-form runners receive a clearly marked morning-line estimate (equal weight only when M/L is absent). Green = field best on ranked numeric facts. Red = never on today's surface. For actual first-time starters, the highlighted line replaces unavailable race-history evidence with M/L, trainer FTS angle, workouts, pedigree, jockey, weight, medication and equipment. These facts are display evidence only; v9.89 changes only the missing-form Model Share fallback; original selection and wager rules remain in place.</div></details>`;
+    }).join('')}</tbody></table></div><div class="note" style="padding:7px 9px;font-size:10px;">Model Rank = relative AI(2) score order among the active runners (lower rank is better). The numerical Model Share sums to 100% for active runners but is NOT a calibrated win probability. FTS and incomplete-form runners receive a clearly marked morning-line estimate (equal weight only when M/L is absent). Green = field best on ranked numeric facts. Red = never on today's surface. For actual first-time starters, the highlighted line replaces unavailable race-history evidence with M/L, trainer FTS angle, workouts, pedigree, jockey, weight, medication and equipment. These facts are display evidence only; v9.90 changes only the missing-form Model Share fallback; original selection and wager rules remain in place.</div></details>`;
 }
 
 function fieldTableHTML(raceNum,field,scored,classMap,liveOnly=false){
@@ -8198,7 +8198,7 @@ function hh974UpdateCompact(race,r,aiCard,condition,ai2Condition){
   target.dataset.finalResearch=v.research?'1':'0';
   target.dataset.finalReason=v.reason;
   target.innerHTML='<div class="hh974-top"><span>RACE '+safeText(race)+'</span><strong class="hh974-status '+(v.bet?'hh974-bet':'hh974-pass')+'">'+(v.bet?'BET':'PASS')+'</strong></div>'+ 
-    '<div class="hh974-horse">'+(horse?'#'+safeText(post)+' '+safeText(horse):'No selection available')+'</div>'+ 
+    '<div class="hh974-horse">'+(horse?'#'+safeText(post)+' '+safeText(horse):'Calculating selections…')+'</div>'+ 
     '<div class="hh974-reason">'+safeText(v.reason)+(v.research?' · RESEARCH / UNVALIDATED':'')+'</div>';
 }
 
@@ -9108,7 +9108,7 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v9.89</h2>
+      <h2>Help — Horse Handicap v9.90</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.79's actual final selection, after its review of race evidence and warnings. Its selection is the win-bet horse, otherwise a qualifying figure-leader bet, otherwise the horse with the highest reviewed chance.</p>
         <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; where PPs are absent it uses a marked morning-line estimate; it is <b>not</b> a calibrated win probability.</p>
@@ -11001,7 +11001,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.89 · November 20, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.90 · November 20, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
 
 <script>
 (function(){
@@ -11162,7 +11162,7 @@ document.addEventListener("click",e=>{
    const cards=candidates().filter(x=>sel.value==='all'||raceOf(x)===sel.value);
    if(!cards.length){alert('Compute the race card first, then open Decisions.');return false;}
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.89 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.90 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.79 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    return true;
@@ -11311,7 +11311,7 @@ document.addEventListener("click",e=>{
    const count=competition.filter(z=>z.merit>=b.merit-1).length;
    const facts=(h)=>h.dimensions.filter(x=>x.v>=2).map(x=>x.label).slice(0,3).join(' · ')||h.dimensions.filter(x=>x.v>0).map(x=>x.label).slice(0,3).join(' · ')||'Limited confirming form';
    return `<div class="hh978-facts"><h4>CONTENDER EVIDENCE · LEADER VS CHALLENGER</h4>
-   <p><b>Numerical leader: #${txt(a.h.post)} ${txt(a.h.horse)}</b> · challenger #${txt(b.h.post)} ${txt(b.h.horse)}. Other contenders remain in the three-horse review above.</p>
+   <p><b>Evidence choice: #${txt(a.h.post)} ${txt(a.h.horse)}</b> · challenger #${txt(b.h.post)} ${txt(b.h.horse)}. Other contenders remain in the three-horse review above.</p>
    <p><b>Why:</b> ${txt(explain(a,b))}. ${count?'Other field threats were examined; '+count+' remain close on descriptive evidence.':'Other active runners were included in the screen.'}</p>
    <table><thead><tr><th>Pre-race evidence</th><th>#${txt(a.h.post)} ${txt(a.h.horse)}</th><th>#${txt(b.h.post)} ${txt(b.h.horse)}</th></tr></thead><tbody>
    <tr><td>Model share</td><td>${percent(a.share)}${a.share<0.01?' · check speed input':''}</td><td>${percent(b.share)}${b.share<0.01?' · check speed input':''}</td></tr>
@@ -11448,7 +11448,7 @@ document.addEventListener("click",e=>{
     compact.dataset.finalReason=wager.why;
     compact.dataset.evidencePick='#'+h.post+' '+h.horse;
     compact.innerHTML=`<div class="hh974-top"><span>RACE ${txt(race)}</span><strong class="hh974-status ${bet?'hh974-bet':'hh974-pass'}">${bet?'BET':'PASS'}</strong></div>
-      <div class="hh974-horse">${bet?'BET SELECTION':'NUMERICAL LEADER'} · #${txt(h.post)} ${txt(h.horse)}</div>
+      <div class="hh974-horse">${bet?'BET SELECTION':'EVIDENCE CHOICE — NOT AI(2)'} · #${txt(h.post)} ${txt(h.horse)}</div><div class="hh978-rival"><b>AI(2) pick:</b> #${txt(summary.field.find(x=>String(x.horse).toLowerCase()===String(aiCard?.getAttribute('data-ai2-horse')||'').toLowerCase())?.post||'?')} ${txt(aiCard?.getAttribute('data-ai2-horse')||'unavailable')}${r?.final?.horse?' · <b>AI(1) pick:</b> #'+txt(r.final.post)+' '+txt(r.final.horse):''}</div>
       ${!bet?'<div class="hh978-rival"><b>PASS — no approved selection.</b> See three contenders in Race Facts.</div>':`<div class="hh978-rival">Next contender #${txt(summary.opponent.h.post)} ${txt(summary.opponent.h.horse)}</div>`} 
       ${bet?`<div class="hh978-why">${txt(summary.explanation)}</div>`:''}
       ${summary.suggestedSwitch ? `<div class="hh986-research"><b>CHALLENGER — RESEARCH ONLY:</b> #${txt(summary.opponent.h.post)} ${txt(summary.opponent.h.horse)} · ${txt(summary.promoted.proof.reasons.join(' + '))}. Historical reversals have not proved a net winner gain; this does not change the pick or bet.</div>` : ''}
@@ -11588,6 +11588,43 @@ if(typeof hh974UpdateCompact==='function'){
    return ret;
  };
 }
+})();
+</script>
+
+<style id="hh990-ready-style">
+#hh69-decision-list.hh990-pending > .best-pick{display:none!important}
+#hh990-loading{display:none;padding:22px 16px;margin:10px 0;border:1px solid #cbbf9e;border-left:5px solid #294c3f;border-radius:9px;background:#fff;color:#20382e;font-weight:800}
+#hh69-decision-list.hh990-pending #hh990-loading{display:block}
+</style>
+<script id="hh990-ready-script">
+/* Wait for both engines before exposing the decision list. Never render temporary PASS cards. */
+(function(){
+ 'use strict';
+ const root=document.getElementById('hh69-decision-list');
+ if(!root)return;
+ const loading=document.createElement('div');loading.id='hh990-loading';loading.setAttribute('role','status');loading.textContent='Calculating selections…';root.prepend(loading);
+ let complete=false;
+ function sync(){
+  const cards=[...root.querySelectorAll('.best-pick[data-race-order]')];
+  if(!cards.length){root.classList.remove('hh990-pending');return;}
+  const finished=cards.every(card=>{
+    const race=String(card.getAttribute('data-race-order'));
+    const compact=card.querySelector('.hh974-compact');
+    const result=typeof hh74Results!=='undefined'&&hh74Results&&hh74Results[race];
+    return compact?.dataset.finalBet && result?.top;
+  });
+  if(finished){complete=true;root.classList.remove('hh990-pending');}
+  else if(!complete){root.classList.add('hh990-pending');}
+  if(!finished&&!complete){
+   const error=typeof hh74Error!=='undefined'?String(hh74Error):'';
+   loading.textContent=/timed out|engine error|unavailable|unpack failed|did not initialize/i.test(error)
+    ?'AI(1) could not finish. '+error+' Recompute to retry.'
+    :'Calculating selections… Please wait for both engines.';
+  }
+ }
+ const observer=new MutationObserver(sync);
+ observer.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['data-final-bet']});
+ sync();
 })();
 </script>
 </body>
