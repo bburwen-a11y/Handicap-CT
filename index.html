@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.94 · November 21, 2026 — Market Confirmation</title>
+<title>Horse Handicap v9.96 · November 21, 2026 — AI(1) Pass Protection</title>
 
 <style>
 :root{
@@ -1474,7 +1474,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.94 · Nov 21, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.96 · Nov 21, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -1482,8 +1482,9 @@ BRIS Single File parser + field-relative win-ranking engine using Prime Power, B
 
 <main>
 <details id="hh935ReleaseNotes" style="margin:0 0 14px;border:1px solid #CFC2A0;border-radius:8px;background:#fff;overflow:hidden">
-<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.94 · Market Confirmation · AI(1) v4.79</summary>
+<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.96 · AI(1) Pass Protection · AI(1) v4.79</summary>
 <div style="padding:0 12px 12px;font-size:12px;line-height:1.6">
+<b>AI(1) pass:</b> When AI(1) has no win bet or extra win play for the horse, Horse Handicap keeps it at PASS. Speed and form evidence remain visible in Race Facts. Existing Horse Handicap checks still apply to AI(1) plays.<br>
 <b>Market %:</b> morning-line odds expressed as a share of the active field. The comparison card highlights historical support at AI(1) Chance of 35% or higher when the morning line agrees. If AI(2) ranks another horse first, the comparison shows the two highest AI(1) Chance horses. Historical counts come from a 148-race replay.
 <br><b>Loss signs:</b> Prime Power #1 with zero or one loss sign is highlighted for a qualifying figure favourite. Overlay Board v4.88 reported the pattern in both halves of its historical pool.
 <br><b>Race Facts:</b> career in-the-money percentages now include the number of top-three finishes and starts.
@@ -9214,7 +9215,7 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v9.94</h2>
+      <h2>Help — Horse Handicap v9.96</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.79's actual final selection, after its review of race evidence and warnings. Its selection is the win-bet horse, otherwise a qualifying figure-leader bet, otherwise the horse with the highest reviewed chance.</p>
         <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; where PPs are absent it uses a marked morning-line estimate; it is <b>not</b> a calibrated win probability.</p>
@@ -11107,7 +11108,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.94 · November 21, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.96 · November 21, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.79</div>
 
 <script>
 (function(){
@@ -11268,7 +11269,7 @@ document.addEventListener("click",e=>{
    const cards=candidates().filter(x=>sel.value==='all'||raceOf(x)===sel.value);
    if(!cards.length){alert('Compute the race card first, then open Decisions.');return false;}
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.94 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.96 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.79 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    return true;
@@ -11535,7 +11536,15 @@ document.addEventListener("click",e=>{
     if(classRisk && !exception)return {bet:false,why:'Class suitability remains unproven'};
     if(summary.changed && !exception)return {bet:false,why:'Challenger promotion lacks independent betting validation'};
     if(originalApproved && !summary.changed)return {bet:true,why:'Original wager qualified; evidence check retained the pick'};
-    if(exception)return {bet:true,why:'Independent latest-speed, three-race form and class evidence agree'};
+    if(exception){
+      const classRise=/^UP\b/i.test(h.conditions.label||'');
+      const hasExtraPlay=(r?.summary?.extraBets||[]).some(play=>nameMatch(h.h,play));
+      if(!originalApproved && !hasExtraPlay){
+        const reason=classRise?'Class rise with no AI(1) win play.':'AI(1) passed on the win bet.';
+        return {bet:false,why:reason+' Speed and form evidence for review only.'};
+      }
+      return {bet:true,why:'Independent latest-speed, three-race form and class evidence agree'};
+    }
     return {bet:false,why:'Best-supported pick, but no independently supported win-bet edge'};
   }
   const oldUpdate=hh974UpdateCompact;
