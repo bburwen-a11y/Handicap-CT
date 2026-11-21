@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.97 · November 21, 2026 — Overlay Board v4.91</title>
+<title>Horse Handicap v9.98 · November 21, 2026 — Decisions Bet Summary</title>
 
 <style>
 :root{
@@ -1429,6 +1429,11 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 </style>
 <style id="hh974-one-decision">
 /* Only the Decisions view is condensed; race facts and printable detail remain. */
+#hh69-decision-list > .best-pick[hidden]{display:none!important}
+.hh998-bets-summary{margin:8px 0 12px;padding:10px 12px;border:1px solid #cbbf9e;border-radius:8px;background:#f4f9f5;color:#203c2b}
+.hh998-bet-links{display:flex;flex-wrap:wrap;gap:6px 12px}
+.hh998-bet-links a{display:inline-flex;gap:6px;flex-wrap:wrap;align-items:center;min-height:44px;color:inherit;text-decoration:none;font-weight:700}
+.hh998-bet-links a b{text-decoration:underline;text-underline-offset:2px}
 #bestSection #hh69-decision-list > .best-pick{padding:12px!important;margin:8px 0!important;border:1px solid #cbbf9e!important;border-left:5px solid #294c3f!important;background:#fff!important;box-shadow:none!important}
 #bestSection #hh69-decision-list > .best-pick > :not(.hh974-compact):not([data-hh994-review]){display:none!important}
 .hh974-compact{display:block!important;padding:0!important;font-size:14px;line-height:1.4;color:#20382e}
@@ -1474,7 +1479,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.97 · Nov 21, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.98 · Nov 21, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -1482,8 +1487,9 @@ BRIS Single File parser + field-relative win-ranking engine using Prime Power, B
 
 <main>
 <details id="hh935ReleaseNotes" style="margin:0 0 14px;border:1px solid #CFC2A0;border-radius:8px;background:#fff;overflow:hidden">
-<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.97 · Overlay Board v4.91 · AI(1) Pass Protection</summary>
+<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.98 · Decisions Bet Summary · AI(1) v4.91</summary>
 <div style="padding:0 12px 12px;font-size:12px;line-height:1.6">
+<b>Decisions:</b> The bet count lists each approved horse. Focus shows approved bets by race number.<br>
 <b>AI(1) pass:</b> When AI(1) has no win bet or extra win play for the horse, Horse Handicap keeps it at PASS. Speed and form evidence remain visible in Race Facts. Existing Horse Handicap checks still apply to AI(1) plays.<br>
 <b>Market %:</b> morning-line odds expressed as a share of the active field. The comparison card highlights historical support at AI(1) Chance of 35% or higher when the morning line agrees. If AI(2) ranks another horse first, the comparison shows the two highest AI(1) Chance horses. Historical counts come from a 148-race replay.
 <br><b>Loss signs:</b> Prime Power #1 with zero or one loss sign is highlighted for a qualifying figure favourite. Overlay Board v4.88 reported the pattern in both halves of its historical pool.
@@ -6924,6 +6930,11 @@ function bindRaceJumpBars(){
             }else if(section==='best'){
                 showTab('best');
                 const target=document.getElementById('decision-race-'+raceNum);
+                if(target?.hidden){
+                    const filter=document.getElementById('hh69-sort');
+                    if(filter)filter.value='race';
+                    hh69SortDecisions('race');
+                }
                 if(target) target.scrollIntoView({behavior:'smooth',block:'start'});
             }else if(section==='analysis'){
                 showTab('analysis');
@@ -7325,24 +7336,30 @@ function hh67PaceVerdict(field,horse){
   }
   return {verdict,level,reason,shape:p.label,cluster:group.map(x=>`#${x.h.post||x.h.pgm} ${x.h.horse}`),style,nPace:p.nPace,n:p.n};
 }
-/* Research triage, not a validated wagering system. Does not alter horse rankings. */
-function hh69SortDecisions(mode){
- const box=document.getElementById('hh69-decision-list'); if(!box)return;
+function hh69SortDecisions(mode=document.getElementById('hh69-sort')?.value){
+ const box=document.getElementById('hh69-decision-list');
+ const count=document.getElementById('hh998-bet-count');
+ const links=document.getElementById('hh998-bet-links');
+ if(!box||!count||!links)return;
  const cards=[...box.children].filter(el=>el.matches('.best-pick[data-race-order]'));
- const focusMode=mode==='focus';
- const focusCards=cards.filter(el=>el.dataset.focusStatus==='FOCUS');
- // v8.90: Focus view is an actual FILTER, not merely a sort that can put
- // a CONSIDER race first when no race qualifies as FOCUS.
- cards.forEach(el=>{el.hidden=focusMode && el.dataset.focusStatus!=='FOCUS';});
- cards.sort((a,b)=>focusMode?(Number(a.dataset.focusOrder)-Number(b.dataset.focusOrder)||Number(a.dataset.raceOrder)-Number(b.dataset.raceOrder)):(Number(a.dataset.raceOrder)-Number(b.dataset.raceOrder)));
- cards.forEach(el=>box.appendChild(el));
- const note=document.getElementById('hh90-focus-note');
- if(note){
-   note.hidden=!focusMode;
-   note.textContent=focusCards.length
-    ? `${focusCards.length} race${focusCards.length===1?'':'s'} qualified as FOCUS. CONSIDER races are hidden; select Race number to see the full card.`
-    : 'NO FOCUS RACES QUALIFIED under the current evidence checks. Select Race number to review every race.';
- }
+ const bets=[];
+ let unresolved=0;
+ cards.forEach(card=>{
+   const race=card.dataset.raceOrder;
+   const decision=card.querySelector('.hh974-compact')?.dataset;
+   const final=hh74Results[race]?.summary?.selection && decision?.evidencePick && decision.finalBet;
+   if(!final)unresolved++;
+   const approved=final==='BET';
+   card.hidden=mode==='focus'&&!approved;
+   if(approved)bets.push({race,horse:decision.evidencePick});
+ });
+ const ready=Object.keys(hh74Results).length>0;
+ const error=/timed out|engine error|unavailable|unpack failed|did not initialize/i.test(hh74Error);
+ const total=bets.length;
+ const label=unresolved&&!ready?(error?'Bet count unavailable':'Calculating bets…'):
+   `${total} approved bet${total===1?'':'s'}${unresolved?` · ${unresolved} race${unresolved===1?'':'s'} unavailable`:''}`;
+ if(count.textContent!==label)count.textContent=label;
+ links.innerHTML=bets.map(({race,horse})=>`<a href="#decision-race-${safe(race)}"><b>Race ${safe(race)}</b><span>· ${safe(horse)}</span></a>`).join('');
 }
 function hh68RaceTriage(field,rankHorse,modelHorse){
   const live=(field||[]).filter(h=>!h.scratched), p=hh68PaceScenario(live);
@@ -8144,7 +8161,7 @@ function hh60DecisionHTML(d,caseBoard=null){
 
 // v8.74: exact Claude v3.75 engine runs inside an isolated hidden document.
 let hh74Text='',hh74Ready=false,hh74Token=0,hh74Results={},hh74Error='';
-function hh74SetCard(text){if(hh74Text===text)return;hh74Text=text;hh74Results={};hh74Error='';hh74Token++;}
+function hh74SetCard(text){if(hh74Text===text)return;hh74Text=text;hh74Results={};hh74Error='';hh74Token++;hh69SortDecisions();}
 function hh74Norm(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
 function hh27SamePick(a,b){if(!a||!b)return false;const aPost=String(a.post??'').trim(), bPost=String(b.post??'').trim();if(aPost&&bPost)return aPost===bPost;return hh74Norm(a.horse)===hh74Norm(b.horse);}
 function hh27AI2Pick(card){const name=card?.getAttribute('data-ai2-horse')||'';const label=card?.getAttribute('data-ai2-name')||'';const m=label.match(/^\s*#(\d+[A-Z]?)\s+/i);return {post:m?m[1]:'',horse:name||label.replace(/^\s*#\d+[A-Z]?\s*/i,'')};}
@@ -8372,22 +8389,6 @@ function hh74Refresh(){
     const condition=hh932ConditionReview(card,r,ai1HorseName);
     const ai2Condition=hh932ConditionReview(card,r,ai2HorseName);
     const review=hh929Review(r,card);
-    // v9.52: any horse-specific veto or unverified condition excludes FOCUS.
-    // Do not confuse an AI ranking with an eligible win-bet selection.
-    const focusCard=card.closest('.best-pick');
-    if(focusCard && (condition.pass || ai2Condition.pass || condition.unverified || ai2Condition.unverified)){
-      focusCard.dataset.focusStatus='CONSIDER';
-      focusCard.dataset.focusOrder='99';
-      if(document.getElementById('hh90-focus-note')){
-        const qualified=[...document.querySelectorAll('#bestSection .best-pick[data-focus-status="FOCUS"]')].length;
-        const note=document.getElementById('hh90-focus-note');
-        if(!note.hidden)note.textContent=qualified?qualified+' races qualified as FOCUS after condition checks.':'NO FOCUS RACES QUALIFIED after condition checks.';
-      }
-      if(focusCard.parentElement && focusCard.parentElement.closest('#bestSection')){
-        const filter=document.querySelector('#bestSection [data-focus-filter]');
-        if(focusCard.hidden===false && [...document.querySelectorAll('#bestSection .best-pick')].some(el=>el.hidden))focusCard.hidden=true;
-      }
-    }
     const existingFour=card.querySelector('.hh934-four');if(existingFour)existingFour.remove();
     const oldChecklist=card.querySelector('.hh936-checklist');if(oldChecklist)oldChecklist.remove();
     let decision=card.querySelector('.hh937-disagreement');
@@ -8502,6 +8503,7 @@ function hh74Refresh(){
     const meta=r ? ' · Tier '+escapeText(r.tier?.tier??'unavailable')+' of 7 · confidence '+escapeText(r.confidence||'unavailable') : '';
     return '<div id="concurrence-race-'+escapeText(race)+'" class="hh-concurrence-race" style="padding:14px 0;border-top:1px solid #ddd;scroll-margin-top:110px"><b>Race '+escapeText(race)+'</b><div>'+escapeText(result)+'</div>'+(r?.top?'<div style="font-size:12px;opacity:.75">RS #1: #'+escapeText(r.top.post)+' '+escapeText(r.top.horse)+'</div>':'')+'</div>';
   });
+  hh69SortDecisions();
   const out=document.getElementById('hh74-ai-summary');
   if(out)out.innerHTML='<h3>HORSE HANDICAP v9.72 · CONCURRENCE</h3><div>'+agree+' concurrent · '+disagree+' different · '+unknown+' pending</div>'+lines.join('');
 
@@ -8628,6 +8630,8 @@ function hh98ExportCSV(){const rows=[['date','track','race','selection','selecti
 function hh98Import(file){if(!file)return;const fr=new FileReader();fr.onload=()=>{try{const obj=JSON.parse(fr.result);if(!obj||Array.isArray(obj)||typeof obj!=='object')throw Error('Not a valid audit object');const db=hh98Load();let n=0;Object.entries(obj).forEach(([k,r])=>{if(r&&Array.isArray(r.horses)&&r.key===k&&!db[k]){db[k]=r;n++}});hh98Save(db);hh98Render();alert(n+' new snapshots imported; existing snapshots preserved.')}catch(e){alert('Import failed: '+e.message)}};fr.readAsText(file)}
 
 function computeRaceCard(){
+    const decisionMode=document.getElementById('hh69-sort')?.value;
+    hh74Results={};
     Object.keys(hh994Inputs).forEach(race=>delete hh994Inputs[race]);
 
     computedRaces = {};
@@ -9149,14 +9153,16 @@ function computeRaceCard(){
                 Race Decision Board
             </h3>
 
-            <div class="small-note" style="margin:4px 0 10px;">WINNER: protected original model selection. VERIFIED CONTENDERS require two independent evidence groups. M/L is price information, not a contender qualification. No automatic wager.</div>
+            <div class="hh998-bets-summary">
+              <b id="hh998-bet-count" role="status">Calculating bets…</b>
+              <div id="hh998-bet-links" class="hh998-bet-links"></div>
+            </div>
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 14px">
-              <label for="hh69-sort" style="font-weight:800">Decision order:</label>
+              <label for="hh69-sort" style="font-weight:800">Show</label>
               <select id="hh69-sort" style="max-width:240px" onchange="hh69SortDecisions(this.value)">
-                <option value="race">Race number (all races)</option><option value="focus">FOCUS races only</option>
+                <option value="race">All races</option><option value="focus"${decisionMode==='focus'?' selected':''}>Focus · Bets only</option>
               </select>
             </div>
-            <div id="hh90-focus-note" role="status" hidden style="border-left:5px solid #9a6c13;padding:10px;background:#fff6e7;margin:8px 0 12px;font-weight:700"></div>
             <div id="hh69-decision-list">${bestHTML}</div>
             <div id="longshotsBoard" hidden></div>
         </div>
@@ -9215,7 +9221,7 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v9.97</h2>
+      <h2>Help — Horse Handicap v9.98</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.91's actual final selection, after its review of race evidence and warnings. It uses the horse named by Overlay Board for the race.</p>
         <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; where PPs are absent it uses a marked morning-line estimate; it is <b>not</b> a calibrated win probability.</p>
@@ -11108,7 +11114,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.97 · November 21, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.91</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.98 · November 21, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.91</div>
 
 <script>
 (function(){
@@ -11269,7 +11275,7 @@ document.addEventListener("click",e=>{
    const cards=candidates().filter(x=>sel.value==='all'||raceOf(x)===sel.value);
    if(!cards.length){alert('Compute the race card first, then open Decisions.');return false;}
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.97 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v9.98 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.91 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    return true;
