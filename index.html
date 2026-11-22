@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v9.99 · November 22, 2026 — Fragile Favourite Caution</title>
+<title>Horse Handicap v10.00 · November 22, 2026 — Decision Comparison</title>
 
 <style>
 :root{
@@ -1434,6 +1434,8 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 .hh998-bet-links{display:flex;flex-wrap:wrap;gap:6px 12px}
 .hh998-bet-links a{display:inline-flex;gap:6px;flex-wrap:wrap;align-items:center;min-height:44px;color:inherit;text-decoration:none;font-weight:700}
 .hh998-bet-links a b{text-decoration:underline;text-underline-offset:2px}
+.hh1000-held{margin-top:8px;padding-top:8px;border-top:1px solid #cbbf9e;color:#51462f}
+.hh1000-held[hidden]{display:none!important}
 .hh999-caution{margin:5px 0;color:#6b4610;font-weight:800}
 #bestSection #hh69-decision-list > .best-pick{padding:12px!important;margin:8px 0!important;border:1px solid #cbbf9e!important;border-left:5px solid #294c3f!important;background:#fff!important;box-shadow:none!important}
 #bestSection #hh69-decision-list > .best-pick > :not(.hh974-compact):not([data-hh994-review]){display:none!important}
@@ -1480,7 +1482,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v9.99 · Nov 22, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v10.00 · Nov 22, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -1488,10 +1490,10 @@ BRIS Single File parser + field-relative win-ranking engine using Prime Power, B
 
 <main>
 <details id="hh935ReleaseNotes" style="margin:0 0 14px;border:1px solid #CFC2A0;border-radius:8px;background:#fff;overflow:hidden">
-<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v9.99 · Fragile Favourite Caution · AI(1) v4.92</summary>
+<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v10.00 · Decision Comparison · AI(1) v4.92</summary>
 <div style="padding:0 12px 12px;font-size:12px;line-height:1.6">
 <b>Cautious bet:</b> An approved bet carries this label when AI(1) flags the same horse as a fragile favourite. The BET badge stays.<br>
-<b>Decisions:</b> The bet count lists each approved horse. Focus shows approved bets by race number.<br>
+<b>Decisions:</b> The bet count lists each approved horse. All races also lists AI(1) win plays the board held. Focus shows approved bets by race number.<br>
 <b>AI(1) pass:</b> When AI(1) has no win bet or extra win play for the horse, Horse Handicap keeps it at PASS. Speed and form evidence remain visible in Race Facts. Existing Horse Handicap checks still apply to AI(1) plays.<br>
 <b>Market %:</b> morning-line odds expressed as a share of the active field. The comparison card highlights historical support at AI(1) Chance of 35% or higher when the morning line agrees. If AI(2) ranks another horse first, the comparison shows the two highest AI(1) Chance horses. Historical counts come from a 148-race replay.
 <br><b>Loss signs:</b> Prime Power #1 with zero or one loss sign is highlighted for a qualifying figure favourite. Overlay Board v4.88 reported the pattern in both halves of its historical pool.
@@ -7342,18 +7344,30 @@ function hh69SortDecisions(mode=document.getElementById('hh69-sort')?.value){
  const box=document.getElementById('hh69-decision-list');
  const count=document.getElementById('hh998-bet-count');
  const links=document.getElementById('hh998-bet-links');
- if(!box||!count||!links)return;
+ const heldSummary=document.getElementById('hh1000-held');
+ const heldCount=document.getElementById('hh1000-held-count');
+ const heldLinks=document.getElementById('hh1000-held-links');
+ if(!box||!count||!links||!heldSummary||!heldCount||!heldLinks)return;
  const cards=[...box.children].filter(el=>el.matches('.best-pick[data-race-order]'));
  const bets=[];
+ const held=[];
  let unresolved=0;
  cards.forEach(card=>{
    const race=card.dataset.raceOrder;
    const decision=card.querySelector('.hh974-compact')?.dataset;
-   const final=hh74Results[race]?.summary?.selection && decision?.evidencePick && decision.finalBet;
+   const result=hh74Results[race];
+   const final=result?.summary?.selection && decision?.evidencePick && decision.finalBet;
    if(!final)unresolved++;
    const approved=final==='BET';
    card.hidden=mode==='focus'&&!approved;
    if(approved)bets.push({race,horse:decision.evidencePick,cautious:decision.cautiousBet==='1'});
+   if(mode==='focus'||!final)return;
+   const plays=new Map();
+   for(const play of [result.bet,...(result.summary.extraBets||[])]){
+     if(play?.post&&play.horse)plays.set(String(play.post),play.horse);
+   }
+   if(approved)plays.delete(decision.evidencePost);
+   for(const [post,horse] of plays)held.push({race,horse:'#'+post+' '+horse});
  });
  const ready=Object.keys(hh74Results).length>0;
  const error=/timed out|engine error|unavailable|unpack failed|did not initialize/i.test(hh74Error);
@@ -7361,7 +7375,11 @@ function hh69SortDecisions(mode=document.getElementById('hh69-sort')?.value){
  const label=unresolved&&!ready?(error?'Bet count unavailable':'Calculating bets…'):
    `${total} approved bet${total===1?'':'s'}${unresolved?` · ${unresolved} race${unresolved===1?'':'s'} unavailable`:''}`;
  if(count.textContent!==label)count.textContent=label;
- links.innerHTML=bets.map(({race,horse,cautious})=>`<a href="#decision-race-${safe(race)}"><b>Race ${safe(race)}</b><span>· ${safe(horse)}${cautious?' · Cautious':''}</span></a>`).join('');
+ const raceLink=({race,horse,cautious})=>`<a href="#decision-race-${safe(race)}"><b>Race ${safe(race)}</b><span>· ${safe(horse)}${cautious?' · Cautious':''}</span></a>`;
+ links.innerHTML=bets.map(raceLink).join('');
+ heldSummary.hidden=held.length===0;
+ heldCount.textContent=`${held.length} AI(1) win play${held.length===1?'':'s'} held by Horse Handicap`;
+ heldLinks.innerHTML=held.map(raceLink).join('');
 }
 function hh68RaceTriage(field,rankHorse,modelHorse){
   const live=(field||[]).filter(h=>!h.scratched), p=hh68PaceScenario(live);
@@ -9158,6 +9176,10 @@ function computeRaceCard(){
             <div class="hh998-bets-summary">
               <b id="hh998-bet-count" role="status">Calculating bets…</b>
               <div id="hh998-bet-links" class="hh998-bet-links"></div>
+              <div id="hh1000-held" class="hh1000-held" hidden>
+                <b id="hh1000-held-count" role="status"></b>
+                <div id="hh1000-held-links" class="hh998-bet-links"></div>
+              </div>
             </div>
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 14px">
               <label for="hh69-sort" style="font-weight:800">Show</label>
@@ -9223,7 +9245,7 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v9.99</h2>
+      <h2>Help — Horse Handicap v10.00</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.92's actual final selection, after its review of race evidence and warnings. It uses the horse named by Overlay Board for the race.</p>
         <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; where PPs are absent it uses a marked morning-line estimate; it is <b>not</b> a calibrated win probability.</p>
@@ -11116,7 +11138,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v9.99 · November 22, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.92</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v10.00 · November 22, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.92</div>
 
 <script>
 (function(){
@@ -11277,7 +11299,7 @@ document.addEventListener("click",e=>{
    const cards=candidates().filter(x=>sel.value==='all'||raceOf(x)===sel.value);
    if(!cards.length){alert('Compute the race card first, then open Decisions.');return false;}
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v9.99 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v10.00 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.92 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    return true;
@@ -11573,6 +11595,7 @@ document.addEventListener("click",e=>{
     compact.dataset.cautiousBet=cautious?'1':'0';
     compact.dataset.finalResearch=summary.changed?'1':'0';
     compact.dataset.finalReason=wager.why;
+    compact.dataset.evidencePost=String(h.post);
     compact.dataset.evidencePick='#'+h.post+' '+h.horse;
     const ai2Name=String(aiCard?.getAttribute('data-ai2-horse')||'').trim();
     const ai2Runner=summary.field.find(x=>String(x.horse).toLowerCase()===ai2Name.toLowerCase());
