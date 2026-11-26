@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Horse Handicap v10.06 · November 25, 2026 — Chance Gap</title>
+<title>Horse Handicap v10.07 · November 26, 2026 — Race Facts Quick View</title>
 
 <style>
 :root{
@@ -1463,6 +1463,28 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 .hh978-facts li{margin:3px 0}
 @media(max-width:700px){.hh978-facts{padding:9px;font-size:12px}.hh978-facts table{font-size:10.5px}}
 </style>
+<style id="hh1007-race-facts-style">
+.hh1007-chart{--hh-chance:#276049;--hh-share:#37577d;--hh-market:#8d5b13;margin:12px 10px;padding:13px 12px;background:#fbfaf5;border:1px solid #cbbf9e;border-radius:9px;color:#23362c}
+.hh1007-chart h4{margin:0 0 8px;font-size:17px;letter-spacing:normal}
+.hh1007-legend,.hh1007-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;font-size:11px;font-weight:750;text-align:right}
+.hh1007-legend{padding:0 0 5px;border-bottom:1px solid #d8d2bf}
+.hh1007-legend span,.hh1007-values span{white-space:nowrap}
+.hh1007-key:before{content:"";display:inline-block;width:8px;height:6px;border-radius:2px;background:currentColor;margin-right:3px;vertical-align:2px}
+.hh1007-key.market:before{width:2px;height:9px;border-radius:0}
+.hh1007-chart .chance{color:var(--hh-chance)}.hh1007-chart .share{color:var(--hh-share)}.hh1007-chart .market{color:var(--hh-market)}
+.hh1007-rows{list-style:none;padding:0;margin:0}
+.hh1007-row{padding:5px 0 6px;border-bottom:1px solid #e5dfcd}
+.hh1007-row-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.hh1007-name{min-width:0;line-height:1.2;font-size:13px;font-weight:800}
+.hh1007-chart .horse-name-link{max-width:100%;white-space:normal;text-align:left;overflow-wrap:anywhere;vertical-align:top;font-size:inherit;line-height:1.3}
+.hh1007-values{min-width:124px;flex:0 0 42%;font-variant-numeric:tabular-nums}
+.hh1007-track{position:relative;height:13px;margin-top:4px;background:repeating-linear-gradient(to right,#e3decd 0 1px,transparent 1px 25%),#efecdf;border-right:1px solid #e3decd;border-radius:2px}
+.hh1007-bar{position:absolute;left:0;height:5px;width:var(--width);border-radius:0 2px 2px 0}
+.hh1007-bar.chance{top:1px;background:var(--hh-chance)}.hh1007-bar.share{bottom:1px;background:var(--hh-share)}
+.hh1007-marker{position:absolute;left:var(--position);top:0;bottom:0;border-left:2px solid var(--hh-market);transform:translateX(-1px)}
+.hh1007-axis{display:flex;justify-content:space-between;margin-top:4px;color:#605a47;font-size:10px;font-variant-numeric:tabular-nums}
+.hh1007-note{margin:7px 0 0;color:#5b5545;font-size:11px;line-height:1.4}
+</style>
 <style id="hh983-historical-style">#bestSection .hh983-history{font-size:11px;color:#355546;margin:6px 0 2px;line-height:1.4}.hh978-facts .hh983-history{border-top:1px solid #cfc2a0;padding-top:7px;margin-top:8px}</style>
 <style id="hh986-original-pick-style">
 .hh986-research{margin:8px 0;padding:8px 10px;background:#fff8e9;border-left:4px solid #ad7a2a;border-radius:4px;color:#493b24;font-size:12px;line-height:1.5}
@@ -1482,7 +1504,7 @@ body:not(.hh-nav-ready) #tabbar{display:none!important;}
 
 <header>
 <p class="eyebrow">Professional Handicapping & Value Engine</p>
-<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v10.06 · Nov 25, 2026</span></h1>
+<h1>Horse Handicap <span style="font-family:var(--mono);font-size:.34em;vertical-align:middle;opacity:.8;">v10.07 · Nov 26, 2026</span></h1>
 <p class="tagline">
 BRIS Single File parser + field-relative win-ranking engine using Prime Power, BRIS speed/pace, class, recent form, trainer/jockey, T/J combo, run style, workouts, surface/distance.
 </p>
@@ -1490,11 +1512,12 @@ BRIS Single File parser + field-relative win-ranking engine using Prime Power, B
 
 <main>
 <details id="hh935ReleaseNotes" style="margin:0 0 14px;border:1px solid #CFC2A0;border-radius:8px;background:#fff;overflow:hidden">
-<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v10.06 · Chance Gap · AI(1) v4.95</summary>
+<summary style="padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer">v10.07 · Race Facts Quick View · AI(1) v4.95</summary>
 <div style="padding:0 12px 12px;font-size:12px;line-height:1.6">
 <b>Cautious bet:</b> An approved bet carries this label when AI(1) flags the same horse as a fragile favourite. The BET badge stays.<br>
 <b>Allowance bets:</b> An AI(1) allowance play can qualify when Horse Handicap selects the same horse and its class is unchanged or the rise is supported by comparable speed figures. It must clear the existing form, readiness and price checks.<br>
 <b>Pre-bet checks:</b> AI(2) disagreement is shown on the decision card. The four checks are chance below morning-line share, 9+ runners, 3+ Against items, and maiden special weight or claiming race. Two failures hold a win bet. A morning line under 3-2 holds it on its own.<br>
+<b>Race Facts:</b> Quick View compares AI(1) Chance, AI(2) Share and the morning-line Market for every active runner.<br>
 <b>Chance gap:</b> The Decisions card compares AI(1)’s two highest Chances in percentage points. Under 10 is close, 10 to under 20 is moderate, and 20 or more is clear. Display only.<br>
 <b>Pick reasons:</b> Export AI(2) reasons from Decisions to compare the largest model-score differences against AI(1), or against the AI(2) runner-up when the picks agree.<br>
 <b>Challengers:</b> Over and Full comparison show rivals above 8% of the active field’s morning-line market. If the list is empty, the highest-chance eligible rival is shown when available.<br>
@@ -6833,8 +6856,51 @@ function hh994Review(input,summary){
     </section>`;
     return {chances,html};
 }
+function hh1007Chart(input,review){
+    const chanceByPost=review?.chances;
+    const scoreByPost=new Map(input.scored.map(s=>[String(s.horse.post),s]));
+    const data=input.field.filter(h=>!h.scratched).map(horse=>{
+        const post=String(horse.post);
+        const item=scoreByPost.get(post);
+        const chance=chanceByPost?.get(post);
+        return {horse,chance:chance>0?chance:null,
+            share:Number.isFinite(item?.probability)?100*item.probability:null,
+            market:input.market.get(post)==null?null:100*input.market.get(post),
+            estimated:!!item&&item.shareSource!=='MODEL'};
+    }).sort((a,b)=>(b.chance??-1)-(a.chance??-1)||(b.market??-1)-(a.market??-1));
+    if(!data.length)return '';
+    const peak=Math.max(0,...data.flatMap(r=>[r.chance??0,r.share??0,r.market??0]));
+    const axisMax=Math.min(100,Math.max(20,Math.ceil(peak/20)*20));
+    const scaled=n=>Math.max(0,Math.min(100,n/axisMax*100));
+    const value=n=>n==null?'—':n.toFixed(1)+'%';
+    return `<section class="hh1007-chart" aria-label="Race Facts quick view">
+        <h4>Quick View</h4>
+        <div class="hh1007-legend"><span class="hh1007-key chance">AI(1) Chance</span><span class="hh1007-key share">AI(2) Share</span><span class="hh1007-key market">Market</span></div>
+        <ul class="hh1007-rows">${data.map(r=>`<li class="hh1007-row">
+          <div class="hh1007-row-top">
+            <span class="hh1007-name">${horseNameLinkHTML(r.horse,'#'+r.horse.post+' '+r.horse.horse)}</span>
+            <span class="hh1007-values">
+              <span class="chance" aria-label="AI(1) Chance ${r.chance==null?'unavailable':value(r.chance)}">${value(r.chance)}</span>
+              <span class="share" aria-label="AI(2) Share ${r.share==null?'unavailable':value(r.share)}${r.estimated?' estimated':''}">${value(r.share)}${r.estimated?'*':''}</span>
+              <span class="market" aria-label="Market ${r.market==null?'unavailable':value(r.market)}">${value(r.market)}</span>
+            </span>
+          </div>
+          <div class="hh1007-track" aria-hidden="true">
+            ${r.chance==null?'':`<span class="hh1007-bar chance" style="--width:${scaled(r.chance)}%"></span>`}
+            ${r.share==null?'':`<span class="hh1007-bar share" style="--width:${scaled(r.share)}%"></span>`}
+            ${r.market==null?'':`<span class="hh1007-marker" style="--position:${scaled(r.market)}%"></span>`}
+          </div>
+        </li>`).join('')}</ul>
+        <div class="hh1007-axis" aria-hidden="true">${[0,.25,.5,.75,1].map(t=>`<span>${t*axisMax}%</span>`).join('')}</div>
+        <p class="hh1007-note">${chanceByPost?'':'AI(1) Chance hasn’t loaded. '}Market uses the morning line. AI(2) Share measures relative model strength.${data.some(r=>r.estimated)?' *Estimated without usable past-performance figures.':''}</p>
+      </section>`;
+}
 function hh994Refresh(){
     const reviews=new Map(Object.entries(hh994Inputs).map(([race,input])=>[race,hh994Review(input,hh74Results[race]?.summary)]));
+    document.querySelectorAll('[data-hh1007-chart]').forEach(node=>{
+        const race=node.dataset.hh1007Chart, input=hh994Inputs[race];
+        if(input)node.innerHTML=hh1007Chart(input,reviews.get(race));
+    });
     document.querySelectorAll('[data-hh994-review]').forEach(node=>{
         node.innerHTML=reviews.get(node.dataset.hh994Review)?.html||'';
     });
@@ -8865,6 +8931,7 @@ function computeRaceCard(){
         // by the Race Card, presented race-by-race with the details opened.
         factsHTML += `<details class="race-card race-anchor-target facts-race-fold" id="facts-race-${safe(raceNum)}">
           <summary><b>RACE ${safe(raceNum)} — RACE FACTS</b> <span class="small-note">Tap to open</span></summary>
+          <div data-hh1007-chart="${safe(raceNum)}">${hh1007Chart(hh994Inputs[String(raceNum)])}</div>
           ${raceConditionsHTML(top.horse)}
           <div class="note"><b>PACE / QUIRIN — ALL RUNNERS:</b> ${hh68PaceScenario(activeField).profiles.map(p=>`#${safe(p.h.post||p.h.pgm||'?')} ${safe(p.h.horse)}: ${safe(p.style||'unknown')} / Q ${Number.isFinite(Number(p.sp))?safe(p.sp):'—'}`).join(' · ')}. <b>Race scenario:</b> ${safe(hh68PaceScenario(activeField).label)}. Quirin points reflect early-running tendency, not finishing strength; projected pace is uncertain when comparable early figures are missing.</div>
           <div data-hh994-review="${safe(raceNum)}"></div>
@@ -9303,7 +9370,7 @@ function computeRaceCard(){
 
 
     $("helpSection").innerHTML = `
-      <h2>Help — Horse Handicap v10.06</h2>
+      <h2>Help — Horse Handicap v10.07</h2>
       <div class="race-card"><h3>Decisions</h3>
         <p><b>AI(1) Final Pick:</b> Overlay Board v4.95's actual final selection, after its review of race evidence and warnings. It uses the horse named by Overlay Board for the race.</p>
         <p><b>AI(2) Pick:</b> Horse Handicap's independent selection. Its Model Share measures relative score strength within this race; where PPs are absent it uses a marked morning-line estimate; it is <b>not</b> a calibrated win probability.</p>
@@ -11196,7 +11263,7 @@ document.addEventListener("click",e=>{
 
 </script>
 
-<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v10.06 · November 25, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.95</div>
+<div style="text-align:center;padding:12px 0 22px;font-family:var(--mono);font-size:10px;color:var(--ink-soft);opacity:.75;">Horse Handicap v10.07 · November 26, 2026 · iPhone/Safari · AI(1) engine: Overlay Board v4.95</div>
 
 <script>
 (function(){
@@ -11357,7 +11424,7 @@ document.addEventListener("click",e=>{
    const cards=candidates().filter(x=>sel.value==='all'||raceOf(x)===sel.value);
    if(!cards.length){alert('Compute the race card first, then open Decisions.');return false;}
    report.replaceChildren();
-   report.append(node('h1','Horse Handicap v10.06 — Complete Race Report'));
+   report.append(node('h1','Horse Handicap v10.07 — Complete Race Report'));
    report.append(node('p','Generated '+new Date().toLocaleString()+' · AI(1) Overlay Board v4.95 / AI(2) Horse Handicap','hh923-stamp'));
    cards.forEach(c=>report.append(renderRace(c)));
    return true;
@@ -11704,7 +11771,7 @@ document.addEventListener("click",e=>{
         holder.firstElementChild?.appendChild(note);
       }
       const child=holder.firstElementChild;
-      if(child)facts.insertBefore(child,facts.querySelector('summary')?.nextSibling||null);
+      if(child)facts.querySelector('[data-hh1007-chart]')?.after(child);
     }
   };
 document.addEventListener('click',e=>{
